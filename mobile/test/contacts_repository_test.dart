@@ -92,7 +92,7 @@ void main() {
       final result = await repo.generate(validFor: const Duration(hours: 1));
       expect(result.row.status, InvitationStatus.pending);
       expect(result.shortCode, isNotEmpty);
-      expect(result.deepLink, startsWith('compartarenta://'));
+      expect(result.deepLink, startsWith('bojairu://'));
       // The on-device row id matches the invitation id embedded in the code.
       expect(result.row.id, result.code.invitationIdHex());
     });

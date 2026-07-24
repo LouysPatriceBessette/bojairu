@@ -797,6 +797,66 @@ committed yet), then `F.2 PASS` after the baseline commit lands on
 
 ---
 
+## G. Closed-app push ops (FCM `bojairu` + daily stats)
+
+Operator-facing checks for OpenSpec `closed-app-push-delivery` **11.2** /
+**11.6** and Phase A FCM project cutover. Execution is on the VPS; this
+section is the checklist the operator ticks. Details:
+[`relay-deployment.md`](./relay-deployment.md) (FCM / WAKE section),
+[`stack-deployment.md`](./stack-deployment.md) (daily statistics cron).
+
+### G.1 FCM service account is the `bojairu` Firebase project (ops A2)
+
+1. On the VPS, confirm the JSON mounted into the relay container has
+   `"project_id": "bojairu"` (or the current product Firebase project id
+   documented in `relay-deployment.md`).
+2. Confirm stack `.env` sets `FCM_SERVICE_ACCOUNT_JSON_PATH` to that file
+   **inside** the container.
+3. Restart relay after placing/rotating the file.
+4. With `WAKE_PUSH_DISPATCH_ENABLED=true`, smoke a wake-eligible send and
+   confirm FCM accept in relay logs (no permanent token error storm).
+
+**Expected:** dispatcher credentials match the same Firebase project as
+the shipped Android/iOS apps. The agent cannot place the secret JSON —
+operator only.
+
+### G.2 Auditor posture confirmation (OpenSpec 11.2)
+
+Before treating production wake dispatch as formally signed-off, confirm
+with the auditor:
+
+| Item | Posture |
+|------|---------|
+| Push-token TTL default | 14 days |
+| Country suppression threshold | hardcoded **10** |
+| Statistics HTTP endpoint | loopback-only |
+| Stats file | append-only `STATS_FILE_PATH` (default `/srv/compartarenta-stats/daily.jsonl`) |
+| DB access for stats | no humans querying the DB for routine stats |
+
+Record sign-off date and actor in [`relay-audit-log.md`](./relay-audit-log.md).
+Field QA may enable the flag earlier; **11.2** remains open until auditor
+confirmation.
+
+### G.3 Daily stats cron under the relay OS user (OpenSpec 11.6)
+
+1. Install cron under the **operating-system user that owns the relay
+   process** (not root-only), using the Docker wrapper on this stack:
+
+   ```cron
+   7 0 * * * /srv/compartarenta-relay/source/relay/scripts/daily-stats-append-via-docker.sh >> /srv/compartarenta-stats/cron.log 2>&1
+   ```
+
+2. After one full UTC day, verify the first line landed:
+
+   ```bash
+   ssh $ADMIN_HOST 'head -n 1 /srv/compartarenta-stats/daily.jsonl | jq .'
+   ```
+
+**Expected:** one JSON line per day appended at ~00:07 UTC; `cron.log`
+shows no permission errors. Scripts live under `relay/scripts/`.
+
+---
+
 ## How to record findings
 
 Append one row per finding to the **Findings** section of

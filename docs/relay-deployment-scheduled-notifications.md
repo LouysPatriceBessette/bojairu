@@ -16,6 +16,8 @@ Payment reminder reconciliation uses the existing scheduling HTTP API:
 - `POST /v1/scheduling/timezone` — upsert recipient IANA timezone (recomputes pending housing fires).
 - `POST /v1/scheduling/housing/reconcile` — upsert/cancel housing payment targets (domain `housing_payment`).
 - `POST /v1/scheduling/housing/cancel` — partial cancel by scope/period.
+- `POST /v1/scheduling/fires/upsert` — authenticated client wall-clock `fires[]` upsert for domains `contacts_invitation_expiry` and `housing_proposal_deadline` (past `fire_at` skipped server-side).
+- `POST /v1/scheduling/fires/cancel` — cancel pending fires by domain + `scope_key`(s).
 - `GET /v1/scheduling/pending-deliveries` — client fetch after wake push.
 - `POST /v1/scheduling/ack-delivery` — mark a fired row consumed.
 
@@ -31,5 +33,9 @@ mobile client builds the localized notification.
 4. Confirm due fires move from `pending` to `fired` within one cron interval (see relay logs / metrics).
 5. Cross-reference audit items in [`relay-audit-checklist.md`](./relay-audit-checklist.md) for scheduled-notification tables.
 
-Domains reserved for follow-up client work (schema only today): `housing_proposal_deadline`,
-`contacts_invitation_expiry`.
+Client domains that supply wall-clock `fires[]` (same schema as housing payment):
+
+| Domain | Who registers | Cancel when |
+|--------|---------------|-------------|
+| `contacts_invitation_expiry` | Inviter on invitation create | used / revoked / extend (re-register) |
+| `housing_proposal_deadline` | Proposer on proposal dispatch | response / invalidate / expire |

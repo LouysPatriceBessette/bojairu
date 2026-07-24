@@ -1,8 +1,8 @@
-# Compartarenta Stack — VPS Deployment Runbook (Relay + Entitlement)
+# Bojairũ Stack — VPS Deployment Runbook (Relay + Entitlement)
 
 This runbook describes how to deploy and upgrade the **full backend stack**
 on an existing Ubuntu VPS that already runs (or previously ran) the
-Compartarenta relay. It covers:
+Bojairũ relay. It covers:
 
 - **Relay** — encrypted envelope transport (public via Apache TLS)
 - **Entitlement** — housing licensing state (private, loopback only)
@@ -29,6 +29,7 @@ Product semantics: `openspec/changes/entitlement-server`,
 | Relay source | [`relay/`](../relay) |
 | Apache / TLS / host prep | [`relay-deployment.md`](./relay-deployment.md) |
 | Audit checklist | [`relay-audit-checklist.md`](./relay-audit-checklist.md) |
+| Entitlement audit checklist | [`entitlement-audit-checklist.md`](./entitlement-audit-checklist.md) |
 | Daily stats cron (Docker VPS) | [`relay/scripts/daily-stats-append-via-docker.sh`](../relay/scripts/daily-stats-append-via-docker.sh) — see [Daily statistics cron](#daily-statistics-cron-containerized-vps) |
 
 ## Topology (additions over relay-only)

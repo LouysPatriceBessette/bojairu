@@ -2173,6 +2173,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationContactInvitationBeforeExpiryTitle =>
+      'Invitation expiring soon';
+
+  @override
+  String get pushNotificationContactInvitationBeforeExpiryBody =>
+      'A pending invitation will expire soon.';
+
+  @override
+  String get pushNotificationContactInvitationExpiredTitle =>
+      'Invitation expired';
+
+  @override
+  String get pushNotificationContactInvitationExpiredBody =>
+      'An invitation was not used and has expired.';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineTitle =>
+      'Proposal deadline approaching';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineBody =>
+      'A housing plan offer expires soon. Open Housing to respond or check status.';
+
+  @override
   String get notificationHousingPaymentRemindersLabel => 'Payment reminders';
 
   @override

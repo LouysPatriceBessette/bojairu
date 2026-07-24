@@ -73,6 +73,39 @@ final class HousingReminderScheduleTarget {
   };
 }
 
+/// One client-supplied scheduled-fire target (invitation / proposal deadline).
+final class ClientScheduledFireTarget {
+  const ClientScheduledFireTarget({
+    required this.domain,
+    required this.scopeKeyBytes,
+    required this.recipientRoutingId,
+    required this.reminderKind,
+    required this.fireAts,
+    this.dueAt,
+    this.generation = 1,
+  });
+
+  final String domain;
+  final Uint8List scopeKeyBytes;
+  final Uint8List recipientRoutingId;
+  final String reminderKind;
+  final List<DateTime> fireAts;
+  final DateTime? dueAt;
+  final int generation;
+
+  Map<String, dynamic> toJson() => {
+    'domain': domain,
+    'scope_key': RelaySchedulingCodec.encodeId(scopeKeyBytes),
+    'recipient_identity': RelaySchedulingCodec.encodeId(recipientRoutingId),
+    'reminder_kind': reminderKind,
+    'generation': generation,
+    if (dueAt != null) 'due_at': dueAt!.toUtc().toIso8601String(),
+    'fires': [
+      for (final at in fireAts) {'fire_at': at.toUtc().toIso8601String()},
+    ],
+  };
+}
+
 class RelaySchedulingCodec {
   RelaySchedulingCodec._();
 

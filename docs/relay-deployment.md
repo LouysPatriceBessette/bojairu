@@ -1,4 +1,4 @@
-# Compartarenta Relay — Deployment Runbook
+# Bojairũ Relay — Deployment Runbook
 
 > **Relay + entitlement on the same VPS:** use
 > [`stack-deployment.md`](./stack-deployment.md) for pull, `.env`, build,
@@ -6,7 +6,7 @@
 > This document remains the reference for Apache, TLS, host preparation,
 > and relay-only operational details.
 
-This runbook describes how to deploy the Compartarenta relay on an
+This runbook describes how to deploy the Bojairũ relay on an
 existing Ubuntu VPS that **already hosts other services**, under a
 dedicated sub-domain, with Apache as the reverse proxy in front of the
 containerized Go binary and a containerized PostgreSQL behind it. It is
@@ -14,6 +14,10 @@ the operational counterpart to the spec at
 `openspec/changes/relay-server-infrastructure-and-audit/`. Auditors
 should cross-reference this document with
 [`relay-audit-checklist.md`](./relay-audit-checklist.md).
+
+Host paths, deploy users, and container names such as `/srv/compartarenta-relay`
+and `compartarenta-relay` remain the technical identifiers used on the VPS;
+they are not renamed in this batch.
 
 ## At a glance
 
@@ -557,6 +561,33 @@ same applies to tasks 7.6 (audit-checklist dry-run on a live
 deployment) and 6.3/6.4 (first tagged release + baseline audit entry).
 Mark them done in `tasks.md` once they're completed against the live
 deployment.
+
+## Closed-app wake push (FCM / Android)
+
+Android clients register FCM tokens with the relay. Wake dispatch uses
+Firebase Cloud Messaging HTTP v1. The **service account JSON must belong
+to the same Firebase project as the mobile apps** (currently **`bojairu`**).
+
+| Variable | Role |
+|----------|------|
+| `WAKE_PUSH_DISPATCH_ENABLED` | Master switch (default `false`). When false, tokens are stored but no FCM call is made. |
+| `FCM_SERVICE_ACCOUNT_JSON_PATH` | Path **inside the relay container** to the Firebase service account JSON. The relay reads `project_id` from that file. |
+| `ROUTING_PUSH_TOKEN_TTL_SECONDS` | Token lifetime on refresh (default 14 days). |
+
+Mount the JSON into the container (compose volume or copy into the image
+layer is **not** recommended — prefer a host bind under
+`/srv/compartarenta-relay/…` with mode `0600`, owned by the deploy user).
+Set `FCM_SERVICE_ACCOUNT_JSON_PATH` in the stack `.env`, then restart the
+relay. See [`relay/.env.example`](../relay/.env.example) and
+[`relay-state-schema.md`](./relay-state-schema.md).
+
+**Ops checklist (Phase A cut):** place the `bojairu` service account on the
+VPS → point `FCM_SERVICE_ACCOUNT_JSON_PATH` → set
+`WAKE_PUSH_DISPATCH_ENABLED=true` when ready → restart relay → smoke an
+Android wake (e.g. `qa:run-fcm-wake-push`).
+
+APNs variables are documented in `.env.example` but iOS push QA remains
+deferred.
 
 ## Daily closed-app push statistics (loopback)
 

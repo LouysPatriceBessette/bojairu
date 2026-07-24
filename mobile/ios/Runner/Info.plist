@@ -22,10 +22,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.compartarenta.contact-invite</string>
+			<string>app.incoherences.bojairu.contact-invite</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>compartarenta</string>
+				<string>bojairu</string>
 			</array>
 		</dict>
 	</array>

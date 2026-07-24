@@ -1,4 +1,4 @@
-# Compartarenta Entitlement Service
+# Bojairũ Entitlement Service
 
 Canonical server-side housing licensing state: trial consumption, accepted plan rosters, per-participant license coverage (stub verifier in Phase A), and relay-facing allow/deny introspection.
 

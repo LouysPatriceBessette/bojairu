@@ -11,6 +11,7 @@ import '../contacts/contact_duplicate_handshake_dialog_state.dart';
 import '../contacts/contact_duplicate_module_anchor.dart';
 import '../contacts/contact_invitations_repository.dart';
 import '../contacts/invitation_code.dart';
+import '../contacts/invitation_expiry_reminder_service.dart';
 import '../db/app_database.dart';
 import '../db/repositories/contacts_repository.dart';
 import '../device/device_binding_service.dart';
@@ -28,6 +29,8 @@ import '../housing/participation/housing_participation_change_kind.dart';
 import '../housing/participation/housing_participation_change_service.dart';
 import '../housing/participation/housing_participation_change_sync_service.dart';
 import '../housing/reminders/housing_payment_reminder_service.dart';
+import '../housing/reminders/proposal_deadline_reminder_service.dart';
+import '../housing/proposals/housing_proposal_revision_state.dart';
 import '../housing/realized_expense/realized_expense_ledger_service.dart';
 import '../housing/realized_expense/realized_expense_participants.dart';
 import '../housing/realized_expense/realized_expense_repository.dart';
@@ -516,6 +519,18 @@ class HandshakeOrchestrator {
     final row = await (_db.select(
       _db.contactInvitations,
     )..where((t) => t.id.equals(invitationIdHex))).getSingle();
+
+    unawaited(
+      InvitationExpiryReminderService(
+        relay: _relay,
+        orchestrator: this,
+      ).registerForInvitation(
+        invitationId: invitationIdHex,
+        validFor: validFor,
+        expiresAtUtc: expiresAt,
+      ),
+    );
+
     return (
       invitation: row,
       localContactId: stubContactId,
@@ -523,6 +538,23 @@ class HandshakeOrchestrator {
       deepLink: code.renderDeepLink(expiresAtUtc: expiresAt),
       webLink: code.renderWebLink(expiresAtUtc: expiresAt),
     );
+  }
+
+  /// Cancels relay invitation-expiry fires (revoke / used / extend).
+  Future<void> cancelInvitationExpiryReminders(String invitationId) =>
+      _cancelInvitationExpiryReminders(invitationId);
+
+  Future<void> _cancelInvitationExpiryReminders(String invitationId) async {
+    try {
+      await InvitationExpiryReminderService(
+        relay: _relay,
+        orchestrator: this,
+      ).cancelForInvitation(invitationId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('cancelInvitationExpiryReminders: $e');
+      }
+    }
   }
 
   /// Inviter accepts an incoming handshake.
@@ -2197,6 +2229,7 @@ class HandshakeOrchestrator {
 
     // Nonce consumed; further hellos are ignored.
     await _invitations.markUsed(row.invitationIdHex, now: _now().toUtc());
+    unawaited(_cancelInvitationExpiryReminders(row.invitationIdHex));
 
     // Stash the peer identity + profile on the pending row.
     await _markHandshake(
@@ -2832,11 +2865,71 @@ class HandshakeOrchestrator {
       }
     }
 
+    if (sent > 0) {
+      unawaited(
+        _registerProposalDeadlineRemindersAfterSend(
+          planId: planId,
+          revisionId: revisionId,
+        ),
+      );
+    }
+
     return HousingProposalSendResult(
       sentCount: sent,
       failedParticipantIds: List.unmodifiable(failed),
       relayStatusByParticipantId: Map.unmodifiable(relayStatusByParticipantId),
     );
+  }
+
+  Future<void> _registerProposalDeadlineRemindersAfterSend({
+    required String planId,
+    required String revisionId,
+  }) async {
+    try {
+      final rev = await (_db.select(
+        _db.proposalRevisions,
+      )..where((t) => t.id.equals(revisionId))).getSingleOrNull();
+      if (rev == null) return;
+      final state = HousingProposalRevisionState.fromJson(rev.payloadJson);
+      final expires = state.responseExpiresAtUtc;
+      if (expires == null) return;
+
+      final wakeIds = await routingWakeRecipientIdentities();
+      if (wakeIds.isEmpty) return;
+      final recipientIds = <Uint8List>[...wakeIds];
+      final selfPub = await _identity.publicKey();
+      final participants = (await _db.listParticipants())
+          .where((p) => p.id.startsWith('$planId:'))
+          .toList(growable: false);
+      for (final p in participants) {
+        final contactId = p.contactId;
+        if (contactId == null) continue;
+        final contact = await _contacts.get(contactId);
+        final peerB64 = contact?.peerPublicMaterial;
+        if (peerB64 == null || peerB64.isEmpty) continue;
+        try {
+          final peerPub = RelayRouting.unb64(peerB64);
+          recipientIds.add(
+            await RelayRouting.steadyStateAddress(
+              firstPub: peerPub,
+              secondPub: selfPub,
+            ),
+          );
+        } catch (_) {}
+      }
+      await ProposalDeadlineReminderService(
+        relay: _relay,
+      ).registerFires(
+        senderIdentity: wakeIds.first,
+        revisionId: revisionId,
+        expiresAtUtc: expires,
+        recipientRoutingIds: recipientIds,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('proposal deadline register after send: $e');
+      }
+    }
   }
 
   List<Contact> _housingProposalTargetContacts({
@@ -3011,9 +3104,14 @@ class HandshakeOrchestrator {
         responderParticipantId: selfParticipantId,
       );
     }
+    unawaited(_cancelProposalDeadlineReminders(selectedRevisionId));
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
     return sendResult;
   }
+
+  /// Cancels relay proposal-deadline fires (response / invalidate / expire).
+  Future<void> cancelProposalDeadlineReminders(String revisionId) =>
+      _cancelProposalDeadlineReminders(revisionId);
 
   Future<HousingProposalSendResult> _broadcastHousingProposalResponse({
     required String planId,
@@ -3116,10 +3214,29 @@ class HandshakeOrchestrator {
       }
     }
 
+    unawaited(_cancelProposalDeadlineReminders(revisionId));
+
     return HousingProposalSendResult(
       sentCount: sent,
       failedParticipantIds: List.unmodifiable(failed),
     );
+  }
+
+  Future<void> _cancelProposalDeadlineReminders(String revisionId) async {
+    try {
+      final wakeIds = await routingWakeRecipientIdentities();
+      if (wakeIds.isEmpty) return;
+      await ProposalDeadlineReminderService(
+        relay: _relay,
+      ).cancelForRevision(
+        senderIdentity: wakeIds.first,
+        revisionId: revisionId,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('proposal deadline cancel: $e');
+      }
+    }
   }
 
   /// Broadcasts a proposed realized expense to connected co-participants.
@@ -3706,6 +3823,7 @@ class HandshakeOrchestrator {
           status: status,
           responderParticipantId: participantId,
         );
+        unawaited(_cancelProposalDeadlineReminders(revision.id));
       }
       await transport.reconcileStalePackagePending(pkg.planId);
     }

@@ -903,13 +903,17 @@ class HousingProposalTransportService {
     return true;
   }
 
-  Future<void> expireOpenRevisionsForPlan(String planId) async {
+  Future<String?> expireOpenRevisionsForPlan(String planId) async {
     final pkg = await (_db.select(
       _db.proposalPackages,
     )..where((t) => t.planId.equals(planId))).getSingleOrNull();
     final pendingId = pkg?.pendingRevisionId;
-    if (pendingId == null) return;
-    await expireRevisionIfNeeded(planId: planId, revisionId: pendingId);
+    if (pendingId == null) return null;
+    final expired = await expireRevisionIfNeeded(
+      planId: planId,
+      revisionId: pendingId,
+    );
+    return expired ? pendingId : null;
   }
 
   Future<void> updateRevisionPayload({

@@ -1000,6 +1000,12 @@
   "@pushNotificationHousingPaymentReminderOverdueBody": {
     "placeholders": { "lineTitle": { "type": "String" } }
   },
+  "pushNotificationContactInvitationBeforeExpiryTitle": "Invitation expiring soon",
+  "pushNotificationContactInvitationBeforeExpiryBody": "A pending invitation will expire soon.",
+  "pushNotificationContactInvitationExpiredTitle": "Invitation expired",
+  "pushNotificationContactInvitationExpiredBody": "An invitation was not used and has expired.",
+  "pushNotificationHousingProposalDeadlineTitle": "Proposal deadline approaching",
+  "pushNotificationHousingProposalDeadlineBody": "A housing plan offer expires soon. Open Housing to respond or check status.",
   "notificationHousingPaymentRemindersLabel": "Payment reminders",
   "housingOverdueJournalCardBody": "{lineTitle} was not completed for this period.",
   "@housingOverdueJournalCardBody": {

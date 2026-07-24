@@ -20,7 +20,7 @@
     : '';
 
   var deepLink = hasInvite
-    ? 'compartarenta://contact/invite' + deepSearch
+    ? 'bojairu://contact/invite' + deepSearch
     : '';
 
   function setDeepLinkTargets() {
@@ -29,14 +29,14 @@
       if (hasInvite) {
         openButtons[i].setAttribute('href', deepLink);
       } else {
-        openButtons[i].setAttribute('href', 'compartarenta://contact/invite');
+        openButtons[i].setAttribute('href', 'bojairu://contact/invite');
       }
     }
     var linkBoxes = document.querySelectorAll('[data-invite-link-box]');
     for (var j = 0; j < linkBoxes.length; j++) {
       linkBoxes[j].textContent = hasInvite
         ? deepLink
-        : 'compartarenta://contact/invite';
+        : 'bojairu://contact/invite';
     }
   }
 
@@ -139,7 +139,7 @@
     });
   }
 
-  var LANG_KEY = 'compartarenta-invite-lang';
+  var LANG_KEY = 'bojairu-invite-lang';
 
   function detectBrowserLang() {
     var candidates = [];

@@ -56,10 +56,10 @@
 > `housing_proposal_deadline`). No new SQL migration expected (`0003` already
 > allows the domain).
 
-- [ ] 4.1 Relay: authenticated upsert/cancel for domain `contacts_invitation_expiry` accepting client `fires[]` (`fire_at` wall-clock); skip/no-op for past instants already handled client-side; cancel by invitation `scope_key`.
-- [ ] 4.2 Client: on invitation create, register `before_expiry` + `expired` per validity table; cancel on used/revoked/extend; deliver via pending-deliveries → local notification; gate on `notificationContactInvitationExpiration`; deep link to outstanding invitations; EN/FR/ES ARB.
-- [ ] 4.3 Tests: lead-time helper unit tests; revoke/use cancel; notification copy; optional Maestro simulated display later.
-- [ ] 4.4 Mark `contacts-module` task **3.7** done when 4.1–4.2 land; update operator docs if new HTTP paths are added.
+- [x] 4.1 Relay: authenticated upsert/cancel for domain `contacts_invitation_expiry` accepting client `fires[]` (`fire_at` wall-clock); skip/no-op for past instants already handled client-side; cancel by invitation `scope_key`.
+- [x] 4.2 Client: on invitation create, register `before_expiry` + `expired` per validity table; cancel on used/revoked/extend; deliver via pending-deliveries → local notification; gate on `notificationContactInvitationExpiration`; deep link to outstanding invitations; EN/FR/ES ARB.
+- [x] 4.3 Tests: lead-time helper unit tests; revoke/use cancel; notification copy; optional Maestro simulated display later.
+- [x] 4.4 Mark `contacts-module` task **3.7** done when 4.1–4.2 land; update operator docs if new HTTP paths are added.
 
 ## Dependencies
 

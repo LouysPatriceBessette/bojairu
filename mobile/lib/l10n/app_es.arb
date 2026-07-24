@@ -849,6 +849,12 @@
   "@pushNotificationHousingPaymentReminderOverdueBody": {
     "placeholders": { "lineTitle": { "type": "String" } }
   },
+  "pushNotificationContactInvitationBeforeExpiryTitle": "Invitación a punto de caducar",
+  "pushNotificationContactInvitationBeforeExpiryBody": "Una invitación pendiente caducará pronto.",
+  "pushNotificationContactInvitationExpiredTitle": "Invitación caducada",
+  "pushNotificationContactInvitationExpiredBody": "Una invitación no se usó y ha caducado.",
+  "pushNotificationHousingProposalDeadlineTitle": "Plazo de propuesta próximo",
+  "pushNotificationHousingProposalDeadlineBody": "Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.",
   "notificationHousingPaymentRemindersLabel": "Recordatorios de pago",
   "housingOverdueJournalCardBody": "El pago de {lineTitle} no se completó para este período.",
   "@housingOverdueJournalCardBody": {

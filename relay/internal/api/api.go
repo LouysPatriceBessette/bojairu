@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -78,6 +79,8 @@ func (s *Server) PublicHandler() http.Handler {
 	mux.HandleFunc("/v1/scheduling/timezone", s.handleSchedulingTimezoneUpsert)
 	mux.HandleFunc("/v1/scheduling/housing/reconcile", s.handleSchedulingHousingReconcile)
 	mux.HandleFunc("/v1/scheduling/housing/cancel", s.handleSchedulingHousingCancel)
+	mux.HandleFunc("/v1/scheduling/fires/upsert", s.handleSchedulingFiresUpsert)
+	mux.HandleFunc("/v1/scheduling/fires/cancel", s.handleSchedulingFiresCancel)
 	mux.HandleFunc("/v1/scheduling/pending-deliveries", s.handleSchedulingPendingDeliveries)
 	mux.HandleFunc("/v1/scheduling/ack-delivery", s.handleSchedulingAckDelivery)
 	mux.HandleFunc("/v1/envelopes", s.handleEnvelopes)
@@ -661,11 +664,83 @@ type healthResponse struct {
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, healthResponse{
+	resp := healthResponse{
 		Status:        "ok",
 		Build:         version.Build,
 		SchemaVersion: version.Expected,
-	})
+	}
+	if prefersHTML(r) {
+		writeHealthHTML(w, http.StatusOK, resp)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func prefersHTML(r *http.Request) bool {
+	accept := r.Header.Get("Accept")
+	if accept == "" {
+		return false
+	}
+	// Browsers send text/html first; curl/JSON clients typically send */* or application/json.
+	if containsToken(accept, "text/html") {
+		return true
+	}
+	return false
+}
+
+func containsToken(header, token string) bool {
+	lower := strings.ToLower(header)
+	tok := strings.ToLower(token)
+	for _, part := range strings.Split(lower, ",") {
+		part = strings.TrimSpace(part)
+		if i := strings.IndexByte(part, ';'); i >= 0 {
+			part = strings.TrimSpace(part[:i])
+		}
+		if part == tok {
+			return true
+		}
+	}
+	return false
+}
+
+func writeHealthHTML(w http.ResponseWriter, code int, resp healthResponse) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(code)
+	_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Bojairũ relay health</title>
+<style>
+  body{font-family:system-ui,-apple-system,sans-serif;margin:1.25rem;line-height:1.45;color:#111;background:#fafafa}
+  h1{font-size:1.25rem;margin:0 0 .75rem}
+  dl{margin:0}
+  dt{font-weight:600;margin-top:.5rem}
+  dd{margin:0 0 0 .25rem;font-family:ui-monospace,monospace;word-break:break-all}
+</style>
+</head>
+<body>
+<h1>Relay health</h1>
+<dl>
+<dt>status</dt><dd>%s</dd>
+<dt>build</dt><dd>%s</dd>
+<dt>schema_version</dt><dd>%d</dd>
+</dl>
+</body>
+</html>
+`, htmlEscape(resp.Status), htmlEscape(resp.Build), resp.SchemaVersion)
+}
+
+func htmlEscape(s string) string {
+	replacer := strings.NewReplacer(
+		`&`, "&amp;",
+		`<`, "&lt;",
+		`>`, "&gt;",
+		`"`, "&quot;",
+	)
+	return replacer.Replace(s)
 }
 
 func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
@@ -835,6 +910,10 @@ func classifyEndpoint(r *http.Request) string {
 		return "disconnect"
 	case p == "/v1/handshake/establish":
 		return "handshake_establish"
+	case p == "/v1/scheduling/fires/upsert":
+		return "scheduling_fires_upsert"
+	case p == "/v1/scheduling/fires/cancel":
+		return "scheduling_fires_cancel"
 	case p == "/healthz":
 		return "healthz"
 	case p == "/readyz":

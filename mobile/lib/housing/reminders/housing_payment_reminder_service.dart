@@ -12,10 +12,13 @@ import '../../relay/handshake_orchestrator.dart';
 import '../../relay/relay_client.dart';
 import '../../relay/relay_scheduling.dart';
 import '../../relay/routing.dart';
+import '../../contacts/invitation_expiry_reminder_service.dart';
+import '../../scheduling/client_scheduled_fire_times.dart';
 import '../amendment/housing_active_agreement_service.dart';
 import '../realized_expense/realized_expense_ledger_service.dart';
 import '../realized_expense/realized_expense_participants.dart';
 import 'payment_period_coverage.dart';
+import 'proposal_deadline_reminder_service.dart';
 
 /// Reconciles housing payment reminders with the relay and delivers fired rows.
 class HousingPaymentReminderService {
@@ -237,14 +240,35 @@ class HousingPaymentReminderService {
         continue;
       }
       for (final d in pending) {
-        if (d.domain != 'housing_payment') {
-          await _safeAck(recipient, d.fireId);
+        if (d.domain == 'housing_payment') {
+          final handled = await _deliverHousingPaymentReminder(d);
+          if (handled) {
+            await _safeAck(recipient, d.fireId);
+          }
           continue;
         }
-        final handled = await _deliverHousingPaymentReminder(d);
-        if (handled) {
-          await _safeAck(recipient, d.fireId);
+        if (d.domain ==
+            ClientScheduledFireTimes.domainContactsInvitationExpiry) {
+          final inviteSvc = InvitationExpiryReminderService(
+            relay: _relay,
+            orchestrator: _orchestrator,
+            prefs: _prefs,
+          );
+          final handled = await inviteSvc.deliverIfApplicable(d);
+          if (handled) await _safeAck(recipient, d.fireId);
+          continue;
         }
+        if (d.domain ==
+            ClientScheduledFireTimes.domainHousingProposalDeadline) {
+          final propSvc = ProposalDeadlineReminderService(
+            relay: _relay,
+            prefs: _prefs,
+          );
+          final handled = await propSvc.deliverIfApplicable(d);
+          if (handled) await _safeAck(recipient, d.fireId);
+          continue;
+        }
+        await _safeAck(recipient, d.fireId);
       }
     }
   }

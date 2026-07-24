@@ -118,6 +118,18 @@ abstract class RelayClient {
     required Uint8List periodKeyBytes,
   });
 
+  /// Client-supplied wall-clock fires (invitation expiry, proposal deadline).
+  Future<void> upsertClientScheduledFires({
+    required Uint8List senderIdentity,
+    required List<ClientScheduledFireTarget> targets,
+  });
+
+  Future<void> cancelClientScheduledFires({
+    required Uint8List senderIdentity,
+    required String domain,
+    required List<Uint8List> scopeKeyBytes,
+  });
+
   Future<List<RelayPendingReminderDelivery>> fetchPendingReminderDeliveries({
     required Uint8List recipientIdentity,
     int limit = 32,
@@ -441,6 +453,46 @@ class HttpRelayClient implements RelayClient {
     );
     if (res.statusCode != 200) {
       throw RelayClientError._fromResponse('scheduling_housing_cancel', res);
+    }
+  }
+
+  @override
+  Future<void> upsertClientScheduledFires({
+    required Uint8List senderIdentity,
+    required List<ClientScheduledFireTarget> targets,
+  }) async {
+    final uri = baseUrl.resolve('/v1/scheduling/fires/upsert');
+    final res = await _post(
+      'scheduling_fires_upsert',
+      uri,
+      body: jsonEncode({
+        'sender_identity': RelayRouting.b64(senderIdentity),
+        'targets': targets.map((t) => t.toJson()).toList(),
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw RelayClientError._fromResponse('scheduling_fires_upsert', res);
+    }
+  }
+
+  @override
+  Future<void> cancelClientScheduledFires({
+    required Uint8List senderIdentity,
+    required String domain,
+    required List<Uint8List> scopeKeyBytes,
+  }) async {
+    final uri = baseUrl.resolve('/v1/scheduling/fires/cancel');
+    final res = await _post(
+      'scheduling_fires_cancel',
+      uri,
+      body: jsonEncode({
+        'sender_identity': RelayRouting.b64(senderIdentity),
+        'domain': domain,
+        'scope_keys': scopeKeyBytes.map(RelayRouting.b64).toList(),
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw RelayClientError._fromResponse('scheduling_fires_cancel', res);
     }
   }
 

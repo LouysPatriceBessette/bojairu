@@ -5,12 +5,13 @@ Deferred engineering chores. Pick these up when convenient; they are
 
 ## Backlog
 
-- [ ] **Relay `/healthz` — human-readable on mobile** (ops / QA prerequisite).  
+- [x] **Relay `/healthz` — human-readable on mobile** (ops / QA prerequisite).  
   Today `GET /healthz` returns raw JSON only; on a phone browser it is tiny, top-left,
   and unusable for quick “is the relay up?” checks during multi-device manual QA
   (see 2026-06-16 transfer expense test). Add a minimal mobile-friendly page
   (status, build digest, schema version) — via relay `Accept` negotiation, a small
   static Apache page, or both. **Do before inviting non-developers to manual relay QA.**
+  **Done (Phase A):** `Accept: text/html` → HTML page; otherwise JSON unchanged.
 
 - [ ] **Housing balance chart — roster SVG overflow with inactive participants** (bug, minor).  
   Active roster is capped at **8** participants because only eight due-split SVG layouts exist. When **inactive participants** retain non-zero balances, the UI may need to show **more than eight** balance rows; relying on the active-roster cap alone can overflow or hide labels. Inactive settlement tiles landed on the balances screen (2026); chart/legend layout still needs a pass.  

@@ -142,7 +142,7 @@ void main() {
       addTearDown(InvitationCode.resetRandomForTesting);
       final code = InvitationCode.generate();
       final link = code.renderDeepLink();
-      expect(link, startsWith('compartarenta://contact/invite?'));
+      expect(link, startsWith('bojairu://contact/invite?'));
       expect(link, contains('v=${InvitationCode.currentVersion}'));
       expect(link, contains('c='));
     });

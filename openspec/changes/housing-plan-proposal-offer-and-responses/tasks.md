@@ -11,7 +11,7 @@
   - **Local persistence:** after decrypt/validate, persist the offer locally (proposal package, `packageId` / `revisionId`, roster, `expiresAt`, pending response state) so the recipient can open it from Housing/workbench without re-fetching ciphertext from the relay.
   - **Notification on receipt:** when a new housing proposal envelope is imported, fire a **local notification** (and push when the platform and notification prefs allow — same category as “plan submission received”). This is **“you have a new offer to review”**, not “deadline approaching”.
   - **Out of scope for 1.4:** reminders as the response deadline nears → **1.4b**.
-- [ ] 1.4b **Deadline reminder** notifications (housing proposal response window).
+- [x] 1.4b **Deadline reminder** notifications (housing proposal response window).
   - For each **open** `revisionId` where the local user is still **pending** (recipient) or is the **author** awaiting peer responses (product decision per role), schedule one or more reminders before `expiresAt` (from 1.2) via relay scheduled notifications (domain `housing_proposal_deadline`).
   - **Lead times** depend on the deadline preset chosen at send (product table, e.g. 48 h → remind at 24 h + 6 h; 7 days → remind at 48 h + 24 h — document in spec or `design.md` when fixed).
   - **Cancel / reschedule** when the user submits a response, the revision is **invalidated** or **expired**, or `expiresAt` changes on resend.

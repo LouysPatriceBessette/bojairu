@@ -866,6 +866,12 @@
   "@pushNotificationHousingPaymentReminderOverdueBody": {
     "placeholders": { "lineTitle": { "type": "String" } }
   },
+  "pushNotificationContactInvitationBeforeExpiryTitle": "Invitation bientôt expirée",
+  "pushNotificationContactInvitationBeforeExpiryBody": "Une invitation en attente expirera bientôt.",
+  "pushNotificationContactInvitationExpiredTitle": "Invitation expirée",
+  "pushNotificationContactInvitationExpiredBody": "Une invitation n’a pas été utilisée et a expiré.",
+  "pushNotificationHousingProposalDeadlineTitle": "Échéance de proposition proche",
+  "pushNotificationHousingProposalDeadlineBody": "Une offre de plan logement expire bientôt. Ouvrez Logement pour répondre ou vérifier le statut.",
   "notificationHousingPaymentRemindersLabel": "Rappels de paiement",
   "housingOverdueJournalCardBody": "Le paiement de {lineTitle} n'a pas été complété pour cette période.",
   "@housingOverdueJournalCardBody": {

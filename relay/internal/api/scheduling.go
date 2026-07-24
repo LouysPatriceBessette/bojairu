@@ -269,6 +269,180 @@ func (s *Server) handleSchedulingHousingCancel(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+type clientFiresUpsertRequest struct {
+	SenderIdentity string `json:"sender_identity"`
+	Targets        []struct {
+		Domain            string `json:"domain"`
+		ScopeKey          string `json:"scope_key"`
+		RecipientIdentity string `json:"recipient_identity"`
+		ReminderKind      string `json:"reminder_kind"`
+		PeriodKey         string `json:"period_key,omitempty"`
+		DueAt             string `json:"due_at,omitempty"`
+		Generation        int64  `json:"generation,omitempty"`
+		Fires             []struct {
+			FireAt string `json:"fire_at"`
+		} `json:"fires"`
+	} `json:"targets"`
+}
+
+func (s *Server) handleSchedulingFiresUpsert(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "POST only")
+		return
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 256*1024))
+	if err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_upsert", "oversize")
+		return
+	}
+	var req clientFiresUpsertRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_upsert", "malformed_json")
+		return
+	}
+	sender, err := decodeIdentity(req.SenderIdentity, s.idMinLen, s.idMaxLen)
+	if err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_upsert", err.Error())
+		return
+	}
+	if !s.identityLim.Allow("identity:" + hex.EncodeToString(sender)) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited_identity",
+			"per-identity rate limit exceeded")
+		return
+	}
+	ok, err := s.store.HasActiveRoutingForIdentity(r.Context(), sender)
+	if err != nil {
+		s.writeInternal(w, r, "scheduling_fires_upsert", err)
+		return
+	}
+	if !ok {
+		s.rejectBadFraming(w, r, "scheduling_fires_upsert", "no_active_routing")
+		return
+	}
+
+	now := s.now()
+	var targets []store.ClientScheduledFireTarget
+	for _, t := range req.Targets {
+		scopeKey, err := decodeIdentity(t.ScopeKey, s.idMinLen, 128)
+		if err != nil {
+			s.rejectBadFraming(w, r, "scheduling_fires_upsert", "invalid_scope_key")
+			return
+		}
+		recipient, err := decodeIdentity(t.RecipientIdentity, s.idMinLen, s.idMaxLen)
+		if err != nil {
+			s.rejectBadFraming(w, r, "scheduling_fires_upsert", "invalid_recipient")
+			return
+		}
+		var periodKey []byte
+		if t.PeriodKey != "" {
+			periodKey, err = decodeIdentity(t.PeriodKey, 1, 64)
+			if err != nil {
+				s.rejectBadFraming(w, r, "scheduling_fires_upsert", "invalid_period_key")
+				return
+			}
+		}
+		var dueAt *time.Time
+		if t.DueAt != "" {
+			parsed, err := time.Parse(time.RFC3339, t.DueAt)
+			if err != nil {
+				s.rejectBadFraming(w, r, "scheduling_fires_upsert", "invalid_due_at")
+				return
+			}
+			u := parsed.UTC()
+			dueAt = &u
+		}
+		var fireAts []time.Time
+		for _, f := range t.Fires {
+			parsed, err := time.Parse(time.RFC3339, f.FireAt)
+			if err != nil {
+				s.rejectBadFraming(w, r, "scheduling_fires_upsert", "invalid_fire_at")
+				return
+			}
+			fireAts = append(fireAts, parsed.UTC())
+		}
+		targets = append(targets, store.ClientScheduledFireTarget{
+			Domain:             t.Domain,
+			ScopeKey:           scopeKey,
+			RecipientRoutingID: recipient,
+			ReminderKind:       t.ReminderKind,
+			PeriodKey:          periodKey,
+			DueAt:              dueAt,
+			Generation:         t.Generation,
+			FireAts:            fireAts,
+		})
+	}
+	if err := s.store.UpsertClientScheduledFires(r.Context(), targets, now); err != nil {
+		if err.Error() == "unsupported_domain" || err.Error() == "unsupported_reminder_kind" ||
+			err.Error() == "missing_scope_or_recipient" {
+			s.rejectBadFraming(w, r, "scheduling_fires_upsert", err.Error())
+			return
+		}
+		s.writeInternal(w, r, "scheduling_fires_upsert", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+type clientFiresCancelRequest struct {
+	SenderIdentity string   `json:"sender_identity"`
+	Domain         string   `json:"domain"`
+	ScopeKeys      []string `json:"scope_keys"`
+}
+
+func (s *Server) handleSchedulingFiresCancel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "POST only")
+		return
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 64*1024))
+	if err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_cancel", "oversize")
+		return
+	}
+	var req clientFiresCancelRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_cancel", "malformed_json")
+		return
+	}
+	sender, err := decodeIdentity(req.SenderIdentity, s.idMinLen, s.idMaxLen)
+	if err != nil {
+		s.rejectBadFraming(w, r, "scheduling_fires_cancel", err.Error())
+		return
+	}
+	if !s.identityLim.Allow("identity:" + hex.EncodeToString(sender)) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited_identity",
+			"per-identity rate limit exceeded")
+		return
+	}
+	ok, err := s.store.HasActiveRoutingForIdentity(r.Context(), sender)
+	if err != nil {
+		s.writeInternal(w, r, "scheduling_fires_cancel", err)
+		return
+	}
+	if !ok {
+		s.rejectBadFraming(w, r, "scheduling_fires_cancel", "no_active_routing")
+		return
+	}
+	var scopeKeys [][]byte
+	for _, sk := range req.ScopeKeys {
+		b, err := decodeIdentity(sk, s.idMinLen, 128)
+		if err != nil {
+			s.rejectBadFraming(w, r, "scheduling_fires_cancel", "invalid_scope_key")
+			return
+		}
+		scopeKeys = append(scopeKeys, b)
+	}
+	if err := s.store.CancelClientScheduledByScope(r.Context(), req.Domain, scopeKeys, s.now()); err != nil {
+		if err.Error() == "unsupported_domain" {
+			s.rejectBadFraming(w, r, "scheduling_fires_cancel", err.Error())
+			return
+		}
+		s.writeInternal(w, r, "scheduling_fires_cancel", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func (s *Server) handleSchedulingPendingDeliveries(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "GET only")

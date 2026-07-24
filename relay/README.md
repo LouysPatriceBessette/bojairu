@@ -1,7 +1,7 @@
-# Compartarenta Relay
+# Bojairũ Relay
 
 A privacy-first relay for end-to-end-encrypted envelopes exchanged between
-Compartarenta clients. The relay never sees plaintext: every envelope it
+Bojairũ clients. The relay never sees plaintext: every envelope it
 stores is opaque ciphertext addressed to opaque recipient identifiers. This
 project's value to operators and users is that **what the relay does NOT do
 is enforceable by reading this repository**.

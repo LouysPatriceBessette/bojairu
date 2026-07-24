@@ -401,7 +401,12 @@ class _HousingModuleEntryScreenState extends State<HousingModuleEntryScreen> {
     final plans = await housingPlansWithSelfParticipant(db);
     final transport = HousingProposalTransportService(db);
     for (final plan in plans) {
-      await transport.expireOpenRevisionsForPlan(plan.id);
+      final expiredRevisionId = await transport.expireOpenRevisionsForPlan(
+        plan.id,
+      );
+      if (expiredRevisionId != null) {
+        unawaited(orch?.cancelProposalDeadlineReminders(expiredRevisionId));
+      }
       await transport.reconcileStalePackagePending(plan.id);
     }
 

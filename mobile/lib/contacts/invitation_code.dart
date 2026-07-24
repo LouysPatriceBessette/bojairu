@@ -92,12 +92,12 @@ class InvitationCode {
   String renderDeepLink({DateTime? expiresAtUtc}) {
     final encoded = base64Url.encode(_payloadBytes()).replaceAll('=', '');
     final e = _expiresQueryParam(expiresAtUtc);
-    return 'compartarenta://contact/invite?v=$version&c=$encoded${e == null ? '' : '&e=$e'}';
+    return 'bojairu://contact/invite?v=$version&c=$encoded${e == null ? '' : '&e=$e'}';
   }
 
   /// HTTPS representation suitable for email, SMS, and messaging apps.
   ///
-  /// Most clients do not autolink custom schemes like `compartarenta://`.
+  /// Most clients do not autolink custom schemes like `bojairu://`.
   /// This URL carries the same payload but starts with `https://`, so it is
   /// clickable in common mail clients. Once app/universal links are configured
   /// for [origin], the OS can route this URL directly into the installed app.
@@ -280,7 +280,7 @@ InvitationCodeParseResult parseInvitationInput(String input) {
   return parseInvitationCode(trimmed);
 }
 
-/// Parses a `compartarenta://contact/invite` or
+/// Parses a `bojairu://contact/invite` or
 /// `https://<host>/contact/invite` invitation link.
 ///
 /// The deep-link payload is intended for QR/share-sheet transport. It carries
@@ -295,7 +295,7 @@ InvitationCodeParseResult parseInvitationLink(String input) {
   }
 
   final supportedCustomScheme =
-      uri.scheme == 'compartarenta' &&
+      uri.scheme == 'bojairu' &&
       uri.host == 'contact' &&
       uri.path == '/invite';
   final supportedWebLink =
@@ -351,9 +351,9 @@ InvitationCodeParseResult parseInvitationLink(String input) {
 }
 
 /// Whether [uri] is the in-app deep link for contact invitations
-/// (`compartarenta://contact/invite?...`), before query validation.
+/// (`bojairu://contact/invite?...`), before query validation.
 bool isContactInvitationAppLink(Uri uri) =>
-    uri.scheme == 'compartarenta' &&
+    uri.scheme == 'bojairu' &&
     uri.host == 'contact' &&
     uri.path == '/invite';
 
@@ -362,14 +362,14 @@ InvitationCodeParseResult parseInvitationDeepLink(String input) =>
     parseInvitationLink(input);
 
 String? _extractInvitationUri(String input) {
-  if (input.startsWith('compartarenta://') ||
+  if (input.startsWith('bojairu://') ||
       input.startsWith('https://') ||
       input.startsWith('http://')) {
     return _stripTrailingPunctuation(input);
   }
 
   final match = RegExp(
-    r'(compartarenta://\S+|https?://\S+)',
+    r'(bojairu://\S+|https?://\S+)',
     caseSensitive: false,
   ).firstMatch(input);
   if (match == null) return null;

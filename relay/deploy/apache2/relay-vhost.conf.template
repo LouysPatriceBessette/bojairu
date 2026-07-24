@@ -81,7 +81,7 @@
     #
     # This page is purely static — it reads the `?v=…&c=…` payload of the
     # invitation URL on the client and offers two paths:
-    #   (1) tap a `compartarenta://contact/invite?…` deep link, and
+    #   (1) tap a `bojairu://contact/invite?…` deep link, and
     #   (2) copy the full deep link and paste it into the app's
     #       "Scan / enter a code" screen.
     # It never sends the payload to the relay.

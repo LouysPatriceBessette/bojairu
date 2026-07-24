@@ -516,6 +516,174 @@ func (s *Store) AckReminderFireDelivery(
 	return tag.RowsAffected() > 0, nil
 }
 
+// ClientScheduledFireTarget is one domain target with client-supplied fire_at list.
+type ClientScheduledFireTarget struct {
+	Domain             string
+	ScopeKey           []byte
+	RecipientRoutingID []byte
+	ReminderKind       string
+	PeriodKey          []byte
+	DueAt              *time.Time
+	Generation         int64
+	FireAts            []time.Time
+}
+
+var allowedClientFireDomains = map[string]bool{
+	"contacts_invitation_expiry":  true,
+	"housing_proposal_deadline":   true,
+}
+
+var allowedClientFireKinds = map[string]bool{
+	"before_expiry":    true,
+	"expired":          true,
+	"before_deadline":  true,
+}
+
+// UpsertClientScheduledFires replaces targets+pending fires for client wall-clock domains.
+func (s *Store) UpsertClientScheduledFires(
+	ctx context.Context,
+	targets []ClientScheduledFireTarget,
+	now time.Time,
+) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, in := range targets {
+		if !allowedClientFireDomains[in.Domain] {
+			return errors.New("unsupported_domain")
+		}
+		if !allowedClientFireKinds[in.ReminderKind] {
+			return errors.New("unsupported_reminder_kind")
+		}
+		if len(in.ScopeKey) == 0 || len(in.RecipientRoutingID) == 0 {
+			return errors.New("missing_scope_or_recipient")
+		}
+		gen := in.Generation
+		if gen == 0 {
+			gen = 1
+		}
+
+		var periodKey any
+		if len(in.PeriodKey) > 0 {
+			periodKey = in.PeriodKey
+		}
+
+		var targetID []byte
+		err = tx.QueryRow(ctx, `
+			SELECT target_id FROM scheduled_notification_targets
+			WHERE domain = $1
+			  AND scope_key = $2
+			  AND recipient_routing_id = $3
+			  AND reminder_kind = $4
+			  AND period_key IS NOT DISTINCT FROM $5
+		`, in.Domain, in.ScopeKey, in.RecipientRoutingID, in.ReminderKind, periodKey).Scan(&targetID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			targetID, err = randomID()
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `
+				INSERT INTO scheduled_notification_targets (
+					target_id, domain, scope_key, recipient_routing_id, reminder_kind,
+					period_key, due_at, generation, cancelled_at, created_at, updated_at
+				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULL,$9,$9)
+			`, targetID, in.Domain, in.ScopeKey, in.RecipientRoutingID, in.ReminderKind,
+				periodKey, in.DueAt, gen, now)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = tx.Exec(ctx, `
+				UPDATE scheduled_notification_targets
+				SET due_at = $2, generation = $3, cancelled_at = NULL, updated_at = $4
+				WHERE target_id = $1
+			`, targetID, in.DueAt, gen, now)
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `
+				UPDATE scheduled_notification_fires
+				SET status = 'cancelled'
+				WHERE target_id = $1 AND status = 'pending'
+			`, targetID)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fireAt := range in.FireAts {
+			fireAt = fireAt.UTC()
+			if !fireAt.After(now) {
+				continue
+			}
+			fireID, err := randomID()
+			if err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `
+				INSERT INTO scheduled_notification_fires (
+					fire_id, target_id, recipient_routing_id, fire_at, status
+				) VALUES ($1, $2, $3, $4, 'pending')
+				ON CONFLICT (target_id, fire_at) DO NOTHING
+			`, fireID, targetID, in.RecipientRoutingID, fireAt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+// CancelClientScheduledByScope cancels all active targets (and pending fires)
+// for the given domain and scope keys.
+func (s *Store) CancelClientScheduledByScope(
+	ctx context.Context,
+	domain string,
+	scopeKeys [][]byte,
+	now time.Time,
+) error {
+	if !allowedClientFireDomains[domain] {
+		return errors.New("unsupported_domain")
+	}
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, sk := range scopeKeys {
+		_, err = tx.Exec(ctx, `
+			UPDATE scheduled_notification_targets
+			SET cancelled_at = $3, updated_at = $3
+			WHERE domain = $1
+			  AND scope_key = $2
+			  AND cancelled_at IS NULL
+		`, domain, sk, now)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = tx.Exec(ctx, `
+		UPDATE scheduled_notification_fires f
+		SET status = 'cancelled'
+		FROM scheduled_notification_targets t
+		WHERE f.target_id = t.target_id
+		  AND f.status = 'pending'
+		  AND t.cancelled_at IS NOT NULL
+		  AND t.domain = $1
+	`, domain)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func randomID() ([]byte, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

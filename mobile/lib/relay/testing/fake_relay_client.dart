@@ -305,6 +305,23 @@ class FakeRelayClient implements RelayClient {
   }
 
   @override
+  Future<void> upsertClientScheduledFires({
+    required Uint8List senderIdentity,
+    required List<ClientScheduledFireTarget> targets,
+  }) async {
+    _maybeThrowOnce();
+  }
+
+  @override
+  Future<void> cancelClientScheduledFires({
+    required Uint8List senderIdentity,
+    required String domain,
+    required List<Uint8List> scopeKeyBytes,
+  }) async {
+    _maybeThrowOnce();
+  }
+
+  @override
   Future<List<RelayPendingReminderDelivery>> fetchPendingReminderDeliveries({
     required Uint8List recipientIdentity,
     int limit = 32,

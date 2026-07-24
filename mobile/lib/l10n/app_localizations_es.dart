@@ -2201,6 +2201,30 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationContactInvitationBeforeExpiryTitle =>
+      'Invitación a punto de caducar';
+
+  @override
+  String get pushNotificationContactInvitationBeforeExpiryBody =>
+      'Una invitación pendiente caducará pronto.';
+
+  @override
+  String get pushNotificationContactInvitationExpiredTitle =>
+      'Invitación caducada';
+
+  @override
+  String get pushNotificationContactInvitationExpiredBody =>
+      'Una invitación no se usó y ha caducado.';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineTitle =>
+      'Plazo de propuesta próximo';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineBody =>
+      'Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.';
+
+  @override
   String get notificationHousingPaymentRemindersLabel =>
       'Recordatorios de pago';
 

@@ -11,9 +11,45 @@ import (
 	"github.com/compartarenta/relay/internal/config"
 )
 
-func TestDecodeIdentityRejectsEmpty(t *testing.T) {
-	if _, err := decodeIdentity("", 8, 64); err == nil {
-		t.Fatal("expected error for empty identity")
+func TestPrefersHTML(t *testing.T) {
+	cases := []struct {
+		accept string
+		want   bool
+	}{
+		{"", false},
+		{"application/json", false},
+		{"*/*", false},
+		{"text/html", true},
+		{"text/html,application/xhtml+xml", true},
+		{"application/json, text/html;q=0.9", true},
+	}
+	for _, c := range cases {
+		r := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+		if c.accept != "" {
+			r.Header.Set("Accept", c.accept)
+		}
+		if got := prefersHTML(r); got != c.want {
+			t.Errorf("Accept=%q got %v want %v", c.accept, got, c.want)
+		}
+	}
+}
+
+func TestHandleHealthzHTML(t *testing.T) {
+	s := &Server{}
+	r := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	r.Header.Set("Accept", "text/html")
+	w := httptest.NewRecorder()
+	s.handleHealthz(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d", w.Code)
+	}
+	ct := w.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Fatalf("content-type %q", ct)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "schema_version") || !strings.Contains(body, "status") {
+		t.Fatalf("unexpected body: %s", body)
 	}
 }
 

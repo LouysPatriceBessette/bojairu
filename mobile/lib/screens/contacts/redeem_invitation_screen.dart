@@ -34,7 +34,7 @@ class RedeemInvitationScreen extends StatefulWidget {
     this.housingMissingParticipantName,
   });
 
-  /// Full `compartarenta://contact/invite?...` URI from an app link
+  /// Full `bojairu://contact/invite?...` URI from an app link
   /// ([GoRouterState.extra]) or tests.
   final String? initialInvitationUri;
 

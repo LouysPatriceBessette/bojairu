@@ -589,6 +589,91 @@ class PushNotificationService {
     );
   }
 
+  static Future<void> showLocalContactInvitationExpiryNotification({
+    required String reminderKind,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled ||
+        !prefs.notificationContactInvitationExpiration) {
+      return;
+    }
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final before = reminderKind == 'before_expiry';
+    final title = before
+        ? l10n.pushNotificationContactInvitationBeforeExpiryTitle
+        : l10n.pushNotificationContactInvitationExpiredTitle;
+    final body = before
+        ? l10n.pushNotificationContactInvitationBeforeExpiryBody
+        : l10n.pushNotificationContactInvitationExpiredBody;
+    final displayTitle = notificationQaPrefix(12, title);
+    final displayBody = notificationQaPrefix(12, body);
+    if (kIsWeb) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel = playSound ? _androidChannel : _androidSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: displayTitle,
+      body: displayBody,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: _contactsPayload,
+    );
+  }
+
+  static Future<void> showLocalHousingProposalDeadlineNotification({
+    required String revisionId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled ||
+        !prefs.notificationHousingOfferExpiration) {
+      return;
+    }
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final displayTitle = notificationQaPrefix(
+      13,
+      l10n.pushNotificationHousingProposalDeadlineTitle,
+    );
+    final displayBody = notificationQaPrefix(
+      13,
+      l10n.pushNotificationHousingProposalDeadlineBody,
+    );
+    if (kIsWeb) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel = playSound ? _androidChannel : _androidSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: displayTitle,
+      body: displayBody,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: revisionId.isEmpty
+          ? _housingTapPayload
+          : '$_housingTapPayload:$revisionId',
+    );
+  }
+
   static Future<void> showLocalHousingRealizedExpenseRejectedNotification({
     required String senderDisplayName,
     String? expenseId,

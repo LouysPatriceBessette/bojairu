@@ -33,7 +33,7 @@
 - [x] 3.4 Implement out-of-band sharing entry points (copy, share sheet, QR display). *(Copy + deep-link landed; full share-sheet integration deferred to Wave B alongside QR.)*
 - [x] 3.5 Implement the outstanding-invitations list with statuses (pending, used, expired, revoked) and a revoke action.
 - [x] 3.6 Implement invitee entry UI (paste, type, scan QR) with locally-validated checksum before any relay call.
-- [ ] 3.7 **Invitation expiry reminder** notifications (outgoing pending invitation codes).
+- [x] 3.7 **Invitation expiry reminder** notifications (outgoing pending invitation codes).
   - **Deferred (2026-07-13):** product lead times + copy are locked in
     `housing-scheduled-payment-reminders` /
     `scheduling-deadline-and-invitation-reminders` (and D-invitation in that

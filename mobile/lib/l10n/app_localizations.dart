@@ -3713,6 +3713,42 @@ abstract class AppLocalizations {
   /// **'{lineTitle} was not completed for this period.'**
   String pushNotificationHousingPaymentReminderOverdueBody(String lineTitle);
 
+  /// No description provided for @pushNotificationContactInvitationBeforeExpiryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation expiring soon'**
+  String get pushNotificationContactInvitationBeforeExpiryTitle;
+
+  /// No description provided for @pushNotificationContactInvitationBeforeExpiryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A pending invitation will expire soon.'**
+  String get pushNotificationContactInvitationBeforeExpiryBody;
+
+  /// No description provided for @pushNotificationContactInvitationExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation expired'**
+  String get pushNotificationContactInvitationExpiredTitle;
+
+  /// No description provided for @pushNotificationContactInvitationExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An invitation was not used and has expired.'**
+  String get pushNotificationContactInvitationExpiredBody;
+
+  /// No description provided for @pushNotificationHousingProposalDeadlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal deadline approaching'**
+  String get pushNotificationHousingProposalDeadlineTitle;
+
+  /// No description provided for @pushNotificationHousingProposalDeadlineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A housing plan offer expires soon. Open Housing to respond or check status.'**
+  String get pushNotificationHousingProposalDeadlineBody;
+
   /// No description provided for @notificationHousingPaymentRemindersLabel.
   ///
   /// In en, this message translates to:

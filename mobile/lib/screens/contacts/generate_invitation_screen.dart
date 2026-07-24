@@ -242,6 +242,10 @@ class _GenerateInvitationScreenState extends State<GenerateInvitationScreen> {
     final invitation = _generated;
     if (invitation == null) return;
     await _repo.revoke(invitation.row.id);
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch != null) {
+      unawaited(orch.cancelInvitationExpiryReminders(invitation.row.id));
+    }
     if (!mounted) return;
     _generatedPollTimer?.cancel();
     setState(() => _generated = null);

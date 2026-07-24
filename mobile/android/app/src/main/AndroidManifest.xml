@@ -31,13 +31,13 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- compartarenta://contact/invite?... contact invitation deep links -->
+            <!-- bojairu://contact/invite?... contact invitation deep links -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="compartarenta"
+                    android:scheme="bojairu"
                     android:host="contact"
                     android:pathPrefix="/invite" />
             </intent-filter>

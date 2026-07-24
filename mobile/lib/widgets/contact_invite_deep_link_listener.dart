@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../contacts/invitation_code.dart';
 import '../prefs/app_preferences.dart';
 
-/// Listens for `compartarenta://contact/invite?...` app links and navigates
+/// Listens for `bojairu://contact/invite?...` app links and navigates
 /// to the redeem screen with the full URI as [GoRouterState.extra].
 ///
 /// Skips routing while onboarding is incomplete (the global redirect would
@@ -42,7 +42,7 @@ class _ContactInviteDeepLinkListenerState
 
   Future<void> _listen() async {
     if (kIsWeb) {
-      // `compartarenta://` is handled on Android/iOS; Flutter web uses https.
+      // `bojairu://` is handled on Android/iOS; Flutter web uses https.
       return;
     }
     final appLinks = AppLinks();
