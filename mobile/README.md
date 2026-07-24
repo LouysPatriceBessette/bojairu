@@ -16,6 +16,14 @@ dart run melos run run:dev
 
 Optional device: `dart run melos run run:dev -- -d <deviceId>`
 
+Reuse an existing `app-dev-debug.apk` without rebuilding (Android only), e.g.
+after `./tool/melosw run qa:build-apk -- --simulation`:
+
+```bash
+./tool/melosw run run:dev -- --skip-build
+./tool/melosw run run:dev -- --skip-build --fresh   # wipe app data
+```
+
 Web: `dart run melos run run:dev:web` (host session server at `http://localhost:18765`,
 JSON at `~/.cache/compartarenta/web-dev-session.json` — use `localhost`, not `127.0.0.1`,
 so the browser can save from `http://localhost:5001`). Ctrl+C safe.

@@ -68,6 +68,9 @@ Future<void> bootstrap() async {
       try {
         await appDb.warmUpStorage();
         earlyPrefs = await AppPreferences.load();
+        if (config.simulationLocked) {
+          await SandboxMode.ensureForcedSimulationPrefs(earlyPrefs);
+        }
         await SandboxLifecycle.maybeRestoreCheckpointOnRealBoot(
           prefs: earlyPrefs,
           db: appDb,

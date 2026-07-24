@@ -15,11 +15,21 @@ ensure_workspace_pub_get "${ROOT}"
 # Example: FLUTTER_DEVICE=linux dart run melos run run:dev
 # Android screenshots without the Simulation ribbon:
 #   ./tool/melosw run run:dev -- -d <deviceId> --screenshot
+# Reuse an existing QA APK (e.g. after qa:build-apk -- --simulation):
+#   ./tool/melosw run run:dev -- --skip-build
+# Wipe app data while reusing that APK:
+#   ./tool/melosw run run:dev -- --skip-build --fresh
 screenshot_mode=false
+skip_build=false
+fresh_install=false
 extra=()
 for arg in "$@"; do
   if [[ "${arg}" == "--screenshot" ]]; then
     screenshot_mode=true
+  elif [[ "${arg}" == "--skip-build" ]]; then
+    skip_build=true
+  elif [[ "${arg}" == "--fresh" ]]; then
+    fresh_install=true
   else
     extra+=("${arg}")
   fi
@@ -52,23 +62,55 @@ if [[ "${screenshot_mode}" == "true" && "${install_mobile_target}" != "true" ]];
   echo "--screenshot is available only for the Android dev APK." >&2
   exit 2
 fi
+if [[ "${skip_build}" == "true" && "${install_mobile_target}" != "true" ]]; then
+  echo "--skip-build is available only for the Android dev APK." >&2
+  exit 2
+fi
+if [[ "${fresh_install}" == "true" && "${skip_build}" != "true" ]]; then
+  echo "--fresh requires --skip-build (normal run:dev already uninstalls first)." >&2
+  exit 2
+fi
 
-run_args=(
-  run
-  --no-pub
-  --flavor dev
-  --dart-define=ENV=dev
-  --dart-define="API_BASE_URL=${API_BASE_URL_VALUE}"
-)
-if [[ "${screenshot_mode}" == "true" ]]; then
-  run_args+=(--dart-define=SCREENSHOT=true)
-fi
-if [[ -n "${ENTITLEMENT_BASE_URL_VALUE}" ]]; then
-  run_args+=(--dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}")
-fi
-# Reinstall native plugins (shared_preferences, path_provider) after plugin or Gradle changes.
-if [[ "${install_mobile_target}" == "true" ]]; then
-  run_args+=(--uninstall-first)
+QA_APK="${DIR}/build/app/outputs/flutter-apk/app-dev-debug.apk"
+
+if [[ "${skip_build}" == "true" ]]; then
+  if [[ ! -f "${QA_APK}" ]]; then
+    echo "APK not found: ${QA_APK}" >&2
+    echo "Build first: ./tool/melosw run qa:build-apk" >&2
+    echo "  (or ./tool/melosw run qa:build-apk -- --simulation)" >&2
+    exit 1
+  fi
+  echo "Skipping build; using existing APK: ${QA_APK}"
+  # Prebuilt binary already embeds dart-defines (ENV, API_BASE_URL, SIMULATION, …).
+  # Default: preserve app data (like adb install -r). --fresh → --uninstall-first.
+  run_args=(
+    run
+    --no-pub
+    --flavor dev
+    --use-application-binary="${QA_APK}"
+  )
+  if [[ "${fresh_install}" == "true" ]]; then
+    echo "Fresh install: uninstalling existing app data first."
+    run_args+=(--uninstall-first)
+  fi
+else
+  run_args=(
+    run
+    --no-pub
+    --flavor dev
+    --dart-define=ENV=dev
+    --dart-define="API_BASE_URL=${API_BASE_URL_VALUE}"
+  )
+  if [[ "${screenshot_mode}" == "true" ]]; then
+    run_args+=(--dart-define=SCREENSHOT=true)
+  fi
+  if [[ -n "${ENTITLEMENT_BASE_URL_VALUE}" ]]; then
+    run_args+=(--dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}")
+  fi
+  # Reinstall native plugins (shared_preferences, path_provider) after plugin or Gradle changes.
+  if [[ "${install_mobile_target}" == "true" ]]; then
+    run_args+=(--uninstall-first)
+  fi
 fi
 run_args+=("${extra[@]}")
 

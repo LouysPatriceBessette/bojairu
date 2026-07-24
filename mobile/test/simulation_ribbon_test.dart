@@ -16,7 +16,11 @@ void main() {
     return prefs;
   }
 
-  Widget app({required AppPreferences prefs, required bool hideWhenActive}) {
+  Widget app({
+    required AppPreferences prefs,
+    required bool hideWhenActive,
+    bool exitEnabled = true,
+  }) {
     return MaterialApp(
       locale: const Locale('en'),
       supportedLocales: AppLocalizations.supportedLocales,
@@ -29,6 +33,7 @@ void main() {
       home: SimulationRibbonHost(
         prefs: prefs,
         hideWhenActive: hideWhenActive,
+        exitEnabled: exitEnabled,
         child: const Scaffold(body: Text('Screenshot content')),
       ),
     );
@@ -54,5 +59,23 @@ void main() {
 
     expect(find.text('Simulation mode'), findsNothing);
     expect(find.text('Screenshot content'), findsOneWidget);
+  });
+
+  testWidgets('locked-in simulation shows ribbon but tap does not exit', (
+    tester,
+  ) async {
+    final prefs = await activeSimulationPrefs();
+
+    await tester.pumpWidget(
+      app(prefs: prefs, hideWhenActive: false, exitEnabled: false),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simulation mode'), findsOneWidget);
+    await tester.tap(find.text('Simulation mode'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Leave simulation mode?'), findsNothing);
+    expect(prefs.sandboxMode, isTrue);
   });
 }

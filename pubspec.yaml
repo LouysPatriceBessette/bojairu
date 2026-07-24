@@ -54,7 +54,11 @@ melos:
         env var. Extra args go through (e.g. -d chrome, -d linux).
         Add --screenshot on Android to hide the Simulation ribbon while
         capturing app screenshots; the Simulation mode remains active.
-      run: cd mobile && ./tool/run_dev.sh
+        Add --skip-build on Android to install/run the existing
+        app-dev-debug.apk without rebuilding (e.g. after qa:build-apk
+        -- --simulation). Add --fresh with --skip-build to uninstall
+        first and wipe app data.
+      run: cd mobile && ./tool/run_dev.sh "$@"
 
     run:dev:web:
       description: |
@@ -141,7 +145,8 @@ melos:
       description: |
         Build a dev-flavor debug APK for manual QA on the emulator
         (mobile/build/app/outputs/flutter-apk/app-dev-debug.apk).
-      run: chmod +x ./tool/build_qa_apk.sh && ./tool/build_qa_apk.sh
+        Pass -- --simulation for locked-in sandbox (SIMULATION=true).
+      run: chmod +x ./tool/build_qa_apk.sh && ./tool/build_qa_apk.sh "$@"
 
     qa:install-apk:
       description: Install the QA debug APK on the running emulator via adb

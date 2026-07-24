@@ -25,4 +25,16 @@ void main() {
       expect(config.screenshotMode, isFalse);
     }
   });
+
+  test('simulationLocked is independent of environment', () {
+    for (final environment in AppEnvironment.values) {
+      final config = AppConfig(
+        environment: environment,
+        apiBaseUrl: Uri.parse(apiBaseUrl),
+        simulationLocked: true,
+      );
+
+      expect(config.simulationLocked, isTrue);
+    }
+  });
 }

@@ -7,6 +7,7 @@ class AppConfig {
     this.entitlementBaseUrl,
     this.gitSha = '',
     bool screenshotMode = false,
+    this.simulationLocked = false,
   }) : screenshotMode = environment == AppEnvironment.dev && screenshotMode;
 
   final AppEnvironment environment;
@@ -34,6 +35,11 @@ class AppConfig {
   /// restricts it to native Android.
   final bool screenshotMode;
 
+  /// When true (`--dart-define=SIMULATION=true`), start already in sandbox and
+  /// disable product exit paths (ribbon tap, 8h nudge). Used by locked-in QA /
+  /// closed-test builds; normal product builds omit this define.
+  final bool simulationLocked;
+
   static AppEnvironment _parseEnv(String value) {
     switch (value.trim().toLowerCase()) {
       case 'dev':
@@ -58,6 +64,10 @@ class AppConfig {
       'SCREENSHOT',
       defaultValue: false,
     );
+    const simulationLocked = bool.fromEnvironment(
+      'SIMULATION',
+      defaultValue: false,
+    );
 
     Uri? entitlementBaseUrl;
     if (entitlementBaseUrlRaw.trim().isNotEmpty) {
@@ -70,6 +80,7 @@ class AppConfig {
       entitlementBaseUrl: entitlementBaseUrl,
       gitSha: gitSha,
       screenshotMode: screenshotMode,
+      simulationLocked: simulationLocked,
     );
   }
 }

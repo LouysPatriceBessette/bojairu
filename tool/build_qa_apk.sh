@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Build a debug APK (dev flavor) for manual QA on the emulator.
 #
-# Usage: ./tool/build_qa_apk.sh
+# Usage: ./tool/build_qa_apk.sh [--simulation]
+#
+#   --simulation  Compile with SIMULATION=true: start already in sandbox,
+#                 Simulation ribbon visible but exit disabled (closed-test builds).
 #
 # Output: mobile/build/app/outputs/flutter-apk/app-dev-debug.apk
 
@@ -9,6 +12,22 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MOBILE="${ROOT}/mobile"
+
+simulation_locked=false
+for arg in "$@"; do
+  case "${arg}" in
+    --simulation) simulation_locked=true ;;
+    -h|--help)
+      echo "Usage: $0 [--simulation]" >&2
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: ${arg}" >&2
+      echo "Usage: $0 [--simulation]" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # shellcheck source=qa_env.sh
 source "${ROOT}/tool/qa_env.sh"
@@ -26,14 +45,23 @@ cd "${MOBILE}"
 VERSION_FLAGS="$("./tool/compute_version.sh")"
 
 echo "Building dev debug APK (API_BASE_URL=${API_BASE_URL_VALUE})"
+if [[ "${simulation_locked}" == "true" ]]; then
+  echo "Simulation locked-in: SIMULATION=true (enter on install, exit disabled)."
+fi
 echo "Target: android-arm64 + android-x64 (physical phones + x86_64 QA emulators)."
+
+build_args=(
+  build apk --debug --flavor dev
+  --dart-define=ENV=dev
+  --dart-define="API_BASE_URL=${API_BASE_URL_VALUE}"
+  --dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}"
+  --target-platform android-arm64,android-x64
+)
+if [[ "${simulation_locked}" == "true" ]]; then
+  build_args+=(--dart-define=SIMULATION=true)
+fi
 # shellcheck disable=SC2086
-./tool/flutterw build apk --debug --flavor dev \
-  --dart-define=ENV=dev \
-  --dart-define="API_BASE_URL=${API_BASE_URL_VALUE}" \
-  --dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}" \
-  --target-platform android-arm64,android-x64 \
-  ${VERSION_FLAGS}
+./tool/flutterw "${build_args[@]}" ${VERSION_FLAGS}
 
 APK="${MOBILE}/build/app/outputs/flutter-apk/app-dev-debug.apk"
 if [[ ! -f "${APK}" ]]; then

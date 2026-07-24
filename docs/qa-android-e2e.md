@@ -42,8 +42,24 @@ From the repository root:
 ./tool/melosw run qa:build-apk
 ```
 
+For a locked-in Simulation build (already in sandbox on install; red ribbon
+visible but exit disabled), pass `--simulation`:
+
+```bash
+./tool/melosw run qa:build-apk -- --simulation
+```
+
+Then install/run that APK without rebuilding:
+
+```bash
+./tool/melosw run run:dev -- --skip-build
+./tool/melosw run run:dev -- --skip-build --fresh   # wipe app data
+```
+
+(or `./tool/melosw run qa:install-apk`).
+
 Equivalent shell scripts: `./tool/create_qa_avd.sh`, `./tool/install_maestro.sh`,
-`./tool/build_qa_apk.sh`.
+`./tool/build_qa_apk.sh` (optional `--simulation`).
 
 Verify the toolchain:
 
@@ -394,7 +410,7 @@ Prefer `./tool/melosw` over `dart run melos` (avoids redundant `pub get`).
 | `qa:create-avd` | Create `Bojairu-QA` AVD |
 | `qa:start-emulator` | Start emulator (cold boot) |
 | `qa:install-maestro` | Install Maestro CLI |
-| `qa:build-apk` | Build `app-dev-debug.apk` |
+| `qa:build-apk` | Build `app-dev-debug.apk` (optional `-- --simulation`) |
 | `qa:install-apk` | Install APK on running emulator |
 | `qa:verify` | Full toolchain verification |
 | `qa:validate-scenarios` | Manifest / seed / flow checks only |
@@ -425,7 +441,7 @@ Examples:
 | `tool/set_android_date.sh` | Set emulator date/time |
 | `tool/restore_android_date.sh` | Restore automatic date/time |
 | `tool/install_maestro.sh` | Install Maestro to `~/.maestro/bin` |
-| `tool/build_qa_apk.sh` | Build dev debug APK |
+| `tool/build_qa_apk.sh` | Build dev debug APK (`--simulation` → `SIMULATION=true`) |
 | `tool/install_qa_apk.sh` | `adb install -r` on emulator |
 | `tool/seed_qa_scenario.sh` | Seed one scenario |
 | `tool/run_scenario.sh` | Full single-scenario orchestrator |

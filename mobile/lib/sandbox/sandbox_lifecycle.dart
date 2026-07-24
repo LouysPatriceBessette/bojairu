@@ -163,6 +163,8 @@ abstract final class SandboxLifecycle {
     required AppPreferences prefs,
     required AppDatabase db,
   }) async {
+    if (SandboxMode.lockedByBuild) return;
+
     final orch = HandshakeOrchestrator.maybeInstance;
     if (orch != null) {
       await orch.releaseLocalDatabaseConnectionForDevReset();

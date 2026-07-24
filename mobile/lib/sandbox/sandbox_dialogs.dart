@@ -10,6 +10,7 @@ import '../prefs/app_preferences.dart';
 import '../relay/handshake_orchestrator.dart';
 import 'peer_simulator.dart';
 import 'sandbox_lifecycle.dart';
+import 'sandbox_mode.dart';
 
 NavigatorState? get _sandboxRootNavigator => appRootNavigatorKey.currentState;
 
@@ -45,6 +46,8 @@ Future<bool> showSandboxExitConfirmDialog() async {
 Future<void> performSandboxExitWithRestartDialog({
   required AppPreferences prefs,
 }) async {
+  if (SandboxMode.lockedByBuild) return;
+
   PeerSimulator.maybeInstance?.pauseReactions();
   HandshakeOrchestrator.maybeInstance?.stopPolling();
 

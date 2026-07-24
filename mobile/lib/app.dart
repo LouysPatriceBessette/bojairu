@@ -406,6 +406,7 @@ class _BojairuAppState extends State<BojairuApp>
                         widget.config.screenshotMode &&
                         !kIsWeb &&
                         defaultTargetPlatform == TargetPlatform.android,
+                    exitEnabled: !widget.config.simulationLocked,
                     child: SandboxEightHourNudgeHost(
                       prefs: prefs,
                       child: SafeArea(
