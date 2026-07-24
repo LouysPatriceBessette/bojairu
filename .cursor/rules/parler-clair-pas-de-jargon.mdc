@@ -1,0 +1,159 @@
+---
+description: Éviter jargon opaque et notes télégraphiques — parler clair d’abord
+alwaysApply: true
+---
+
+# Parler clair — pas de jargon opaque
+
+## Scope
+
+`alwaysApply: true`. S’applique à **toute** réponse chat (deploy, produit, QA,
+docs, plans). Pas seulement à un domaine technique précis.
+
+## Principe
+
+L’utilisateur n’est pas tenu de connaître sigles, ids de plan, jargon d’outil
+ou libellés internes. **Parler d’abord en français courant** : *quoi* / *où* /
+*avec quel objet* / *pourquoi*. Le terme technique peut suivre **entre
+parenthèses**, une fois le sens posé — pas l’inverse.
+
+Si un terme risque de forcer « que signifie… ? » / « c’est quoi… ? » /
+« quoi faire concrètement ? », **ne pas l’utiliser seul** comme étiquette
+d’action.
+
+## Notes internes ≠ consignes à l’utilisateur
+
+Libellés de plan, todos, checklists, codes d’item (« A2 », « G.1 », « P0 »)
+sont des **notes télégraphiques pour l’agent**. Ce ne sont **pas** des
+instructions à coller telles quelles dans le chat.
+
+| Interdit | Obligatoire |
+|----------|-------------|
+| Renvoyer un id / une ligne de plan comme si c’était une procédure | Une procédure autonome, compréhensible sans ouvrir le plan |
+| Empiler sigles et ids dans une seule « action » | Une action = une phrase concrète ; ids en second, optionnels |
+| Dire « fais X » quand X suppose un fichier / un compte / un écran non dit | Nommer l’objet, l’endroit, et comment l’obtenir s’il manque |
+
+Si tu ne peux pas répondre clairement à « **quoi** faire, **où**, avec **quoi** »
+sans lecture supplémentaire, **ne livre pas** la note — livre la procédure (ou
+dis ce qu’il te manque).
+
+## Prérequis et procédures déjà en cours
+
+Quand l’utilisateur est **au milieu** d’une procédure (redeploy, édition de
+config, checklist, parcours UI) :
+
+1. Toute exigence **nouvelle** qui n’est pas l’étape suivante évidente doit
+   s’annoncer comme **prérequis**, **digression**, ou **à faire avant de
+   reprendre** — pas comme une ligne opaque « à faire aussi ».
+2. Si un pas dépend d’un travail **ailleurs** (autre console, autre machine,
+   autre type de fichier, autre rôle), ce travail vient **en tête** de la
+   consigne, **avant** le pas « copie / colle / restart / valide ».
+3. Ne jamais donner le pas aval (« pose le fichier », « change la variable »,
+   « redémarre ») **sans** le prérequis amont, si ce prérequis n’est pas déjà
+   clairement acquis dans le fil.
+4. Une consigne incomplète qui force l’utilisateur à se planter ou à
+   interrompre sa procédure pour découvrir le trou est une **faute de
+   livraison**, pas un détail.
+
+### Ordre type (général)
+
+1. Prérequis (obtenir / créer / vérifier l’objet manquant)  
+2. Où ça aboutit (machine, dossier, écran)  
+3. Réglages annexes déjà connus (droits, montage, options)  
+4. Ce qu’on ne touche pas  
+5. Reprise de la procédure en cours  
+
+## Pas de contournements à la place de la voie propre (surtout déploiement serveur)
+
+**Interdit** de guider une étape qui est **manifestement un contournement** pour
+éviter une opération propre déjà identifiable — surtout dans une **séquence de
+déploiement / ops serveur** (secrets, volumes, compose, chemins host ↔
+conteneur, permissions, recreate).
+
+| Interdit | Obligatoire |
+|----------|-------------|
+| Tricher sur un nom de fichier / écraser sous l’ancien nom pour « éviter une ligne de config » | Mettre à jour la config qui **lie** l’objet (volume, unit, symlink documenté, etc.) |
+| Raccourci qui laisse l’état ops **mensonger** (ancien projet dans le nom, ancien chemin mort, double vérité) | État final aligné : nouvel objet + référence mise à jour + ancienne référence retirée ou archivée |
+| Présenter le contournement comme « le plus simple » sans nommer la voie propre | Si un raccourci existe, le dire **après** la voie propre, comme option **explicite**, jamais comme consigne par défaut |
+
+Économiser « une opération » en faussant noms, chemins ou identité d’un secret
+n’est **pas** une aide. Sur un redeploy serveur, livrer d’abord la séquence
+propre ; le raccourci n’est acceptable que si l’utilisateur le demande ou
+accepte clairement.
+
+## Pas d’« habitude », de « comme d’habitude », ni de procédure implicite
+
+**Interdit** de renvoyer l’utilisateur à une procédure « habituelle », « comme
+la dernière fois », « les mêmes `-f` », « le recreate usuel », etc. — surtout
+pour **ops / déploiement serveur**.
+
+| Interdit | Obligatoire |
+|----------|-------------|
+| « Recrée avec les mêmes `-f` qu’à l’habitude » | Coller la **commande complète** (répertoire de travail, utilisateur, chaque `-f`, flags) |
+| Supposer qu’une procédure « s’est stabilisée » parce qu’elle a déjà été faite | Traiter chaque redeploy comme **autonome** : la procédure a pu changer à **chaque** fois |
+| Remplacer une commande par un rappel flou (« overlay secrets », « stack + secrets ») | Nommer les **fichiers** et écrire la ligne `docker compose …` entière |
+| Dire « redémarre le conteneur » sans dire *comment* | `cd …` + commande exacte + ce qu’on attend ensuite (vérif) |
+
+S’il n’y a **pas** de commande unique documentée dans le fil ou dans une note
+ops déjà ouverte **cette session**, **lire** la source (note deploy, doc, ou
+demander ce qui tourne sur le VPS) — **ne pas inventer** une « habitude ».
+
+## Formulations
+
+| Éviter (opaque) | Préférer |
+|-----------------|----------|
+| « On fait l’AVIF hero » | « Alléger les images de la **première bande** de l’accueil… (AVIF si utile) » |
+| « Fais A2 / le G.1 » | Décrire les étapes concrètes ; mentionner l’id de plan seulement en aparté |
+| « Monte le secret / pointe la var » | Dire quel objet, où sur la machine, ce que la config lit déjà, puis l’action |
+| « Recrée avec les `-f` habituels » | Coller la commande `docker compose …` complète |
+| « Fix LCP / CWV » | « Faire charger plus vite **le gros élément visible en premier** » |
+
+(Les exemples ci-dessus illustrent le **style** ; le principe s’applique à
+tout sujet.)
+
+## Règles opérationnelles
+
+1. **Ancrage concret** : page, écran, machine, dossier, fichier — pas seulement
+   un id ou un sigle.
+2. **Sigle = glossaire inline** à la première occurrence du message ; ensuite
+   le sigle seul est OK dans *ce* message.
+3. **Listes d’actions** : chaque puce tient seule, sans wiki ni plan ouvert.
+4. **Ne pas empiler** les sigles / ids dans une seule étiquette.
+5. **Code / chemins / commits** : noms techniques OK ; la contrainte porte sur
+   le **discours à l’utilisateur**.
+6. **En cas de doute** : phrase concrète + terme entre parenthèses ; sinon
+   **demander** plutôt qu’assumer.
+7. **Commandes ops** : jamais « comme d’habitude » — toujours la ligne
+   complète, ou avouer qu’il faut la retrouver / la confirmer.
+
+## Anti-exemples (incidents fondateurs — courts)
+
+- ❌ « Il reste l’AVIF hero »  
+  ✅ « Il reste à alléger les PNG de la **première bande** de l’accueil… »
+
+- ❌ Coller « reste A2 — JSON + VAR + restart » à quelqu’un déjà en pleine
+  édition de config de redeploy, **sans** dire qu’il manque d’abord une
+  procédure ailleurs pour **obtenir** le bon fichier  
+  ✅ « **Avant de continuer** le redeploy : d’abord obtenir X (où / comment) ;
+  ensuite seulement le poser où Y ; la variable Z peut rester telle quelle ;
+  puis tu reprends. »
+
+- ❌ « Renomme le nouveau secret comme l’ancien pour écraser et éviter
+  d’éditer le montage »  
+  ✅ « Pose le fichier sous son vrai nom ; mets à jour le côté host du volume /
+  de la config de montage ; recreate ; retire l’ancienne référence. »
+
+- ❌ « Recrée le conteneur relay avec les mêmes `-f` qu’à l’habitude
+  (stack + `docker-compose.secrets.yml`) » — il n’y a **pas** d’habitude
+  stable : la procédure VPS a changé à **chaque** redeploy  
+  ✅ Coller la commande autonome, par ex. :
+
+  ```bash
+  sudo -u compartarenta-relay -s
+  cd /srv/compartarenta-relay
+
+  docker compose --env-file env/.env \
+    -f source/deploy/compose.production-stack.yml \
+    -f docker-compose.secrets.yml \
+    up -d --force-recreate relay
+  ```
