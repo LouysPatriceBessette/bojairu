@@ -15,6 +15,10 @@ import '../relay/relay_client.dart';
 /// Intended for the FCM background isolate when the main isolate may be
 /// stopped. Opens its own [AppDatabase] against the on-disk file used by the
 /// app (same path as the foreground binding).
+///
+/// Import handlers may call [HandshakeOrchestrator.startPolling]; this helper
+/// always [HandshakeOrchestrator.stopPolling] before closing the DB so the
+/// background isolate does not leave a loop against a closed connection.
 Future<void> runWakeInboxPollOnce() async {
   if (kIsWeb) return;
 
@@ -31,10 +35,12 @@ Future<void> runWakeInboxPollOnce() async {
     scopeBeforeWake = null;
   }
   AppDatabase.bindProcessScope(appDb);
+  HandshakeOrchestrator? orchestrator;
+  HttpRelayClient? relay;
   try {
     final identity = IdentityKeystore.secureStorage();
-    final relay = HttpRelayClient(baseUrl: config.apiBaseUrl);
-    final orchestrator = HandshakeOrchestrator(
+    relay = HttpRelayClient(baseUrl: config.apiBaseUrl);
+    orchestrator = HandshakeOrchestrator(
       db: appDb,
       identity: identity,
       relay: relay,
@@ -44,10 +50,11 @@ Future<void> runWakeInboxPollOnce() async {
     await orchestrator.processAllPendingHandshakes();
     await orchestrator.pollSteadyStateInboxes();
     await orchestrator.pollHousingPaymentReminders();
-    relay.close();
   } catch (e, st) {
     debugPrint('runWakeInboxPollOnce failed: $e\n$st');
   } finally {
+    orchestrator?.stopPolling();
+    relay?.close();
     if (scopeBeforeWake != null) {
       AppDatabase.bindProcessScope(scopeBeforeWake);
     } else {

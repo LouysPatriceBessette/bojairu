@@ -229,10 +229,19 @@ class HandshakeOrchestrator {
   Future<({String displayName, String avatarId})> Function()?
   ackProfileForAutoAccept;
 
-  /// Only the bootstrap [maybeInstance] posts housing notifications to the OS.
-  /// Sandbox bot orchestrators poll the same FakeRelay but share one device.
-  bool get _ownsDeviceHousingNotifications =>
-      identical(this, HandshakeOrchestrator.maybeInstance);
+  /// Posts housing notifications to the OS when this orchestrator owns the
+  /// device surface.
+  ///
+  /// - Bootstrap [maybeInstance]: sole owner in the main isolate.
+  /// - FCM wake isolate: [maybeInstance] is null (never installed); the
+  ///   short-lived wake orchestrator must notify or closed-app delivery is silent.
+  /// - Sandbox bot orchestrators: [maybeInstance] is the real app; bots must not
+  ///   post (they share one device / FakeRelay).
+  bool get _ownsDeviceHousingNotifications {
+    final installed = HandshakeOrchestrator.maybeInstance;
+    if (installed == null) return true;
+    return identical(this, installed);
+  }
 
   /// PeerSimulator / sandbox bots: keep inviter auto-accept and pin ack profile.
   void enableSandboxPeerAutoAccept({
