@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Open housing contact picker — semantics onTap must mirror FilledButton onPressed.
 - extendedWaitUntil:

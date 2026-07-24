@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # QA scenarios enable notifications (dialogs + system permission).
 - runFlow:

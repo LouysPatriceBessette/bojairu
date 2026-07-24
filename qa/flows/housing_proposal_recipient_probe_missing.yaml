@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Runs after proposer send — missing delivery shows empty wizard, not invitee accept.
 - launchApp:

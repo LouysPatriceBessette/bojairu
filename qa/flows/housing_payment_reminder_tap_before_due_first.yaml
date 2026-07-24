@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # OS shade only (before_due). Text tap allowed for Android system shade only —
 # match stable product title, never QA "#N" prefixes (temporary, will be removed).

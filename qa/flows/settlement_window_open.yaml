@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # POC phase 1 — lendemain de periodEnd, fenêtre de règlement ouverte.
 # Prérequis : ./tool/run_scenario.sh settlement_window_open (seed + date + ce flow)

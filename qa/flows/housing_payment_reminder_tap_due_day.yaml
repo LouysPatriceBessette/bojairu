@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # OS shade only (before_due due day). Product title only — no QA "#N" prefix.
 - extendedWaitUntil:

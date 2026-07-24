@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Bug 1.22: TWO connected Monica-QA rows on Louys after proposer identity drift.
 - runFlow:

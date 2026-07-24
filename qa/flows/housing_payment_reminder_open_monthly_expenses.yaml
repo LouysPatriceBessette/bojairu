@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Fallback when notification tap left shade closed but journal screen not open.
 # Does not stopApp — journal DB must persist across payment-reminder phases.

@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 - runFlow:
     file: _housing_wizard_open_contact_picker.yaml

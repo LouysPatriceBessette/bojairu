@@ -60,7 +60,7 @@ validates all scenario manifests, and verifies Maestro `qa-*` ids against Dart
 | Variable | Default |
 | --- | --- |
 | `COMPARTARENTA_QA_AVD_NAME` | `Bojairu-QA` |
-| `COMPARTARENTA_QA_APP_ID` | `com.compartarenta.compartarenta.dev` |
+| `COMPARTARENTA_QA_APP_ID` | `app.incoherences.bojairu.dev` |
 | `COMPARTARENTA_QA_SYSTEM_IMAGE` | `system-images;android-34;google_apis;x86_64` |
 | `COMPARTARENTA_QA_DEVICE_PROFILE` | `pixel_7` |
 | `COMPARTARENTA_QA_DEFAULT_TIMEZONE` | `America/Toronto` |
@@ -490,7 +490,7 @@ Official docs: [Maestro MCP](https://docs.maestro.dev/get-started/maestro-mcp).
 Every flow must declare the **dev** package:
 
 ```yaml
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ```
 
 Maestro is invoked with `--udid <emulator-serial>` so a plugged-in phone is never

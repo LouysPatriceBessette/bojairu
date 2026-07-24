@@ -1,9 +1,8 @@
 // ignore_for_file: lines_longer_than_80_chars
 //
-// **Replace this file** by running `dart pub global activate flutterfire_cli`
-// then `flutterfire configure` from the `mobile/` directory so FCM can reach
-// a real Firebase project. Placeholder values keep the project compiling until
-// then; push delivery will not work until configuration is complete.
+// Android options match `android/app/google-services.json` (Firebase project
+// `bojairu`). Regenerate with `flutterfire configure` after adding .dev /
+// .staging / iOS apps in the Console.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
@@ -36,20 +35,25 @@ class DefaultFirebaseOptions {
     storageBucket: 'compartarenta-placeholder.appspot.com',
   );
 
+  // From Firebase project `bojairu`. Default Dart options target the **dev**
+  // Android app (matches `run:dev` / flavor `dev`). Native plugin still
+  // selects the matching client from google-services.json per applicationId.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA7CUooClPYS9r-xc8thhgosktav6xJ_Xw',
-    appId: '1:371195804616:android:ef9fcfb26ab5603a99defd',
-    messagingSenderId: '371195804616',
-    projectId: 'compararenta-app',
-    storageBucket: 'compararenta-app.firebasestorage.app',
+    apiKey: 'AIzaSyCkmsxmA4QWul3msv1it0TvjY3vyusYdZU',
+    appId: '1:333095166523:android:01aa74954ac09983efb21e',
+    messagingSenderId: '333095166523',
+    projectId: 'bojairu',
+    storageBucket: 'bojairu.firebasestorage.app',
   );
+  // iOS app not registered yet in project `bojairu` — update via flutterfire
+  // configure after adding bundle IDs in the Console.
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCoVeWoCvJ8GU220YhZ1ZnpwHc5BTv7SKs',
-    appId: '1:371195804616:ios:b2b2361caaa2b0b799defd',
-    messagingSenderId: '371195804616',
-    projectId: 'compararenta-app',
-    storageBucket: 'compararenta-app.firebasestorage.app',
-    iosBundleId: 'com.compartarenta.compartarenta.staging',
+    apiKey: 'REPLACE_WITH_IOS_API_KEY',
+    appId: '1:333095166523:ios:0000000000000000000000',
+    messagingSenderId: '333095166523',
+    projectId: 'bojairu',
+    storageBucket: 'bojairu.firebasestorage.app',
+    iosBundleId: 'app.incoherences.bojairu',
   );
   static const FirebaseOptions macos = ios;
 

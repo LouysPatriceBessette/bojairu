@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Invitee (Louys): optional cleanup when dialog was not dismissed in redeem flow.
 # Phase 4 coordinator dismisses Ok in contact_handshake_invitee_redeem_anchor_rejected.yaml.

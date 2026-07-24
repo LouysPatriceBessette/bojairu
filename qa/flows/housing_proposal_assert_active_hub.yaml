@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # App already in foreground (post-accept or post-activation). Do not call
 # launchApp stopApp: false — it can hang on emulator while the hub is visible.

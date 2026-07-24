@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Enable app + system notification permission and wake-eligible housing category.
 - launchApp:

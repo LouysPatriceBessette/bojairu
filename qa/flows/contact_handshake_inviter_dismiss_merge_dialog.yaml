@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Inviter (Monica): merge dialog appears over invite screen — dismiss before navigation.
 - extendedWaitUntil:

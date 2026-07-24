@@ -12,7 +12,7 @@ export COMPARTARENTA_ROOT
 # --- Defaults (override via env before calling scripts) -----------------------
 
 export COMPARTARENTA_QA_AVD_NAME="${COMPARTARENTA_QA_AVD_NAME:-Bojairu-QA}"
-export COMPARTARENTA_QA_APP_ID="${COMPARTARENTA_QA_APP_ID:-com.compartarenta.compartarenta.dev}"
+export COMPARTARENTA_QA_APP_ID="${COMPARTARENTA_QA_APP_ID:-app.incoherences.bojairu.dev}"
 export COMPARTARENTA_QA_SYSTEM_IMAGE="${COMPARTARENTA_QA_SYSTEM_IMAGE:-system-images;android-34;google_apis;x86_64}"
 export COMPARTARENTA_QA_DEVICE_PROFILE="${COMPARTARENTA_QA_DEVICE_PROFILE:-pixel_7}"
 export COMPARTARENTA_QA_API_BASE_URL="${COMPARTARENTA_QA_API_BASE_URL:-https://sync.incoherences.org}"

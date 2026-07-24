@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # After drift, clean state: exactly one connected Monica row (no second index).
 - runFlow:

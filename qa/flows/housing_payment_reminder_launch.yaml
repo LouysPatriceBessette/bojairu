@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Cold start (one-shot post-action simulates notification); wait until home is ready.
 - launchApp:

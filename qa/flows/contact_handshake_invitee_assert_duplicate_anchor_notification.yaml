@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Invitee: anchor-reject banner on redeem (persists until navigation).
 - launchApp:

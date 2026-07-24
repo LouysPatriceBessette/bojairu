@@ -119,7 +119,7 @@ line that contains **`PASSED`** and the scenario id (e.g.
 Every flow:
 
 ```yaml
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ```
 
 Maestro runs with `--udid <serial>` from coordinators — never assume a single device.

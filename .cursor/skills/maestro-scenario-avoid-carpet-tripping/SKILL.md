@@ -137,7 +137,7 @@ See `qa-contacts-generate-code`, `qa-housing-wizard-next` in codebase — grep b
 **Prefer `runFlow` of existing `_*.yaml`** over new steps.
 
 ```yaml
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 - runFlow:
     file: _enter_contacts_hub.yaml   # example — use what grep found

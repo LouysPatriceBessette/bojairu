@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "371195804616",
-    "project_id": "compararenta-app",
-    "storage_bucket": "compararenta-app.firebasestorage.app"
+    "project_number": "333095166523",
+    "project_id": "bojairu",
+    "storage_bucket": "bojairu.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:371195804616:android:d9207fa88154241099defd",
+        "mobilesdk_app_id": "1:333095166523:android:9d942c88fb8a919aefb21e",
         "android_client_info": {
-          "package_name": "com.compartarenta.compartarenta"
+          "package_name": "app.incoherences.bojairu"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA7CUooClPYS9r-xc8thhgosktav6xJ_Xw"
+          "current_key": "AIzaSyCkmsxmA4QWul3msv1it0TvjY3vyusYdZU"
         }
       ],
       "services": {
@@ -26,15 +26,34 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:371195804616:android:ef9fcfb26ab5603a99defd",
+        "mobilesdk_app_id": "1:333095166523:android:01aa74954ac09983efb21e",
         "android_client_info": {
-          "package_name": "com.compartarenta.compartarenta.dev"
+          "package_name": "app.incoherences.bojairu.dev"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA7CUooClPYS9r-xc8thhgosktav6xJ_Xw"
+          "current_key": "AIzaSyCkmsxmA4QWul3msv1it0TvjY3vyusYdZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333095166523:android:7708544b9a37bdf4efb21e",
+        "android_client_info": {
+          "package_name": "app.incoherences.bojairu.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkmsxmA4QWul3msv1it0TvjY3vyusYdZU"
         }
       ],
       "services": {

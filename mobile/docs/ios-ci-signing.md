@@ -15,9 +15,9 @@ such as Fastlane `match`.
 
 Prereqs in Apple Developer / App Store Connect:
 - Create app entries for bundle IDs:
-  - `com.compartarenta.compartarenta` (prod)
-  - `com.compartarenta.compartarenta.staging` (staging)
-  - `com.compartarenta.compartarenta.dev` (dev)
+  - `app.incoherences.bojairu` (prod)
+  - `app.incoherences.bojairu.staging` (staging)
+  - `app.incoherences.bojairu.dev` (dev)
 - Create an **App Store Connect API key** (Issuer ID, Key ID, and the `.p8` file)
 
 CI secrets to add:
@@ -39,9 +39,8 @@ CI secrets to add:
 ## Bundle ID mapping in this repo
 
 To support side-by-side installs and a simple 3-env mapping without Xcode schemes:
-- **Debug** → `com.compartarenta.compartarenta.dev`
-- **Profile** → `com.compartarenta.compartarenta.staging`
-- **Release** → `com.compartarenta.compartarenta`
+- **Debug** → `app.incoherences.bojairu.dev`
+- **Profile** → `app.incoherences.bojairu.staging`
+- **Release** → `app.incoherences.bojairu`
 
 If you later want “dev/staging/prod” *all as Debug*, we can introduce explicit Xcode build configurations/schemes.
-

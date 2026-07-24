@@ -1,4 +1,4 @@
-appId: com.compartarenta.compartarenta.dev
+appId: app.incoherences.bojairu.dev
 ---
 # Dates step: allow contact/period persist to settle before advancing to expenses.
 - extendedWaitUntil:
