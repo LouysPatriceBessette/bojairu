@@ -1,145 +1,215 @@
-# Compartarenta Relay — Audit Log
+# Bojairũ Relay — Audit Log
 
-This file is the public, append-only record of relay deployments and
-self-audits. Required by `relay-public-auditability`:
+Public, append-only record of stack deployments and self-audits
+(`relay-public-auditability`).
 
-- Each deployed version maps to a tagged release ⇒ "Deployments" table.
-- A periodic self-audit (at minimum quarterly) is performed and
-  recorded ⇒ "Self-audits" section.
-- Audit findings are tracked transparently ⇒ "Findings" section.
-- The audit posture applies from day one of public availability ⇒ the
-  baseline self-audit below must be dated **on or before** the day the
-  relay sub-domain first accepts public traffic.
+**How to deploy and audit:** [`deploy/2026-07-24-HOW-TO-DEPLOY.md`](../deploy/2026-07-24-HOW-TO-DEPLOY.md)
+(§1 Deploy, then §2 Audit). Append entries here after each release.
 
-The placeholder entries below describe the shape of a real entry. They
-SHALL be replaced (not deleted) by real entries once the first
-deployment happens.
+**Rules**
+
+- Never delete a past entry. Append only.
+- Operator / auditor fields use a **role** id (e.g. `operator-on-call`), not a personal name.
+- Image digests are immutable container ids (`sha256:…` / `docker inspect` `.Id`).
+- Configuration drift vs docs is a **Finding** before you rewrite the docs.
 
 ---
 
 ## Deployments
 
-| Tag        | Image digest                             | Deployed at         | Operator    | Notes                                                        |
-|------------|------------------------------------------|---------------------|-------------|--------------------------------------------------------------|
-| v0.1.0 | sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e | 2026-05-13T21:05Z | operator-on-call | First deployment. |
-| v0.2.0 | sha256:b5967deacc70d3b19cd2e31a12f294898a7549951779a8b92ba9a81d63cc010d | 2026-05-19T21:58Z | operator-on-call | Closed-app push delivery (schema v2). Wake dispatch disabled (WAKE_PUSH_DISPATCH_ENABLED=false). Stats cron via daily-stats-append-via-docker.sh. |
-| v0.2.1 | sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e | 2026-05-26T00:23Z | operator-on-call | Raised ENVELOPE_MAX_BYTES to 262144 (256 KiB) for proof-bearing envelopes. Built from commit b69d4bfb2ed0c5b9bb6d5acae04cbdbffebd4567. |
-| v0.3.0 | sha256:5055f30f74eb18e9616086ad9be5c5469090d4ea2e99081baa75d713e581e1ff | 2026-06-18T16:54Z | operator-on-call | Added cron notifications capability to the Relay server and first deployed the Entitlement server. Built from commit 5abd13e1970a50143776b248af37f8d7673261dc. |
-| v0.3.1 | sha256:f01a7f7c30436e8aae806724187841edfa704d3ccd9ffe2cd08f1e68af9fffde | 2026-06-23T13:21Z | operator-on-call | Updated the Relay server and the Entitlement server in order to allow an installation ID to be updated on mobile device data import. Built from commit 0e334a44d8908748da1d366dbfc7efcd23ea40de. |
+Copy the template, fill it, paste **above** the older entries (newest first)
+or append at the bottom — pick one convention and keep it. This file uses
+**newest last** (chronological).
 
-When a new image goes live:
+### Template
 
-1. Append a new row (do NOT delete the prior one — this is an audit
-   log).
-2. Set `Tag` to the matching git tag (`v0.x.y`).
-3. Set `Image digest` to the immutable container image digest the
-   binary was packaged into (`sha256:<…>`).
-4. Set `Deployed at` to the ISO-8601 timestamp the deployment went
-   live.
-5. Set `Operator` to a role identifier (e.g., `operator-on-call`), NOT
-   a personal identifier.
+```markdown
+### vX.Y.Z
+
+- **Tag:** vX.Y.Z
+- **Relay image digest:** sha256:…
+- **Entitlement image digest:** sha256:…   (omit only for pre-entitlement releases)
+- **Deployed at:** YYYY-MM-DDTHH:MMZ
+- **Git commit:** <full sha>
+- **Operator:** operator-on-call
+- **Notes:** one or two sentences
+```
+
+### v0.1.0
+
+- **Tag:** v0.1.0
+- **Relay image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
+- **Deployed at:** 2026-05-13T21:05Z
+- **Git commit:** _(not recorded in earlier log rows)_
+- **Operator:** operator-on-call
+- **Notes:** First deployment.
+
+### v0.2.0
+
+- **Tag:** v0.2.0
+- **Relay image digest:** sha256:b5967deacc70d3b19cd2e31a12f294898a7549951779a8b92ba9a81d63cc010d
+- **Deployed at:** 2026-05-19T21:58Z
+- **Git commit:** _(not recorded in earlier log rows)_
+- **Operator:** operator-on-call
+- **Notes:** Closed-app push delivery (schema v2). Wake dispatch disabled (`WAKE_PUSH_DISPATCH_ENABLED=false`). Stats cron via `daily-stats-append-via-docker.sh`.
+
+### v0.2.1
+
+- **Tag:** v0.2.1
+- **Relay image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
+- **Deployed at:** 2026-05-26T00:23Z
+- **Git commit:** b69d4bfb2ed0c5b9bb6d5acae04cbdbffebd4567
+- **Operator:** operator-on-call
+- **Notes:** Raised `ENVELOPE_MAX_BYTES` to 262144 (256 KiB) for proof-bearing envelopes.
+
+### v0.3.0
+
+- **Tag:** v0.3.0
+- **Relay image digest:** sha256:5055f30f74eb18e9616086ad9be5c5469090d4ea2e99081baa75d713e581e1ff
+- **Deployed at:** 2026-06-18T16:54Z
+- **Git commit:** 5abd13e1970a50143776b248af37f8d7673261dc
+- **Operator:** operator-on-call
+- **Notes:** Cron notifications on the relay; first entitlement server deploy.
+
+### v0.3.1
+
+- **Tag:** v0.3.1
+- **Relay image digest:** sha256:f01a7f7c30436e8aae806724187841edfa704d3ccd9ffe2cd08f1e68af9fffde
+- **Deployed at:** 2026-06-23T13:21Z
+- **Git commit:** 0e334a44d8908748da1d366dbfc7efcd23ea40de
+- **Operator:** operator-on-call
+- **Notes:** Installation id update on mobile device data import (relay + entitlement).
+
+### v0.4.0
+
+- **Tag:** v0.4.0
+- **Relay image digest:** sha256:3f70e5d2c55babdd56f57771d6403f4add9e19f3ff6a477540ebb7e497adeabc
+- **Entitlement image digest:** sha256:4c30c73512ec9603b7b9b8f10757225a17a52a4ffc4c82667aa310fcff5e2c42
+- **Deployed at:** 2026-07-24T17:49Z
+- **Git commit:** 5a434ecad615f76c1feaba41d033450dc2ad8578
+- **Operator:** operator-on-call
+- **Notes:** Bojairũ scheme/landing + FCM service-account path hardening; wake dispatch enabled; living HOW-TO deploy/audit (`deploy/2026-07-24-HOW-TO-DEPLOY.md`).
 
 ---
 
 ## Self-audits
 
-Each self-audit runs every item in
-[`relay-audit-checklist.md`](./relay-audit-checklist.md) on the live
-deployment and records the result here. The cadence is at minimum
-quarterly; the first audit (the "baseline") is dated on or before the
-first day of public traffic.
+Cadence: at least once every **90 days**. Missed deadline → open a Finding.
+
+### Template
+
+```markdown
+### Self-audit — vX.Y.Z
+
+- **Date:** YYYY-MM-DDTHH:MMZ
+- **Tag:** vX.Y.Z
+- **Relay image digest:** sha256:…
+- **Entitlement image digest:** sha256:…
+- **Operator:** operator-on-call
+- **Procedure:** deploy/2026-07-24-HOW-TO-DEPLOY.md §2
+- **Summary:** …
+- **Findings:** None. | See Findings / <id>
+```
 
 ### Baseline (v0.1.0)
 
 - **Date:** 2026-05-13T21:05Z
+- **Tag:** v0.1.0
+- **Relay image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
 - **Operator:** operator-on-call
-- **Image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
-- **Checklist version:** [`relay-audit-checklist.md`](./relay-audit-checklist.md)
-  as of 6a2fdc026d472179b50505736f2a5a7c8bfb595a
-- **Summary:** Initial deployment of sync.incoherences.org, all checks pass. 
-- **Findings:** None. (see Findings section)
+- **Procedure:** docs/relay-audit-checklist.md @ 6a2fdc026d472179b50505736f2a5a7c8bfb595a _(superseded; use HOW-TO going forward)_
+- **Summary:** Initial deployment of sync.incoherences.org; all checks pass.
+- **Findings:** None.
 
-### Self-audit — v0.2.0 upgrade
+### Self-audit — v0.2.0
 
 - **Date:** 2026-05-19T21:58Z
+- **Tag:** v0.2.0
+- **Relay image digest:** sha256:b5967deacc70d3b19cd2e31a12f294898a7549951779a8b92ba9a81d63cc010d
 - **Operator:** operator-on-call
-- **Image digest:** sha256:b5967deacc70d3b19cd2e31a12f294898a7549951779a8b92ba9a81d63cc010d
-- **Checklist version:** [`relay-audit-checklist.md`](./relay-audit-checklist.md)
-  as of 899e36cb441fef858c78b5b444e191ed5d407a65
-- **Summary:** Added a generic closed-app push delivery mechanism, all checks pass. 
+- **Procedure:** docs/relay-audit-checklist.md @ 899e36cb441fef858c78b5b444e191ed5d407a65 _(superseded)_
+- **Summary:** Generic closed-app push delivery; all checks pass.
 - **Findings:** None.
 
-### Self-audit — v0.2.1 envelope size cap update
+### Self-audit — v0.2.1
 
 - **Date:** 2026-05-26T00:23Z
+- **Tag:** v0.2.1
+- **Relay image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
 - **Operator:** operator-on-call
-- **Image digest:** sha256:1c826875efb8c73a96676d82c0fabcbb3e0f3849167d79bf3c831b773ddc653e
-- **Checklist version:** [`relay-audit-checklist.md`](./relay-audit-checklist.md)
-  as of b69d4bfb2ed0c5b9bb6d5acae04cbdbffebd4567
-- **Summary:** Raised ENVELOPE_MAX_BYTES to 262144 (256 KiB) to allow a single compressed proof image in a relay envelope.
+- **Procedure:** docs/relay-audit-checklist.md @ b69d4bfb2ed0c5b9bb6d5acae04cbdbffebd4567 _(superseded)_
+- **Summary:** Raised `ENVELOPE_MAX_BYTES` to 262144 for compressed proof images in envelopes.
 - **Findings:** None.
 
-### Self-audit — v0.3.0 cron notifications and entitlement server
+### Self-audit — v0.3.0
 
 - **Date:** 2026-06-18T16:54Z
+- **Tag:** v0.3.0
+- **Relay image digest:** sha256:5055f30f74eb18e9616086ad9be5c5469090d4ea2e99081baa75d713e581e1ff
 - **Operator:** operator-on-call
-- **Image digest:** sha256:5055f30f74eb18e9616086ad9be5c5469090d4ea2e99081baa75d713e581e1ff
-- **Checklist version:** [`relay-audit-checklist.md`](./relay-audit-checklist.md)
-  as of 5abd13e1970a50143776b248af37f8d7673261dc
-- **Summary:** Added cron notifications capability to the Relay server and first deployed the Entitlement server.
+- **Procedure:** docs/relay-audit-checklist.md @ 5abd13e1970a50143776b248af37f8d7673261dc _(superseded)_
+- **Summary:** Cron notifications + first entitlement server deploy.
 - **Findings:** None.
 
-### Self-audit — v0.3.1 cron notifications and entitlement server
+### Self-audit — v0.3.1
 
 - **Date:** 2026-06-23T13:21Z
+- **Tag:** v0.3.1
+- **Relay image digest:** sha256:f01a7f7c30436e8aae806724187841edfa704d3ccd9ffe2cd08f1e68af9fffde
 - **Operator:** operator-on-call
-- **Image digest:** sha256:f01a7f7c30436e8aae806724187841edfa704d3ccd9ffe2cd08f1e68af9fffde
-- **Checklist version:** [`relay-audit-checklist.md`](./relay-audit-checklist.md)
-  as of 0e334a44d8908748da1d366dbfc7efcd23ea40de
-- **Summary:** Updated the Relay server and the Entitlement server in order to allow an installation ID to be updated on mobile device data import.
+- **Procedure:** docs/relay-audit-checklist.md @ 0e334a44d8908748da1d366dbfc7efcd23ea40de _(superseded)_
+- **Summary:** Installation id update on mobile device data import.
 - **Findings:** None.
 
-### Audit cadence
+### Self-audit — v0.4.0
 
-Quarterly minimum. The next self-audit is due no later than 90 days
-after the previous one. A missed deadline is itself a finding that
-must be recorded below with a documented justification.
+- **Date:** 2026-07-24T17:49Z
+- **Tag:** v0.4.0
+- **Relay image digest:** sha256:3f70e5d2c55babdd56f57771d6403f4add9e19f3ff6a477540ebb7e497adeabc
+- **Entitlement image digest:** sha256:4c30c73512ec9603b7b9b8f10757225a17a52a4ffc4c82667aa310fcff5e2c42
+- **Operator:** operator-on-call
+- **Procedure:** deploy/2026-07-24-HOW-TO-DEPLOY.md §2
+- **Summary:** §2.0–§2.6 PASS (public surface, digests, DB, metrics, entitlement loopback, FCM `project_id=bojairu`, wake flags, stats file). First full audit against the living HOW-TO; Appendix A expected outputs filled from this run.
+- **Findings:** Finding 2026-07-24 — daily-stats-host-cron-remnant (resolved same day).
 
 ---
 
 ## Findings
 
-The Findings section is the public tracker for any audit item that did
-not match its expected outcome (per `relay-public-auditability` /
-"Audit findings are tracked and resolved transparently"). Open
-findings remain visible here until the underlying deviation has been
-corrected OR explicitly accepted with a documented reason.
+Append one block per finding. Status starts as `open`, then `resolved`
+(with fix pointer) or `accepted` (with written reason).
 
-| Date       | Auditor / actor   | Checklist item | Observed                                            | Expected                                  | Status   | Resolution / notes                                  |
-|------------|-------------------|----------------|-----------------------------------------------------|-------------------------------------------|----------|-----------------------------------------------------|
-| _pending_  | _pending_         | A.0            | _placeholder demonstrating the row shape_           | _expected outcome from the checklist_     | accepted | Placeholder. Replace on the first real finding.     |
+### Template
 
-When opening a finding:
+```markdown
+### Finding YYYY-MM-DD — short-slug
 
-- Set `Date` to the date of the audit run.
-- Set `Auditor / actor` to a role identifier (e.g., `operator-on-call`,
-  `external-reviewer-2026q3`).
-- Reference the checklist item by its letter+number (e.g., `A.2`,
-  `C.3`).
-- Capture the observed value and the expected value verbatim.
-- Set `Status` to `open` initially. Transition to `resolved` when the
-  deviation is fixed (link the commit); transition to `accepted` only
-  with a documented reason recorded in the `Resolution / notes`
-  column.
+- **Date:** YYYY-MM-DD
+- **Auditor:** operator-on-call
+- **Item:** 2.1 / public surface (or other HOW-TO §2 subsection)
+- **Observed:** …
+- **Expected:** …
+- **Status:** open | resolved | accepted
+- **Resolution:** …
+```
+
+### Finding 2026-07-24 — daily-stats-host-cron-remnant
+
+- **Date:** 2026-07-24
+- **Auditor:** operator-on-call
+- **Item:** 2.6 / closed-app push and daily stats
+- **Observed:** `crontab -l` still listed a commented host
+  `daily-stats-append.sh` line beside the via-docker job.
+- **Expected:** exactly one cron line —
+  `daily-stats-append-via-docker.sh`.
+- **Status:** resolved
+- **Resolution:** Removed the host-script remnant. Re-check:
+  `crontab -l | grep daily-stats` shows only via-docker.
 
 ---
 
 ## Configuration drift
 
-If the deployed configuration ever differs from what
-[`relay-deployment.md`](./relay-deployment.md) says — TTL values,
-image digest, exposed surface, schema — record the drift here as a
-finding **before** changing the documentation, per
-`relay-public-auditability` /
-"Configuration drift between deployed and documented is itself a
-finding".
+If live config disagrees with [`relay-deployment.md`](./relay-deployment.md)
+or the HOW-TO (TTL, digests, exposed surface, schema), open a Finding
+**before** changing the documentation.

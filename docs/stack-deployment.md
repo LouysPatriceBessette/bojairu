@@ -1,5 +1,10 @@
 # Bojairũ Stack — VPS Deployment Runbook (Relay + Entitlement)
 
+**Day-to-day upgrade and audit:** follow
+[`deploy/2026-07-24-HOW-TO-DEPLOY.md`](../deploy/2026-07-24-HOW-TO-DEPLOY.md)
+(§1 Deploy, then §2 Audit). This file remains the deeper first-time /
+topology reference.
+
 This runbook describes how to deploy and upgrade the **full backend stack**
 on an existing Ubuntu VPS that already runs (or previously ran) the
 Bojairũ relay. It covers:
@@ -28,8 +33,8 @@ Product semantics: `openspec/changes/entitlement-server`,
 | Entitlement source | [`entitlement/`](../entitlement) |
 | Relay source | [`relay/`](../relay) |
 | Apache / TLS / host prep | [`relay-deployment.md`](./relay-deployment.md) |
-| Audit checklist | [`relay-audit-checklist.md`](./relay-audit-checklist.md) |
-| Entitlement audit checklist | [`entitlement-audit-checklist.md`](./entitlement-audit-checklist.md) |
+| Living deploy + audit HOW-TO | [`deploy/2026-07-24-HOW-TO-DEPLOY.md`](../deploy/2026-07-24-HOW-TO-DEPLOY.md) |
+| Audit log | [`relay-audit-log.md`](./relay-audit-log.md) |
 | Daily stats cron (Docker VPS) | [`relay/scripts/daily-stats-append-via-docker.sh`](../relay/scripts/daily-stats-append-via-docker.sh) — see [Daily statistics cron](#daily-statistics-cron-containerized-vps) |
 
 ## Topology (additions over relay-only)
