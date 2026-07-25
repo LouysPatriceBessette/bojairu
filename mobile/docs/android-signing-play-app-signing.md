@@ -31,6 +31,8 @@ cp android/key.properties.example android/key.properties
 
 Edit `android/key.properties` with your real passwords.
 
+`storeFile` is resolved relative to `android/app/` (the Gradle app module). Use `../keystore/upload-keystore.jks` when the JKS lives under `android/keystore/` as above.
+
 ## 3) Build a signed release AAB
 
 ```bash

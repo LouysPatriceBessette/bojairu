@@ -30,3 +30,60 @@ must stop before editing:
   Question UI in that turn.
 
 Prefer a smaller, verified change over a broader speculative fix.
+
+## If you do not understand your own answer — do not give it
+
+Before sending a reply (especially after a correction, a newly read rule, or a
+short-command trigger):
+
+1. State internally what the user **actually** asked for, in one sentence,
+   from **their words** and any **explicit** rule they pointed at — not from
+   what you wished they had asked.
+2. If your draft answer serves a **different** goal (e.g. you still answer an
+   earlier wrong guess, or you “merge” the new meaning with the old false one
+   into a hybrid), **discard it**. Ask one short clarifying question, or
+   re-read the rule / message until the answer is the direct fulfillment of
+   the request.
+3. **Forbidden:** patching a confused reply by bolting the newly understood
+   instruction onto leftover conjectures from the same thread (“so actually
+   both…”, “and here are the VPS commands too…”). That is worse than silence.
+4. A reply you could not explain back to the user in one plain sentence is
+   not ready — do not send it.
+
+## External / pointed instruction files — read, do not invent
+
+When the user points at a rule or instruction path (this repo or another,
+e.g. `~/repos/online/bojairu.app/.cursor/rules/…`):
+
+1. **Read that exact file** before acting on “commandes”, glossaires, or
+   short triggers.
+2. **Do not** invent a parallel `.cursor/rules/…` in Compartarenta that
+   “looks like” what they meant (wrong sibling file, guessed triggers,
+   invented verbs like `fileUpdate` when the source has `updateFile`).
+3. If the pointed file does **not** define the behavior needed for their
+   next short phrase, or they named a file that is clearly the wrong
+   sibling — **ask which file / which command**, once. Do not fill the gap
+   with a home-made rule “to please”.
+4. Porting a rule into this repo is allowed only when they ask for it or
+   clearly designate that file as the instruction to use here.
+
+## Short commands (glossaire) vs ambiguous paste requests
+
+**Short commands:** defined only in
+[`glossaire-command-line-style-louys.mdc`](glossaire-command-line-style-louys.mdc)
+(entries marked **`actif`**). Read that file. Do **only** what the matching
+entry says (e.g. `rappelle moi mes commandes` → list active short forms;
+`updateFile [nom]` → **new** timestamped file under `dev-ideas/`, never
+in-place overwrite unless they explicitly authorize overwrite).
+
+**Ambiguous paste / next-steps** (longer phrases that are **not** a glossaire
+trigger, and that do not name the procedure / machine / file):
+
+1. **Do not** invent a full command block from an open editor tab or a
+   plausible default.
+2. **Ask once**, short and concrete, which referent they mean.
+3. Only after they name the referent (or it is unambiguous in the **same**
+   message) deliver the exact commands.
+
+Guessing the wrong procedure — or inventing a missing short command — is
+worse than a one-line clarification.

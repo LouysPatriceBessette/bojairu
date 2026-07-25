@@ -1,0 +1,144 @@
+---
+description: >-
+  Glossaire / dictionnaire des commandes courtes style CLI (Louys). Déclencheurs
+  memory, updateFile (nouvelle version du fichier argument vs git, jamais
+  d’écrasement sauf exception explicite), Ajoute une commande, QR mobile,
+  rappelle moi mes commandes.
+alwaysApply: true
+---
+
+# Glossaire, dictionnaire, command_line_style — louys
+
+## Scope
+
+Règle **`alwaysApply: true`**. Glossaire vivant des commandes courtes de l’utilisateur (style ligne de commande).
+
+Ce fichier **est** l’instruction de référence. Les commandes ci-dessous y sont listées ; seules les entrées marquées **`actif`** sont opérantes.
+
+---
+
+## Glossaire (format `avant|après|statut`)
+
+Statut : `actif` = utilisée actuellement · `inactif` = obsolète / ne plus déclencher.
+
+```
+Garde-moi cette réponse et nomme le fichier [nom]  |  memory [nom]  |  actif
+Lire le fichier, comparer au git, nouvelle version horodatée  |  updateFile [nom]  |  actif
+(phrase longue fournie à l’ajout)  |  Ajoute une commande [nom]  |  actif
+Donne moi le QR de localhost pour mon cell  |  QR mobile  |  actif
+rappelle moi mes commandes  |  rappelle moi mes commandes  |  actif
+```
+
+**Format d’une ligne** : `avant | après | statut`  
+où `statut` = `actif` (utilisée actuellement) ou `inactif`.  
+Pour `Ajoute une commande`, le comportement attendu est : enregistrer la nouvelle commande **dans cette instruction**, en une ligne `avant|après|actif` (ou `inactif`).
+
+---
+
+## Conventions de nommage (`memory` / `updateFile`)
+
+Nom de fichier :
+
+- Pattern : `YYYY-MM-DD-HH-MM-[slug].md`
+- `YYYY-MM-DD-HH-MM` : date/heure **de ce tour** (horodatage de session fourni, sinon heure locale).
+- `[slug]` : partie descriptive **sans** préfixe d’horodatage. Ex. `2026-07-19-20-32-plan-de-rebranding` ou `plan-de-rebranding.md` → `plan-de-rebranding`.
+- Ignorer un préfixe `dev-ideas/`, un `@` Cursor, et l’extension `.md` avant d’extraire le slug.
+- Collision de nom (même minute) : incrémenter l’horodatage jusqu’à un nom libre — **sans** toucher aux fichiers existants.
+- **Regroupement par slug** : compter les fichiers `YYYY-MM-DD-HH-MM-[slug].md` à la racine de `dev-ideas/` **et** dans `dev-ideas/[slug]/` s’il existe.
+  - Si le total **après** création est **> 3** : créer `dev-ideas/[slug]/` si besoin, y **déplacer** tous les fichiers du slug (noms inchangés), y placer aussi le nouveau.
+  - Si le répertoire existe déjà : y écrire directement les nouvelles versions.
+
+**Interdit** par défaut pour `memory` et `updateFile` : écraser, renommer ou réécrire un fichier déjà présent (sauf le déplacement de regroupement ci-dessus, contenu intact). Exception **uniquement** si l’utilisateur l’autorise explicitement (ex. corriger une version ratée).
+
+---
+
+## Déclencheurs et comportement
+
+### `memory [nom]`
+
+**Déclencheur** : message qui commence par `memory` suivi d’un nom / slug (espaces flexibles). Accents / casse flexibles sur le mot-clé.
+
+**Équivalent exact** : « Garde-moi cette réponse et nomme le fichier [nom] ».
+
+**Rôle** : archiver la **dernière réponse assistant** sous un **slug libre** fourni par l’utilisateur (pas besoin qu’un fichier de ce nom existe déjà).
+
+**Action** :
+
+1. Nommage : section **Conventions de nommage**.
+2. Layout : identique à `question-seulement-dev-ideas-save.mdc` — citation de la consigne utilisateur **à laquelle répondait** la dernière réponse (pas la commande `memory`), puis `hr` HTML exact, `# Réponse IA`, corps = cette réponse.
+3. Extraire le `[slug]` depuis `[nom]` (peut être un simple mot-clé, ex. `chemin-usb-versus-git`).
+4. Créer **uniquement** le nouveau fichier horodaté. Ne jamais citer `memory …` comme block-quote du sujet.
+5. Réponse chat : **uniquement** le chemin du **nouveau** fichier (sauf travail supplémentaire explicite dans le même message).
+
+### `updateFile [nom]`
+
+**Déclencheur** : message qui commence par `updateFile` suivi d’un nom de fichier ou chemin (espaces flexibles ; `@dev-ideas/…` accepté).
+
+**Équivalent** : « Lis ce fichier, compare à l’état git / dépôt, et crée une nouvelle version horodatée à jour » — **pas** un archivage de la dernière réponse chat (`memory`).
+
+**Rôle** : enchaîner une **nouvelle version du document argument** dans la même série (même slug, horodatage actualisé), en **mettant à jour son contenu** d’après l’état réel du projet.
+
+**Action** :
+
+1. Résoudre `[nom]` sous `dev-ideas/` (ajouter `.md` si besoin). Lire le **contenu** de ce fichier (source de vérité structurelle + cases / sections à réviser).
+2. **Ne jamais modifier** le fichier passé en argument (sauf exception d’écrasement **explicitement** autorisée par l’utilisateur).
+3. Extraire le `[slug]` **depuis le nom de ce fichier**.
+4. Comparer le document à l’état du dépôt : `git status` / `git log` / `git diff` / lecture des chemins cités — cocher, décocher, annoter les preuves.
+5. Créer un **nouveau** fichier `YYYY-MM-DD-HH-MM-[slug].md` (conventions de nommage) qui **conserve la structure du document source** (titres, listes, légende) — **pas** le gabarit `memory` (`# Réponse IA` + dernière réponse chat).
+6. Mettre à jour l’en-tête de suivi (date/heure de constat, fichier dérivé) pour refléter ce tour.
+7. Si le fichier argument est introuvable : le signaler ; ne pas inventer un faux suivi.
+8. Réponse chat : **uniquement** le chemin du **nouveau** fichier (sauf travail supplémentaire explicite).
+
+**Anti-pattern** :
+- `updateFile @…/plan.md` → ❌ coller la dernière réponse chat / faire un `memory`
+- `updateFile @…/2026-07-19-21-34-foo.md` → ❌ réécrire `…-21-34-foo.md` · ✅ créer `…-HH-MM-foo.md`, laisser l’argument intact
+
+### `Ajoute une commande [nom]`
+
+**Déclencheur** : message qui contient `Ajoute une commande` suivi du nom (court) de la nouvelle commande.
+
+**Action** :
+
+1. Ajouter **dans ce fichier** (cette instruction), une ligne au glossaire au format :
+
+   `avant|après|actif`
+
+   - `après` = le déclencheur court `[nom]` (ou la forme complète si fournie) ;
+   - `avant` = l’ancienne phrase / description fournie par l’utilisateur ;
+   - statut initial = `actif` sauf indication contraire (`inactif`).
+2. Documenter le **comportement** de la commande dans une sous-section sous « Déclencheurs et comportement » (concis, actionnable).
+3. Si `avant` / comportement manquent : **demander** avant d’écrire.
+4. Ne pas inventer d’autres commandes hors cette procédure.
+
+### `QR mobile`
+
+**Déclencheur** : message seul (ou quasi) du type `QR mobile`, `qr mobile`, etc. (casse / accents flexibles).
+
+**Équivalent exact** : « Donne moi le QR de localhost pour mon cell ».
+
+**Rôle** : fournir un **QR code scannable** vers le serveur de dev local, accessible depuis le téléphone sur le **même Wi‑Fi** (pas `localhost` — IP LAN).
+
+**Action** (tout automatique — **aucun placeholder**, ne rien demander à l’utilisateur pour IP/port) :
+
+1. Détecter l’IP LAN du PC via la route par défaut (`ip route get … src`), pas `localhost`.
+2. Détecter le port en écoute (préférer `8080` si présent ; sinon le port HTTP du serveur de site).
+3. Construire `http://IP:PORT/` et générer un **QR PNG lisible** (Python `qrcode` / `qrencode`) + afficher l’image **et** l’URL en clair.
+4. Si le téléphone est le **hotspot** (SSID du cell, gateway = téléphone) : prévenir que le navigateur du téléphone **ne peut souvent pas** joindre l’IP LAN de ses clients — proposer alors un tunnel (`cloudflared` / équivalent) **seulement avec accord**, puis QR de l’URL tunnel.
+5. Si le serveur n’écoute pas : le signaler (pas de faux QR).
+
+**Anti-pattern** : `localhost`, placeholders `XXXXX` / `<PORT>`, demander à l’utilisateur l’IP ou le port alors qu’ils sont détectables.
+
+### `rappelle moi mes commandes`
+
+**Déclencheur** : message seul (ou quasi) du type `rappelle moi mes commandes`, `rapelle moi mes commandes`, etc. (typos / accents flexibles).
+
+**Action** : lister **uniquement** les commandes au statut **`actif`**, forme courte (`après`), une par ligne. Pas d’historique `inactif` sauf demande explicite.
+
+---
+
+## Priorité
+
+- `memory [nom]` et `updateFile [nom]` : **toujours** un **nouveau** fichier horodaté ; **aucun** écrasement in-place (sauf autorisation explicite).
+- Différence : `memory` = archiver la **dernière réponse chat** sous un slug libre ; `updateFile` = **mettre à jour le document argument** (lire + comparer git) dans la série du slug repris du fichier.
+- « Garde-moi cette réponse » **sans** nom reste géré par `question-seulement-dev-ideas-save.mdc` (slug auto daté).
+- `Revise` et `[icon: …]` restent dans `commandes-courtes.mdc`.

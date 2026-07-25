@@ -14,10 +14,15 @@ class ContactPickerSheet extends StatefulWidget {
     super.key,
     required this.db,
     this.excludeContactIds = const <String>{},
+    this.allowInvite = true,
   });
 
   final AppDatabase db;
   final Set<String> excludeContactIds;
+
+  /// When false (e.g. Simulation mode), the invite CTA stays visible but
+  /// disabled — real handshake invites are out of scope while sandboxed.
+  final bool allowInvite;
 
   @override
   State<ContactPickerSheet> createState() => _ContactPickerSheetState();
@@ -114,7 +119,7 @@ class _ContactPickerSheetState extends State<ContactPickerSheet> {
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.send),
                 label: Text(l10n.contactsInviteAction),
-                onPressed: _inviteContact,
+                onPressed: widget.allowInvite ? _inviteContact : null,
               ),
             ),
           ],
@@ -162,13 +167,17 @@ Future<Contact?> showContactPickerSheet({
   required BuildContext context,
   required AppDatabase db,
   Set<String> excludeContactIds = const <String>{},
+  bool allowInvite = true,
 }) {
   return showAppModalBottomSheet<Contact>(
     context: context,
     guardKey: 'contactPicker',
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) =>
-        ContactPickerSheet(db: db, excludeContactIds: excludeContactIds),
+    builder: (_) => ContactPickerSheet(
+      db: db,
+      excludeContactIds: excludeContactIds,
+      allowInvite: allowInvite,
+    ),
   );
 }

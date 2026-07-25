@@ -589,6 +589,7 @@ class _HousingPlanScreenState extends State<HousingPlanScreen>
       context: context,
       db: _db,
       excludeContactIds: excluded,
+      allowInvite: !SandboxMode.isActive(widget.prefs),
     );
     if (selected == null || !mounted) return;
     setState(() {
@@ -2197,9 +2198,15 @@ class _HousingPlanScreenState extends State<HousingPlanScreen>
             final name = _nameControllers[slot.coIndex].text.trim();
             return name.isEmpty ? '?' : name;
           }();
+    // Empty co-participant tiles show "?"; tap opens the same contact picker
+    // as [housingPlanChooseContactAction] for this slot.
+    final emptyCoTap = !slot.isSelf && _contactIds[slot.coIndex] == null
+        ? () => _chooseContactForParticipant(slot.coIndex)
+        : null;
     final tile = _ParticipantRosterTile(
       label: label,
       color: tileColor,
+      onTap: emptyCoTap,
     );
 
     return DragTarget<int>(
@@ -3762,10 +3769,12 @@ class _ParticipantRosterTile extends StatelessWidget {
   const _ParticipantRosterTile({
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3773,19 +3782,23 @@ class _ParticipantRosterTile extends StatelessWidget {
     return Material(
       color: color,
       borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        height: 56,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 56,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
