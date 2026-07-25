@@ -46,3 +46,10 @@ The output should be in `build/app/outputs/bundle/prodRelease/`.
 - `android/key.properties` and `android/keystore/**` are ignored by `.gitignore` and must never be committed.
 - For CI signing, use the same file format but populate it from your CI secret store (typically by decoding a base64 keystore into `android/keystore/upload-keystore.jks` at build time).
 
+## Firebase API key
+
+After creating the upload keystore, register its **SHA-1** (and the debug keystore SHA-1) as
+**application restrictions** on the Firebase Android API key — see
+[`firebase-android-api-key-application-restrictions.md`](firebase-android-api-key-application-restrictions.md).
+(Google Cloud’s Android app restriction field uses SHA-1, not SHA-256.)
+
