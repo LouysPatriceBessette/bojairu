@@ -144,6 +144,12 @@ qui a le droit d’écrire sous `/var/www/…`.
 | « Monte le secret / pointe la var » | Dire quel objet, où sur la machine, ce que la config lit déjà, puis l’action |
 | « Recrée avec les `-f` habituels » | Coller la commande `docker compose …` complète |
 | « Fix LCP / CWV » | « Faire charger plus vite **le gros élément visible en premier** » |
+| **Gantt** (et « coller dans le Gantt ») | **Interdit** dans le chat. Dire **calendrier du projet**, **planning**, **échéancier**, ou **délai à prévoir** |
+
+### Termes à ne plus jamais utiliser (chat)
+
+- **Gantt** — jargon de planning de projet ; remplacer toujours par une formulation concrète (calendrier, planning, échéancier, délai).
+- **IAP** (et tout sigle de boutique non expliqué) — dire **achat dans l’application** / **achats intégrés Play** (abonnements, produits une fois), jamais « IAP » seul.
 
 (Les exemples ci-dessus illustrent le **style** ; le principe s’applique à
 tout sujet.)

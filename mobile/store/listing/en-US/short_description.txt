@@ -1,2 +1,1 @@
-A cross-platform mobile app (MVP).
-
+Shared living without the drama. Split expenses, rules & balances.

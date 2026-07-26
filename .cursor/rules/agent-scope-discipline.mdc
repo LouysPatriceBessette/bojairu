@@ -87,3 +87,22 @@ trigger, and that do not name the procedure / machine / file):
 
 Guessing the wrong procedure — or inventing a missing short command — is
 worse than a one-line clarification.
+
+## Google consoles and Google sites — exact location required
+
+When telling the user to open, click, paste, configure, or verify something on
+**any Google product surface** (Play Console, Cloud Console, Firebase Console,
+Search Console / Search Central, Analytics, AdMob, Google Account / Developer
+Account, Issue Tracker, etc.):
+
+1. **Name the exact product** in the same sentence (e.g. **Google Play Console**,
+   not « la Console », « Cloud », or « chez Google » alone).
+2. **Give the canonical URL** (e.g. `https://play.google.com/console`).
+3. **Give the in-product path** when the action is on a specific page (menu /
+   section labels in FR if the user works in French, EN labels in parentheses
+   if useful): e.g. *Présence en magasin → Fiche Play Store principale*.
+4. If several Google products could fit, **disambiguate explicitly** (what it is
+   **not**: Cloud ≠ Play ≠ Firebase ≠ Search Console).
+
+**Forbidden:** referring to « la console », « leur dashboard », or an unnamed
+Google UI and assuming the user knows which of Google’s many consoles you mean.

@@ -1,2 +1,1 @@
-Une application mobile multiplateforme (MVP).
-
+La coloc sans les embrouilles. Dépenses, règles et soldes partagés.
