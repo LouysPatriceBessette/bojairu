@@ -75,3 +75,26 @@ Specified in `openspec/changes/housing-active-agreement-operations/`. Implementa
 - [x] Like selector appears after first non-equal expense; copying then editing clears Like
 - [x] Recurrence range cannot exceed agreement period; confirm dialog required; calendar only when recurring
 - [x] Proposal payload includes new fields when a proposal is built (no legacy import path added)
+
+---
+
+## Known bugs (backlog)
+
+- [ ] **5.1 Bug (high / high recurrence): expense split weights ≠ 10000 bps can be saved; wizard catches late**  
+  **Importance:** high. **Recurrence:** high (3-way / non-terminating percents + manual edits keep producing off-by-one bps vectors).  
+  **Confirmed (2026-07-26):** Simulation housing wizard — five expenses listed; **Suivant** blocked with *La répartition de chaque dépense doit totaliser 100 %.* User could finish the per-expense form without a hard gate on `sum(weight) == 10000`.  
+  **Repro artifact DB:** local snapshot `qa/db_seeds/plan-half-done` (gitignored; steal via `qa:db-snapshot-steal`).  
+  **Failing line in that snapshot:** **Épicerie** (`line:1785079545095-52133596`) — exact `plan_ratios.weight` rows:  
+  `…:self` = **0**, `…:p0` (Monica) = **6667**, `…:p1` (Ròberr) = **3334**, **sum = 10001** (not 10000). Other lines in the same snapshot sum to 10000.  
+  **Detection commit (message clarity only — does not fix save gate):** [`7cc095155e3d14efec2a2df3699a8fd8351fb31c`](https://github.com/LouysPatriceBessette/bojairu/commit/7cc095155e3d14efec2a2df3699a8fd8351fb31c) — *Répartition de dépense NON 100% qui leak - bug identifié* (`housing_expenses_step_validation.dart` + distinct wizard snackbars).  
+  **Manual repro recalled (expense form, three participants — matches Épicerie outcome):**  
+  1. Auto split starts at ~**33.3…%** each (equal parts among three).  
+  2. Set one participant to **0%**; set another toward **66.6%** (third keeps the remainder).  
+  3. UI refuses save / continue (correction / mismatch). Try **66.7%** instead of 66.6%.  
+  4. UI still refuses.  
+  5. Adjust the **amount** (remove **4 cents** that were unbalancing the amount↔% grid math) → **UI accepts and saves**.  
+  **Outcome:** form treated amount/percent grid as consistent enough to save, yet persisted bps were **0 / 6667 / 3334 = 10001**. Wizard **Suivant** is the first hard `sum == 10000` check; snackbar does not name which expense.  
+  **Expected:** form save MUST refuse (or correct under an explicit product rule) any split whose basis-point weights do not total exactly 10000; amount tweaks MUST NOT bypass that invariant; wizard Next must not be the first place the user learns a prior expense is invalid; UI SHOULD identify **which** expense is wrong.  
+  **Spec conflict:** `housing-expense-split-grid` — *Persist weights on save* (sum MUST equal 10000); tasks **2.2** / checklist *correction row blocks save* claimed mismatch blocked — incomplete when grid “looks” balanced but bps sum ≠ 10000.  
+  **Likely area:** `expense_split_grid_logic.dart` (percent↔amount / Hamilton), `ExpenseLinePersistence.save`, form `_canContinue` / correction row; optional wizard list badge once save is fixed.  
+  **Do not confuse with:** wizard snackbar wording alone (already improved in `7cc0951`); that only surfaces the late check.
