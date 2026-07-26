@@ -788,7 +788,7 @@ class _HousingInviteProposalScreenState
                               widget.prefs,
                               lines,
                             );
-                            navigateToRoute<void>(context, 
+                            navigateToChildRoute<void>(context, 
                               MaterialPageRoute<void>(
                                 builder: (context) =>
                                     HousingProposalExpensesDetailScreen(

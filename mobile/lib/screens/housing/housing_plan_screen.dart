@@ -4188,7 +4188,7 @@ class _SummaryViewState extends State<_SummaryView> {
                               : () {
                                   final dateFmt =
                                       effectiveDateFormat(widget.prefs);
-                                  navigateToRoute<void>(context, 
+                                  navigateToChildRoute<void>(context, 
                                     MaterialPageRoute<void>(
                                       builder: (context) =>
                                           HousingProposalExpensesDetailScreen(

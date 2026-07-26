@@ -98,3 +98,29 @@ Specified in `openspec/changes/housing-active-agreement-operations/`. Implementa
   **Spec conflict:** `housing-expense-split-grid` — *Persist weights on save* (sum MUST equal 10000); tasks **2.2** / checklist *correction row blocks save* claimed mismatch blocked — incomplete when grid “looks” balanced but bps sum ≠ 10000.  
   **Likely area:** `expense_split_grid_logic.dart` (percent↔amount / Hamilton), `ExpenseLinePersistence.save`, form `_canContinue` / correction row; optional wizard list badge once save is fixed.  
   **Do not confuse with:** wizard snackbar wording alone (already improved in `7cc0951`); that only surfaces the late check.
+
+- [x] **5.2 Bug (high / navigation trap): “Voir les dépenses en détail” had no in-app Retour**  
+  **Confirmed (2026-07-26):** From plan summary / invite before submit, detail carousel opened correctly but AppBar had **no leading back** (only Android system back).  
+  **Root cause:** `navigateToRoute` = `Navigator.pushReplacement` removed the parent from the stack → `ModalRoute.canPop == false` → default AppBar omits leading. Not a missing `IconButton`.  
+  **Fix:** open `HousingProposalExpensesDetailScreen` with `navigateToChildRoute` (`push`) from `housing_plan_screen.dart` and `housing_invite_proposal_screen.dart` (active plan read-only already used child route). Docs on `app_navigation.dart` + skill `.cursor/skills/flutter-in-app-back-navigation/SKILL.md`.  
+  **Forbidden workaround:** fake `leading: BackButton()` without fixing entry navigation.
+
+- [ ] **5.3 Audit (minor / non-blocking): other `navigateToRoute` (`pushReplacement`) call sites — verify in-app back**  
+  **Importance:** minor. **Blocking for closed-test / release:** no.  
+  **Context (2026-07-26):** Inventory after bug **5.2**. Same API removes the parent from the stack; AppBar leading back only appears when `canPop` is true. Skill: `.cursor/skills/flutter-in-app-back-navigation/SKILL.md`.  
+  **How to verify each row:** open via product UI → confirm content → leave with **in-app** chrome (AppBar back or explicit exit) → land on the expected parent. System back alone does **not** pass. If return is required and missing → switch entry to `navigateToChildRoute` (do not fake `leading` only).  
+  **Priority A — detail / review openings (return likely expected):**
+
+  | From | To |
+  | --- | --- |
+  | Monthly expenses list | Realized-expense review |
+  | Rejected-expenses browse | Realized-expense review |
+  | Realized-expense review list | Realized-expense review |
+  | Realized-expense review | Form / another review / fullscreen image viewer |
+  | Amendment line-edit preview | Line-edit detail |
+  | Amendment journal | Amendment detail / participation-change detail |
+  | Amendment submit preview | Detail route (replaces preview) |
+
+  **Priority B — module / workbench transitions (replace often intentional; still confirm a visible exit):** workbench → plan / invite / active plan / archive; module entry → missing contacts / participation detail; archive / plan / amendment detail → invite or missing contacts; past-agreement entry → active plan; housing navigation intent (root); plan → invite after send.  
+  **Also note (different layer):** `navigateTo` / `context.go` replace GoRouter location (home, contacts, housing, onboarding, sandbox exit). Settings children already use `navigateToChild`. Not the same API as `navigateToRoute`; still no automatic AppBar back onto the previous GoRouter location unless that stack allows it.  
+  **Out of scope for this checkbox:** re-opening expenses-in-detail after **5.2** (already fixed).

@@ -10,6 +10,11 @@ Deferred engineering chores. Pick these up when convenient; they are
   **Track:** `openspec/changes/housing-unified-expense-entry/tasks.md` **Known bugs 5.1** (includes recalled 5-step manual repro).  
   **Evidence:** commit `7cc095155e3d14efec2a2df3699a8fd8351fb31c`; DB snapshot `qa/db_seeds/plan-half-done` (Épicerie weights 0 / 6667 / 3334 → sum 10001).
 
+- [ ] **Housing — audit remaining `navigateToRoute` / pushReplacement openings (minor / non-blocking)**  
+  After expenses-in-detail trap (**5.2** fixed), verify other detail/review and module transitions still have an in-app exit when return is expected.  
+  **Track:** `openspec/changes/housing-unified-expense-entry/tasks.md` **Known bugs 5.3**.  
+  **Skill:** `.cursor/skills/flutter-in-app-back-navigation/SKILL.md`.
+
 - [x] **Relay `/healthz` — human-readable on mobile** (ops / QA prerequisite).  
   Today `GET /healthz` returns raw JSON only; on a phone browser it is tiny, top-left,
   and unusable for quick “is the relay up?” checks during multi-device manual QA

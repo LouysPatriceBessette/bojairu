@@ -82,7 +82,17 @@ void pushFromNotificationTapWhenReady(
   unawaited(attempt());
 }
 
-/// Opens a full-screen [route] without growing the navigator stack.
+/// Opens a full-screen [route] by **replacing** the current route
+/// ([Navigator.pushReplacement]).
+///
+/// **Warning — no automatic AppBar back:** the previous screen is removed from
+/// the stack, so [AppBar] will not imply a leading back control. The user is
+/// trapped unless you provide an explicit exit that navigates elsewhere, or the
+/// platform system back leaves the whole module.
+///
+/// For drill-down (“view details”, journals, settings child, …) use
+/// [navigateToChildRoute] ([Navigator.push]) instead — see skill
+/// `flutter-in-app-back-navigation`.
 Future<T?> navigateToRoute<T extends Object?>(
   BuildContext context,
   Route<T> route, {
@@ -92,10 +102,10 @@ Future<T?> navigateToRoute<T extends Object?>(
       .pushReplacement(route);
 }
 
-/// Drill-down navigation with a custom [Route] (Navigator.push).
+/// Drill-down navigation with a custom [Route] ([Navigator.push]).
 ///
-/// Prefer over [navigateToRoute] when the AppBar back button must return to
-/// the parent (e.g. housing hub → journals, settings → units).
+/// Prefer over [navigateToRoute] whenever the AppBar back button must return to
+/// the parent (e.g. housing summary → expenses in detail, hub → journals).
 Future<T?> navigateToChildRoute<T extends Object?>(
   BuildContext context,
   Route<T> route, {
