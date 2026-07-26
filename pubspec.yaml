@@ -219,3 +219,16 @@ melos:
         Défaire l'importation (observe current undo behavior; no rename/confirm path).
         Example: ./tool/melosw run qa:run-vehicle-sale-export-import-undo -- --skip-build
       run: chmod +x ./tool/run_vehicle_sale_export_import_undo_scenario.sh && ./tool/run_vehicle_sale_export_import_undo_scenario.sh "$@"
+
+    qa:db-snapshot-steal:
+      description: |
+        Pull long-lived debug app state (SQLite + prefs + identity) from a populated
+        device into qa/db_seeds/<name>/ (gitignored). Manual populate first; no seed invent.
+        Example: ./tool/melosw run qa:db-snapshot-steal -- --name play-screenshots-v1
+      run: chmod +x ./tool/run_db_snapshot_steal.sh && ./tool/run_db_snapshot_steal.sh "$@"
+
+    qa:db-snapshot-restore:
+      description: |
+        pm clear then restore a named snapshot from qa/db_seeds/<name>/ onto the device.
+        Example: ./tool/melosw run qa:db-snapshot-restore -- --name play-screenshots-v1
+      run: chmod +x ./tool/run_db_snapshot_restore.sh && ./tool/run_db_snapshot_restore.sh "$@"

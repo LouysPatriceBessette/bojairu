@@ -1,5 +1,8 @@
 # Local QA runtime state (clock snapshots, etc.).
 .local/
 
+# Named long-lived device state dumps (steal/restore for screenshots, etc.).
+db_seeds/
+
 # Scenario run outputs (screenshots, Maestro reports) — phase 1+.
 artifacts/

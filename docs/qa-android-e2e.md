@@ -105,6 +105,30 @@ This single command:
 
 Artifacts: `qa/artifacts/settlement_open/<UTC-timestamp>/`
 
+### Named device-state snapshots (manual populate → steal → restore)
+
+For Play screenshots (or any loop that needs the **same** starting UI state),
+populate the debug app **yourself**, then steal a named long-lived dump to disk
+and restore it after wipe as often as you need. Snapshots are **not** inventing
+seed data in Dart.
+
+Storage (gitignored): `qa/db_seeds/<name>/`
+
+```bash
+# Device already populated (./tool/melosw run run:dev or QA APK)
+./tool/melosw run qa:db-snapshot-steal -- --name play-screenshots-v1
+
+# Later: wipe app data and reload that snapshot
+./tool/melosw run qa:db-snapshot-restore -- --name play-screenshots-v1
+```
+
+Requires **debug** APK (`run-as`). Captures Drift SQLite (+ WAL/SHM when present),
+`FlutterSharedPreferences.xml`, and a debug export of the relay identity private
+key (EncryptedSharedPreferences cannot survive `pm clear`). Override device with
+`ANDROID_SERIAL=…`. Overwrite an existing name with `--force` on steal.
+
+Scripts: `tool/run_db_snapshot_steal.sh`, `tool/run_db_snapshot_restore.sh`.
+
 ### Vehicle sale export → import (single emulator)
 
 Local-only portability path (no relay). Mid-run reseed, so it is **not** under
@@ -313,17 +337,21 @@ qa/
   multi_scenarios/*.yaml Multi-device manifests (roles + coordinator)
   flows/*.yaml           Maestro flows (UI steps, assertions, screenshots)
   artifacts/             Run output (gitignored)
+  db_seeds/              Named long-lived device dumps (gitignored; steal/restore)
   .local/                Clock restore state (gitignored)
 
 mobile/lib/debug/
   qa_scenario_seed.dart       Seed dispatch + postconditions (debug Android)
   qa_scenario_seed_helpers.dart   Shared housing seed builders
+  qa_db_snapshot.dart         Identity export/restore markers for db_seeds
 
 tool/
   run_scenario.sh        One scenario end-to-end
   run_multi_device_scenario.sh  Multi-emulator orchestrator entry point
   run_fcm_wake_push_scenario.sh Emulator + physical FCM wake manual scenario
   run_housing_payment_reminder_scenario.sh Housing payment reminder #10 (simulated, no relay)
+  run_db_snapshot_steal.sh   Pull named state into qa/db_seeds/<name>/
+  run_db_snapshot_restore.sh pm clear + restore from qa/db_seeds/<name>/
   coordinators/          Per-domain coordination scripts (contact handshake, …)
   run_all_scenarios.sh   All manifests + aggregated report
   seed_qa_scenario.sh    Seed only (used by run_scenario)
@@ -420,6 +448,8 @@ Prefer `./tool/melosw` over `dart run melos` (avoids redundant `pub get`).
 | `qa:run-all-scenarios` | All scenarios + `index.html` |
 | `qa:run-fcm-wake-push` | FCM wake manual (Monica emulator + physical phone) |
 | `qa:run-payment-reminder` | Housing payment reminder #10 — single emulator, simulated delivery |
+| `qa:db-snapshot-steal` | Pull named state into `qa/db_seeds/<name>/` (`-- --name <slug>`) |
+| `qa:db-snapshot-restore` | `pm clear` + restore from `qa/db_seeds/<name>/` |
 
 Examples:
 
@@ -429,6 +459,8 @@ Examples:
 ./tool/melosw run qa:run-all-scenarios -- --skip-build --skip-install
 ./tool/melosw run qa:run-all-scenarios -- --no-retry
 ./tool/melosw run qa:seed -- voluntary_withdrawal_ack_j5
+./tool/melosw run qa:db-snapshot-steal -- --name play-screenshots-v1
+./tool/melosw run qa:db-snapshot-restore -- --name play-screenshots-v1
 ```
 
 ## Shell script reference
@@ -436,6 +468,8 @@ Examples:
 | Script | Purpose |
 | --- | --- |
 | `tool/qa_env.sh` | Shared constants and adb helpers (sourced by other scripts) |
+| `tool/run_db_snapshot_steal.sh` | Named steal into `qa/db_seeds/<name>/` |
+| `tool/run_db_snapshot_restore.sh` | `pm clear` + restore from `qa/db_seeds/<name>/` |
 | `tool/create_qa_avd.sh` | Create the QA AVD |
 | `tool/start_qa_emulator.sh` | Start emulator (`--quick` for snapshot resume) |
 | `tool/set_android_date.sh` | Set emulator date/time |

@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
 import 'config/app_config.dart';
 import 'debug/local_storage_startup_log.dart';
+import 'debug/qa_db_snapshot.dart';
 import 'debug/qa_e2e_environment.dart';
 import 'debug/qa_e2e_meter_photo.dart';
 import 'debug/qa_post_seed_actions.dart';
@@ -55,6 +56,13 @@ Future<void> bootstrap() async {
         await wipeWebDevBrowserStorageOnLaunchIfRequested(
           clearRelayIdentity: config.apiBaseUrl.host != 'example.invalid',
         );
+      }
+
+      // Snapshot steal/restore: identity before Drift open and before relay
+      // IdentityKeystore.loadOrCreate in the blocks below.
+      if (kDebugMode && !kIsWeb) {
+        await maybeExportQaDbSnapshotIdentity();
+        await maybeRestoreQaDbSnapshotIdentity();
       }
 
       final appDb = AppDatabase();

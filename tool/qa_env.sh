@@ -22,6 +22,7 @@ export COMPARTARENTA_QA_LOCAL_DIR="${COMPARTARENTA_ROOT}/qa/.local"
 export COMPARTARENTA_QA_CLOCK_STATE="${COMPARTARENTA_QA_LOCAL_DIR}/clock-restore.env"
 export COMPARTARENTA_QA_AVD_SERIALS_MAP="${COMPARTARENTA_QA_LOCAL_DIR}/avd-serials.map"
 export COMPARTARENTA_QA_APK_PATH="${COMPARTARENTA_QA_APK_PATH:-${COMPARTARENTA_ROOT}/mobile/build/app/outputs/flutter-apk/app-dev-debug.apk}"
+export COMPARTARENTA_QA_DB_SEEDS_DIR="${COMPARTARENTA_QA_DB_SEEDS_DIR:-${COMPARTARENTA_ROOT}/qa/db_seeds}"
 
 # Persona AVD order must match qa/run-emulators.sh fixed ports (5554, 5556, …).
 COMPARTARENTA_QA_PERSONA_AVD_NAMES=(
@@ -381,31 +382,132 @@ qa_pull_vehicle_sale_export_zip() {
   return 0
 }
 
-# Push a host zip into app_flutter for debug import (bypasses FilePicker).
-qa_push_vehicle_sale_import_zip() {
+# Pull a file from the app data tree (path relative to run-as cwd, e.g.
+# app_flutter/… or shared_prefs/…). Writes host path $3. Returns 0 only when
+# the host file is non-empty. Uses base64 on-device for binary-safe transfer.
+qa_pull_app_path() {
   local serial="$1"
-  local host_path="$2"
+  local device_rel_path="$2"
+  local host_path="$3"
   local app_id="${COMPARTARENTA_QA_APP_ID}"
-  if [[ ! -s "${host_path}" ]]; then
-    echo "qa_push_vehicle_sale_import_zip: missing or empty ${host_path}" >&2
+  local err
+  err="$(mktemp)"
+  mkdir -p "$(dirname "${host_path}")"
+  if ! adb -s "${serial}" shell \
+    "run-as ${app_id} sh -c 'base64 ${device_rel_path}'" \
+    2>"${err}" | base64 -d >"${host_path}"; then
+    echo "qa_pull_app_path: adb/base64 failed for ${device_rel_path}" >&2
+    sed 's/^/  /' "${err}" >&2 || true
+    rm -f "${host_path}" "${err}"
     return 1
   fi
-  adb -s "${serial}" shell "run-as ${app_id} mkdir app_flutter" >/dev/null 2>&1 || true
-  # Binary-safe transfer via base64 (run-as cannot read arbitrary host push paths).
+  if [[ ! -s "${host_path}" ]]; then
+    echo "qa_pull_app_path: empty after pull: ${device_rel_path}" >&2
+    sed 's/^/  /' "${err}" >&2 || true
+    rm -f "${host_path}" "${err}"
+    return 1
+  fi
+  rm -f "${err}"
+  return 0
+}
+
+# List non-empty files in an app-data directory (relative to run-as cwd).
+# Prints one relative path per line (dir/file).
+qa_list_app_dir_files() {
+  local serial="$1"
+  local device_rel_dir="$2"
+  local app_id="${COMPARTARENTA_QA_APP_ID}"
+  adb -s "${serial}" shell \
+    "run-as ${app_id} sh -c 'cd ${device_rel_dir} 2>/dev/null && for f in *; do if [ -f \"\$f\" ]; then echo ${device_rel_dir}/\$f; fi; done'" \
+    2>/dev/null | tr -d '\r' | sed '/^$/d' || true
+}
+
+# Resolve the live Drift DB path under app_flutter/compartarenta/.
+# driftDatabase(name: 'compartarenta.sqlite') may create compartarenta.sqlite.sqlite.
+qa_resolve_drift_sqlite_device_path() {
+  local serial="$1"
+  local app_id="${COMPARTARENTA_QA_APP_ID}"
+  local candidate
+  local listed
+  listed="$(qa_list_app_dir_files "${serial}" "app_flutter/compartarenta")"
+  for candidate in \
+    "app_flutter/compartarenta/compartarenta.sqlite" \
+    "app_flutter/compartarenta/compartarenta.sqlite.sqlite"
+  do
+    if echo "${listed}" | grep -Fxq "${candidate}"; then
+      echo "${candidate}"
+      return 0
+    fi
+  done
+  # Fallback: first *.sqlite that is not -wal/-shm.
+  candidate="$(echo "${listed}" | grep -E '\.sqlite$' | grep -vE '\-(wal|shm)$' | head -1 || true)"
+  if [[ -n "${candidate}" ]]; then
+    echo "${candidate}"
+    return 0
+  fi
+  echo "qa_resolve_drift_sqlite_device_path: no sqlite under app_flutter/compartarenta on ${serial}" >&2
+  if [[ -n "${listed}" ]]; then
+    echo "  present:" >&2
+    echo "${listed}" | sed 's/^/    /' >&2
+  else
+    adb -s "${serial}" shell \
+      "run-as ${app_id} sh -c 'ls -la app_flutter/compartarenta 2>&1 || ls -la app_flutter 2>&1'" \
+      >&2 || true
+  fi
+  return 1
+}
+
+# Push a host file into the app data tree via base64 (run-as cannot read
+# arbitrary host push paths). device_rel_path is relative to run-as cwd.
+qa_push_app_path() {
+  local serial="$1"
+  local host_path="$2"
+  local device_rel_path="$3"
+  local app_id="${COMPARTARENTA_QA_APP_ID}"
+  local device_dir
+  if [[ ! -s "${host_path}" ]]; then
+    echo "qa_push_app_path: missing or empty ${host_path}" >&2
+    return 1
+  fi
+  device_dir="$(dirname "${device_rel_path}")"
+  if [[ "${device_dir}" != "." ]]; then
+    adb -s "${serial}" shell \
+      "run-as ${app_id} mkdir -p ${device_dir}" >/dev/null 2>&1 || true
+  fi
   if ! base64 -w0 "${host_path}" | adb -s "${serial}" shell \
-    "run-as ${app_id} sh -c 'base64 -d > app_flutter/compartarenta_qa_vehicle_sale_import.zip'"; then
-    echo "qa_push_vehicle_sale_import_zip: failed to write import zip" >&2
+    "run-as ${app_id} sh -c 'base64 -d > ${device_rel_path}'"; then
+    echo "qa_push_app_path: failed to write ${device_rel_path}" >&2
     return 1
   fi
   local size
   size="$(adb -s "${serial}" shell \
-    "run-as ${app_id} sh -c 'wc -c < app_flutter/compartarenta_qa_vehicle_sale_import.zip'" \
+    "run-as ${app_id} sh -c 'wc -c < ${device_rel_path}'" \
     2>/dev/null | tr -d '\r' || true)"
   if [[ -z "${size}" || "${size}" -le 0 ]]; then
-    echo "qa_push_vehicle_sale_import_zip: import zip empty on device" >&2
+    echo "qa_push_app_path: empty on device: ${device_rel_path}" >&2
     return 1
   fi
   return 0
+}
+
+# True when a relative app-data path exists and is non-empty.
+qa_app_path_exists() {
+  local serial="$1"
+  local device_rel_path="$2"
+  local app_id="${COMPARTARENTA_QA_APP_ID}"
+  local size
+  size="$(adb -s "${serial}" shell \
+    "run-as ${app_id} sh -c 'if [ -f ${device_rel_path} ]; then wc -c < ${device_rel_path}; else echo 0; fi'" \
+    2>/dev/null | tr -d '\r' || true)"
+  [[ -n "${size}" && "${size}" -gt 0 ]]
+}
+
+# Push a host zip into app_flutter for debug import (bypasses FilePicker).
+qa_push_vehicle_sale_import_zip() {
+  local serial="$1"
+  local host_path="$2"
+  qa_push_app_path "${serial}" "${host_path}" \
+    "app_flutter/compartarenta_qa_vehicle_sale_import.zip"
 }
 
 qa_pull_qa_seed_applied_id() {
