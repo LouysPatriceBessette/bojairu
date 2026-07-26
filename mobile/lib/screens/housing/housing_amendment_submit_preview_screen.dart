@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../db/app_database.dart';
 import '../../housing/amendment/housing_amendment_expense_preview.dart';
+import '../../housing/amendment/housing_amendment_navigation.dart';
 import '../../housing/amendment/housing_amendment_proposal_flow.dart';
 import '../../housing/amendment/housing_amendment_screen_padding.dart';
 import '../../housing/amendment/housing_amendment_summary.dart';
@@ -13,8 +14,6 @@ import '../../housing/proposals/housing_proposal_transport_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../util/display_date.dart';
-import 'housing_amendment_detail_screen.dart';
-import 'package:compartarenta/navigation/app_navigation.dart';
 
 /// Preview of a plan change before sending to the group (deadline asked on submit).
 class HousingAmendmentSubmitPreviewScreen extends StatefulWidget {
@@ -166,15 +165,13 @@ class _HousingAmendmentSubmitPreviewScreenState
     final pendingId = await HousingProposalTransportService(db)
         .pendingRevisionIdForPlan(widget.planId);
     if (!mounted) return;
-    final detailRoute = MaterialPageRoute<void>(
-      builder: (_) => HousingAmendmentDetailScreen(
-        db: db,
-        planId: widget.planId,
-        prefs: widget.prefs,
-        revisionId: pendingId,
-      ),
+    await openHousingAmendmentDetailAfterSubmit(
+      context,
+      db: db,
+      planId: widget.planId,
+      prefs: widget.prefs,
+      revisionId: pendingId,
     );
-    await navigateToRoute<void>(context, detailRoute);
   }
 
   @override

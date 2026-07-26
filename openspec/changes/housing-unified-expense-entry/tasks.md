@@ -119,8 +119,14 @@ Specified in `openspec/changes/housing-active-agreement-operations/`. Implementa
   | Realized-expense review | Form / another review / fullscreen image viewer |
   | Amendment line-edit preview | Line-edit detail |
   | Amendment journal | Amendment detail / participation-change detail |
-  | Amendment submit preview | Detail route (replaces preview) |
+  | ~~Amendment submit preview → Detail via pushReplacement~~ | **Fixed as 5.4** |
 
   **Priority B — module / workbench transitions (replace often intentional; still confirm a visible exit):** workbench → plan / invite / active plan / archive; module entry → missing contacts / participation detail; archive / plan / amendment detail → invite or missing contacts; past-agreement entry → active plan; housing navigation intent (root); plan → invite after send.  
   **Also note (different layer):** `navigateTo` / `context.go` replace GoRouter location (home, contacts, housing, onboarding, sandbox exit). Settings children already use `navigateToChild`. Not the same API as `navigateToRoute`; still no automatic AppBar back onto the previous GoRouter location unless that stack allows it.  
-  **Out of scope for this checkbox:** re-opening expenses-in-detail after **5.2** (already fixed).
+  **Out of scope for this checkbox:** re-opening expenses-in-detail after **5.2** (already fixed); amendment submit after **5.4**.
+
+- [x] **5.4 Bug (high / navigation): after amendment submit, Back returned to the expense form instead of the hub**  
+  **Confirmed (2026-07-26):** Line edit → Continuar → Enviar al grupo → « Cambio solicitado »; AppBar / Atrás / system back reopened « Editar gasto ».  
+  **Root cause:** `HousingAmendmentSubmitPreviewScreen._submit` used `navigateToRoute` (`pushReplacement`) so only the preview was removed; stack remained hub → Modifier le plan → form → detail.  
+  **Fix:** `openHousingAmendmentDetailAfterSubmit` — `Navigator.popUntil(isFirst)` then `push` detail. Skill note in `flutter-in-app-back-navigation`.  
+  **Manual confirm:** pending (retest line-edit amendment Back → hub).

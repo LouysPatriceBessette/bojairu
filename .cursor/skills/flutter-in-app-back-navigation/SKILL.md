@@ -83,9 +83,31 @@ gesture alone as the product exit.
 
 ---
 
+## Post-submit wizard → confirmation (binding — 2026-07-26)
+
+**Symptom:** After submitting a plan-line amendment (form → aperçu → « Changement
+demandé »), AppBar / « Atrás » returned to **Editar gasto** instead of the
+housing hub.
+
+**Root cause:** Submit used `navigateToRoute` (`pushReplacement`) from aperçu
+only. Stack stayed: hub → Modifier le plan → form → **detail**. Popping detail
+resurfaced the form.
+
+**Fix:** `openHousingAmendmentDetailAfterSubmit` in
+`housing_amendment_navigation.dart` — `popUntil(isFirst)` then `push` detail so
+Back lands on the hub.
+
+**Rule:** After a multi-step wizard **commits**, do not only replace the last
+step. Clear intermediate wizard routes (or pop to the intended parent) **then**
+open the confirmation/detail screen.
+
+---
+
 ## When reviewing agent or human diffs
 
 If the diff adds `navigateToRoute(` or `pushReplacement(` to open a detail /
 preview / “view” screen, **flag it**. Ask whether return is required. Default
 assumption for any *Voir …* / detail / form opened from a list or summary:
-**child push**.
+**child push**. After a **submit** that should leave the wizard, prefer
+`popUntil` (or equivalent) to the parent **then** push confirmation — not a
+single `pushReplacement` of the last wizard page alone.

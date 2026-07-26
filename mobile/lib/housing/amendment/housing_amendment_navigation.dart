@@ -37,6 +37,41 @@ Future<bool> openHousingActivePlanHubIfActive(
   return true;
 }
 
+/// Opens amendment detail after the proposer submitted, clearing the wizard
+/// stack (Modifier le plan → form → aperçu) so Back returns to the housing hub.
+///
+/// Do **not** [navigateToRoute] (pushReplacement) from aperçu alone: that only
+/// removes the preview and leaves the expense form underneath — Back lands on
+/// « Editar gasto » instead of the hub (2026-07-26).
+Future<void> openHousingAmendmentDetailAfterSubmit(
+  BuildContext context, {
+  required AppDatabase db,
+  required String planId,
+  required AppPreferences prefs,
+  String? revisionId,
+}) async {
+  final transport = HousingProposalTransportService(db);
+  final pendingId =
+      revisionId ?? await transport.pendingRevisionIdForPlan(planId);
+  if (!context.mounted) return;
+
+  final nav = Navigator.of(context);
+  if (nav.canPop()) {
+    nav.popUntil((route) => route.isFirst);
+  }
+
+  await nav.push<void>(
+    MaterialPageRoute<void>(
+      builder: (_) => HousingAmendmentDetailScreen(
+        db: db,
+        planId: planId,
+        prefs: prefs,
+        revisionId: pendingId,
+      ),
+    ),
+  );
+}
+
 /// Opens the amendment detail screen or the full-plan proposal screen.
 Future<void> openHousingPendingProposalOrAmendment(
   BuildContext context, {
