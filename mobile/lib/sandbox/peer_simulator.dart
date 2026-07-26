@@ -127,8 +127,12 @@ class PeerSimulator {
   ///
   /// Human SQLite + [AppPreferences.sandboxInvitedBotCount] survive APK
   /// reinstall / process death; [SandboxRelay] and bot DBs do not. Catalog
-  /// bots use deterministic identity seeds, so respawning indices `0..n-1`
+  /// bots use deterministic identity seeds, so respawning catalogue index `i`
   /// restores the same long-term keys as the persisted human contacts.
+  ///
+  /// Catalogue slots without a matching **connected** human contact (deleted,
+  /// disconnected, or never completed) are **skipped** — remaining connected
+  /// bots are still restored. Do not abort the whole restore on one miss.
   Future<int> restoreInvitedBotsIfNeeded({
     required HandshakeOrchestrator humanOrchestrator,
   }) async {
@@ -164,7 +168,11 @@ class PeerSimulator {
       for (var i = 0; i < target; i++) {
         final name = SandboxBotCatalog.displayNames[i];
         final avatar = SandboxBotCatalog.avatarIdForCatalogIndex(i);
-        final bot = await _spawnBot(displayName: name, avatarId: avatar);
+        final bot = await _spawnBot(
+          displayName: name,
+          avatarId: avatar,
+          catalogIndex: i,
+        );
         final botPubB64 = await bot.identity.publicKeyB64();
         final matched = humanRows.any(
           (c) =>
@@ -173,15 +181,11 @@ class PeerSimulator {
         );
         if (!matched) {
           debugPrint(
-            'PeerSimulator restore: no human contact for $name '
-            '(pubkey mismatch) — aborting bot teardown',
+            'PeerSimulator restore: skip $name (no connected human '
+            'contact for catalogue index $i)',
           );
           await _disposeBotPeer(bot);
-          for (final prior in List<SandboxBotPeer>.from(_bots)) {
-            await _disposeBotPeer(prior);
-          }
-          _bots.clear();
-          return 0;
+          continue;
         }
         await _injectConnectedPeer(
           owner: bot,
@@ -374,13 +378,28 @@ class PeerSimulator {
           bot,
           expenseId: expenseId,
         );
+        // Bot may already have accepted locally while the human never got the
+        // decision envelope (mesh miss / mapping skip) — re-send when the
+        // human review table still shows this bot pending.
+        final humanAwaits = await _humanStillAwaitsBotDecision(
+          bot,
+          expenseId: expenseId,
+        );
         final hasExpense =
             await RealizedExpenseRepository(bot.db).getById(expenseId) != null;
         debugPrint(
           'PeerSimulator realized-expense review $expenseId bot='
-          '${bot.displayName} hasExpense=$hasExpense needsAccept=$needsAccept',
+          '${bot.displayName} hasExpense=$hasExpense needsAccept=$needsAccept '
+          'humanAwaits=$humanAwaits',
         );
-        if (!needsAccept) continue;
+        if (!needsAccept && !humanAwaits) continue;
+        if (!hasExpense) {
+          debugPrint(
+            'PeerSimulator realized-expense review $expenseId bot='
+            '${bot.displayName} skip: missing expense after backfill',
+          );
+          continue;
+        }
         if (acceptedAnyBot && betweenBotDelay > Duration.zero) {
           debugPrint(
             'PeerSimulator realized-expense review $expenseId '
@@ -539,13 +558,64 @@ class PeerSimulator {
     final expense = await RealizedExpenseRepository(humanDb).getById(expenseId);
     if (expense == null) return null;
     final selfId = selfParticipantIdForPlan(expense.planId);
-    if (expense.payerParticipantId != selfId) return null;
-    final pub = await human.selfLongTermPublicKey();
-    return (
-      db: humanDb,
-      publicKeyB64: base64Url.encode(pub).replaceAll('=', ''),
-      label: 'human',
-    );
+    if (expense.payerParticipantId == selfId) {
+      final pub = await human.selfLongTermPublicKey();
+      return (
+        db: humanDb,
+        publicKeyB64: base64Url.encode(pub).replaceAll('=', ''),
+        label: 'human',
+      );
+    }
+
+    // Bot payer row was wiped (cold restore recreates empty bot sqlite) while
+    // the human still holds the imported propose. Backfill peers from that
+    // human copy, using the payer bot's long-term key as the synthetic sender
+    // so importProposedFromPeer maps the payer correctly.
+    final roster = await participantsForPlan(humanDb, expense.planId);
+    final payerName = displayNameForParticipant(
+      expense.payerParticipantId,
+      roster,
+    ).trim().toLowerCase();
+    if (payerName.isEmpty) return null;
+    for (final bot in List<SandboxBotPeer>.from(_bots)) {
+      if (bot.displayName.trim().toLowerCase() != payerName) continue;
+      return (
+        db: humanDb,
+        publicKeyB64: await bot.identity.publicKeyB64(),
+        label: '${bot.displayName} via human copy',
+      );
+    }
+    return null;
+  }
+
+  /// True when the human review table still shows [bot] as pending/unanswered.
+  Future<bool> _humanStillAwaitsBotDecision(
+    SandboxBotPeer bot, {
+    required String expenseId,
+  }) async {
+    final humanDb = AppDatabase.maybeProcessScope;
+    if (humanDb == null) return false;
+    final expense = await RealizedExpenseRepository(humanDb).getById(expenseId);
+    if (expense == null) return false;
+    final roster = await participantsForPlan(humanDb, expense.planId);
+    final botName = bot.displayName.trim().toLowerCase();
+    Participant? botParticipant;
+    for (final p in roster) {
+      if (p.displayName.trim().toLowerCase() != botName) continue;
+      botParticipant = p;
+      break;
+    }
+    if (botParticipant == null) return false;
+    if (expense.payerParticipantId == botParticipant.id) return false;
+    final repo = RealizedExpenseRepository(humanDb);
+    if (!repo.isTransferReviewParticipant(expense, botParticipant.id)) {
+      return false;
+    }
+    final decision = (await repo.acceptancesFor(expenseId))
+        .where((a) => a.participantId == botParticipant!.id)
+        .map((a) => a.decision)
+        .firstOrNull;
+    return decision == null || decision == RealizedExpenseDecision.pending;
   }
 
   Future<void> _ensureBotPendingHousingPlansActivated(SandboxBotPeer bot) async {
@@ -596,15 +666,118 @@ class PeerSimulator {
         break;
       }
     }
-    if (peerActiveRevisionId == null) return false;
+    if (peerActiveRevisionId != null) {
+      final revisionId = pendingId ?? peerActiveRevisionId;
+      final mirrored = await _forceActivateBotRevision(
+        bot,
+        planId: planId,
+        revisionId: revisionId,
+        reason: 'peer mirror',
+      );
+      if (mirrored) return true;
+      // Peer has an active revision id this bot never imported (cold restore:
+      // first bot got a human agreement mirror; later bots only see that peer
+      // active id and hit "missing revision"). Fall through to human clone.
+    }
 
-    final revisionId = pendingId ?? peerActiveRevisionId;
+    // Cold restore: every bot sqlite is empty and FakeRelay lost in-memory
+    // envelopes. Clone the human's still-active agreement so expense backfill
+    // can import (terminal.log 2026-07-26: no local active agreement).
+    return _mirrorActiveHousingAgreementFromHuman(bot, planId: planId);
+  }
+
+  /// Imports the human's active `housing:<uuid>` agreement onto [bot] as
+  /// `received:<uuid>` and force-activates it (sandbox recover after restore).
+  Future<bool> _mirrorActiveHousingAgreementFromHuman(
+    SandboxBotPeer bot, {
+    required String planId,
+  }) async {
+    final humanDb = AppDatabase.maybeProcessScope;
+    final humanOrch = HandshakeOrchestrator.maybeInstance;
+    if (humanDb == null || humanOrch == null) return false;
+
+    final humanPlanId = localAuthorPlanId(planId);
+    final humanTransport = HousingProposalTransportService(humanDb);
+    final humanActiveId = await humanTransport.resolveActiveRevisionIdForPlan(
+      humanPlanId,
+    );
+    if (humanActiveId == null || humanActiveId.isEmpty) {
+      debugPrint(
+        'PeerSimulator ${bot.displayName} cannot mirror agreement: human '
+        'has no active revision for $humanPlanId',
+      );
+      return false;
+    }
+
+    final roster = await participantsForPlan(humanDb, humanPlanId);
+    final botName = bot.displayName.trim().toLowerCase();
+    final botParticipant = roster
+        .where((p) => p.displayName.trim().toLowerCase() == botName)
+        .firstOrNull;
+    if (botParticipant == null) {
+      debugPrint(
+        'PeerSimulator ${bot.displayName} not on human roster for $humanPlanId',
+      );
+      return false;
+    }
+
+    final humanPubB64 = RelayRouting.b64(
+      await humanOrch.selfLongTermPublicKey(),
+    );
+    final humanContact = (await bot.contacts.list())
+        .where(
+          (c) =>
+              c.kind == 'connected' &&
+              (c.peerPublicMaterial ?? '') == humanPubB64,
+        )
+        .firstOrNull;
+    if (humanContact == null) {
+      debugPrint(
+        'PeerSimulator ${bot.displayName} has no connected human contact; '
+        'cannot mirror agreement',
+      );
+      return false;
+    }
+
+    final proposalJson = await humanTransport.exportProposalForParticipant(
+      planId: humanPlanId,
+      revisionId: humanActiveId,
+      targetParticipantId: botParticipant.id,
+    );
+    final imported = await HousingProposalTransportService(
+      bot.db,
+    ).importReceivedProposal(
+      proposalJson: proposalJson,
+      targetParticipantId: botParticipant.id,
+      senderContactId: humanContact.id,
+      senderDisplayName: humanContact.displayName,
+      senderAvatarId: humanContact.avatarId,
+    );
+    debugPrint(
+      'PeerSimulator ${bot.displayName} imported human agreement '
+      'plan=${imported.planId} rev=${imported.revisionId}',
+    );
+    return _forceActivateBotRevision(
+      bot,
+      planId: imported.planId,
+      revisionId: imported.revisionId,
+      reason: 'human agreement mirror',
+    );
+  }
+
+  Future<bool> _forceActivateBotRevision(
+    SandboxBotPeer bot, {
+    required String planId,
+    required String revisionId,
+    required String reason,
+  }) async {
+    final transport = HousingProposalTransportService(bot.db);
     final localRev = await (bot.db.select(
       bot.db.proposalRevisions,
     )..where((t) => t.id.equals(revisionId))).getSingleOrNull();
     if (localRev == null) {
       debugPrint(
-        'PeerSimulator ${bot.displayName} cannot mirror activation for '
+        'PeerSimulator ${bot.displayName} cannot $reason for '
         '$planId: missing revision $revisionId',
       );
       return false;
@@ -641,7 +814,7 @@ class PeerSimulator {
     );
     final active = await transport.hasActiveRevision(planId);
     debugPrint(
-      'PeerSimulator ${bot.displayName} mirrored activation for $planId '
+      'PeerSimulator ${bot.displayName} $reason for $planId '
       'rev=$revisionId active=$active',
     );
     return active;
@@ -661,6 +834,25 @@ class PeerSimulator {
     final expense = await repo.getById(expenseId);
     if (expense == null) return;
     final selfId = selfParticipantIdForPlan(expense.planId);
+    final hasSelfRow = (await repo.acceptancesFor(
+      expenseId,
+    )).any((a) => a.participantId == selfId);
+    if (!hasSelfRow) {
+      final now = DateTime.now().toUtc();
+      await bot.db
+          .into(bot.db.realizedExpenseAcceptances)
+          .insert(
+            RealizedExpenseAcceptancesCompanion.insert(
+              expenseId: expenseId,
+              participantId: selfId,
+              decision: RealizedExpenseDecision.pending,
+            ),
+          );
+      debugPrint(
+        'PeerSimulator ${bot.displayName} seeded missing acceptance row '
+        'for $expenseId at $now',
+      );
+    }
     await repo.recordLocalAccept(expenseId: expenseId, participantId: selfId);
     await bot.orchestrator.sendRealizedExpenseAccept(
       expenseId: expenseId,
@@ -686,7 +878,10 @@ class PeerSimulator {
         .where((a) => a.participantId == selfId)
         .map((a) => a.decision)
         .firstOrNull;
-    return selfDecision == RealizedExpenseDecision.pending;
+    // Missing acceptance row must still be treated as "needs accept" — otherwise
+    // a partial import leaves the bot permanently silent on the human UI.
+    return selfDecision == null ||
+        selfDecision == RealizedExpenseDecision.pending;
   }
 
   @visibleForTesting
@@ -786,16 +981,24 @@ class PeerSimulator {
     if (!SandboxMode.isActive(_prefs)) {
       throw StateError('inviteNextBot requires sandboxMode');
     }
-    if (_bots.length >= SandboxBotCatalog.maxBots) {
+    // High-water catalogue slot (survives partial restore when a prior bot was
+    // deleted/disconnected). Do not use [_bots.length] — that would re-issue a
+    // skipped catalogue name after cold restore.
+    final index = _prefs.sandboxInvitedBotCount;
+    if (index >= SandboxBotCatalog.maxBots ||
+        _bots.length >= SandboxBotCatalog.maxBots) {
       return null;
     }
-    final index = _bots.length;
     final name = SandboxBotCatalog.displayNames[index];
     final avatar = SandboxBotCatalog.avatarIdForCatalogIndex(index);
-    final bot = await _spawnBot(displayName: name, avatarId: avatar);
+    final bot = await _spawnBot(
+      displayName: name,
+      avatarId: avatar,
+      catalogIndex: index,
+    );
     final priorBots = List<SandboxBotPeer>.from(_bots);
     _bots.add(bot);
-    await _prefs.setSandboxInvitedBotCount(_bots.length);
+    await _prefs.setSandboxInvitedBotCount(index + 1);
 
     final invite = await humanOrchestrator.generateInvitation(
       validFor: const Duration(hours: 24),
@@ -948,16 +1151,22 @@ class PeerSimulator {
   Future<SandboxBotPeer> _spawnBot({
     required String displayName,
     required String avatarId,
+    required int catalogIndex,
   }) async {
-    final id = _botSeq++;
+    // Unique temp DB path per spawn; identity seed is catalogue-stable.
+    final seq = _botSeq++;
     final dbFile = File(
-      '${Directory.systemTemp.path}/compartarenta_sandbox_bot_$id.sqlite',
+      '${Directory.systemTemp.path}/compartarenta_sandbox_bot_'
+      '${catalogIndex}_$seq.sqlite',
     );
     if (dbFile.existsSync()) {
       dbFile.deleteSync();
     }
     final seed = Uint8List.fromList(
-      List<int>.generate(32, (i) => (id * 37 + i * 13 + 7) & 0xff),
+      List<int>.generate(
+        32,
+        (i) => (catalogIndex * 37 + i * 13 + 7) & 0xff,
+      ),
     );
     final db = _SandboxDb(NativeDatabase(dbFile));
     final identity = InMemoryIdentityKeystore(seed: seed);
@@ -970,7 +1179,9 @@ class PeerSimulator {
       contacts: contacts,
       invitations: invitations,
       pollInterval: const Duration(days: 365),
-      deviceBinding: DeviceBindingService.forTesting('sandbox-bot-$id'),
+      deviceBinding: DeviceBindingService.forTesting(
+        'sandbox-bot-$catalogIndex',
+      ),
     );
     orchestrator.enableSandboxPeerAutoAccept(
       profile: () async => (displayName: displayName, avatarId: avatarId),

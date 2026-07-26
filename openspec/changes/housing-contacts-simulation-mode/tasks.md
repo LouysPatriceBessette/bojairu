@@ -50,3 +50,41 @@
 - [x] 7.4 Run `cd mobile && ./tool/flutterw analyze --fatal-infos .` and `./tool/flutterw test` until green
 - [x] 7.5 Manual QA PASSED (2026-07-16, Android): add sandbox bot contacts (catalog invite) through connected peers
 - [x] 7.6 Manual QA PASSED (2026-07-16, Android): housing plan submit through unanimous acceptance (OS notifications: 3× #7 + 1× #9 in causal order; simulation exit without crash)
+
+---
+
+## Known bugs (backlog)
+
+- [x] **S.1 Bug (high / sandbox): cold restore aborted all bots when one catalogue contact was not `connected`**  
+  **Importance:** high (blocks simulation auto-accept after process restart). **Recurrence:** high whenever a catalogue bot was disconnected/deleted while `sandboxInvitedBotCount` still counted it.  
+  **Confirmed (2026-07-26):** Simulation — plan submitted; invitee chips stayed **En attente**; no decision/activation OS notifications. Not a notification-permission issue.  
+  **Evidence DB:** `qa/db_seeds/plan-half-done` — Louys catalogue bot soft-deleted / `local-only` + disconnected (`sandbox-bot-0`); Monica + Ròberr still `connected`; prefs `sandbox.invitedBotCount = 3`; plan roster only Monica/Ròberr.  
+  **Root cause:** `PeerSimulator.restoreInvitedBotsIfNeeded` required a matching **connected** human contact for **every** catalogue index `0..count-1`. First miss (Louys) aborted and tore down prior restores → **0 bots** after cold start (`run:dev` / process death). FakeRelay could still receive proposals; nobody auto-accepted.  
+  **Fix:** skip catalogue slots without a connected match; restore remaining bots; keep high-water `sandboxInvitedBotCount` for next invite (next name = next catalogue slot, e.g. Liuva); seed identity by catalogue index. Unit test: `restoreInvitedBotsIfNeeded skips disconnected catalogue bots and keeps connected`.  
+  **Manual confirm (2026-07-26):** user retest after fix + restored stolen DB — bots accept again; steal/restore path OK.  
+  **Implications when `_bots` stayed empty after cold start (same root):** all PeerSimulator-driven peer actions fail silently or stall — not only initial plan submit.
+
+  | Surface | What breaks with 0 bots |
+  | --- | --- |
+  | Housing plan / amendment send | Envelopes may post to FakeRelay; invitee chips stay **En attente**; no #7 / #9 |
+  | Realized-expense review (human payer opens detail) | `_scheduleSandboxBotReviewsOnOpenIfHumanPayer` returns early if `sim.bots.isEmpty` — reviewers stay « ? » with empty dates; no bot-accept local notifications |
+  | After human accept/reject on a bot expense | `_scheduleSandboxBotExpenseReviews` same empty-bots early return |
+  | Hub « Simuler une dépense d'un Bot » | `sandbox_bot_expense.dart` refuses / cannot pick a bot |
+  | `reactOnce` / inbox reactions | No-op (`bots=0`) |
+  | Contacts « Invite someone » | Still works (spawns new catalogue slot via high-water count) once fix is present |
+
+  **Do not confuse with:** master notification switch off (would silence #7/#9 even when accepts land); that was ruled out by **En attente** / empty decision dates.
+
+- [x] **S.2 Bug (high / sandbox): co-reviewer bot stays « ? » on bot-payer expense after human accept when payer bot row is gone**  
+  **Importance:** high (blocks unanimous expense settlement in Simulation). **Recurrence:** high after cold restore (`run:dev` / process death) when a bot-proposed expense still sits on the human DB but bot sqlite was recreated empty.  
+  **Confirmed (2026-07-26):** Révision de dépense — Monica payer (« Dépense simulée »); Louys accepted with timestamp; Ròberr stayed yellow « ? » with empty date.  
+  **Root cause:** `_expenseProposeSource` only used a bot DB that still held the payer row, or the human DB when the **human** was payer. After restore, neither bot had the expense → backfill aborted (`no payer source`) → peer never accepted. Secondary gap: bot already accepted locally but human never got the decision was not re-sent.  
+  **Fix:** backfill from the human copy of a bot-payer expense using the payer bot’s long-term key as synthetic sender; treat missing local acceptance as needs-accept; re-send when the human review table still awaits that bot. Unit test: `bot-payer expense missing on bots after wipe backfills from human copy`.  
+  **Manual confirm:** pending (rebuild / retest after S.2).
+
+- [x] **S.3 Bug (high / sandbox): human-payer expense bots stay pending after cold restore — no local active agreement**  
+  **Importance:** high (blocks bot auto-accept of the human’s own expense after `run:dev` / process restart). **Recurrence:** every cold restore while an active housing plan remains on the human DB.  
+  **Confirmed (2026-07-26, `mobile/terminal.log`):** `PeerSimulator restore end bots=2`; review sequence ran with `humanAwaits=true`; both Monica and Ròberr logged `import skip: no local active agreement for package=pkg:housing:…` then `skip: missing expense after backfill`.  
+  **Root cause:** restore recreates empty bot sqlite; FakeRelay is in-memory and loses prior proposal envelopes. Bots have contacts only — no `received:<uuid>` agreement. Expense backfill from the human copy still called `importProposedFromPeer`, which requires a local active package. `_ensureBotHousingPlanActive` could only repair pending/peer mirrors, not clone from the human.  
+  **Fix:** when peer mirror fails, export the human’s active agreement for that bot’s roster slot, `importReceivedProposal` onto the bot, force-activate, then continue expense backfill/accept. If a later bot sees a peer `activeRevisionId` but lacks the local revision row (ordering after the first bot’s human mirror), fall through to the same human clone instead of aborting — terminal evidence: Monica OK, Ròberr `cannot peer mirror … missing revision` then `no local active agreement`. Unit test: `human-payer expense after cold empty bot mirrors agreement then accepts` (two bots).  
+  **Manual confirm:** pending (rebuild; reopen expense review — both bots).

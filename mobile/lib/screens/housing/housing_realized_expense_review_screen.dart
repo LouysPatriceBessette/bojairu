@@ -110,7 +110,7 @@ class _HousingRealizedExpenseReviewScreenState
       _onPendingReviewIntent,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleSandboxBotReviewsOnOpenIfHumanPayer();
+      _scheduleSandboxBotReviewsOnOpenIfNeeded();
     });
   }
 
@@ -562,9 +562,12 @@ class _HousingRealizedExpenseReviewScreenState
     );
   }
 
-  /// Human-proposed expense: bots accept only once the payer opens this review
-  /// screen (hub tile → detail), so the user can watch the sequential updates.
-  void _scheduleSandboxBotReviewsOnOpenIfHumanPayer() {
+  /// Sandbox: finish bot co-reviews when this screen opens.
+  ///
+  /// - Human is payer: bots accept once the payer opens detail (watch updates).
+  /// - Bot is payer and the human already decided: re-run bot accepts when peers
+  ///   are still pending (e.g. after cold restore wiped bot DBs mid-review).
+  void _scheduleSandboxBotReviewsOnOpenIfNeeded() {
     final prefs = widget.prefs;
     if (prefs == null || !SandboxMode.isActive(prefs)) return;
     final sim = PeerSimulator.maybeInstance;
@@ -573,9 +576,30 @@ class _HousingRealizedExpenseReviewScreenState
       final expense = await _repo.getById(widget.expenseId);
       if (expense == null || !mounted) return;
       final selfId = selfParticipantIdForPlan(expense.planId);
-      if (expense.payerParticipantId != selfId) return;
-      await sim.reactOnce();
-      if (!mounted) return;
+      if (expense.payerParticipantId == selfId) {
+        await sim.reactOnce();
+        if (!mounted) return;
+        await sim.acceptPendingRealizedExpenseReviewsAfterHumanDecision(
+          expenseId: widget.expenseId,
+        );
+        return;
+      }
+      final acceptances = await _repo.acceptancesFor(widget.expenseId);
+      final selfDecision = acceptances
+          .where((a) => a.participantId == selfId)
+          .map((a) => a.decision)
+          .firstOrNull;
+      final humanSettled =
+          selfDecision == RealizedExpenseDecision.accepted ||
+          selfDecision == RealizedExpenseDecision.rejected;
+      if (!humanSettled) return;
+      final peersStillPending = acceptances.any(
+        (a) =>
+            a.participantId != selfId &&
+            a.participantId != expense.payerParticipantId &&
+            a.decision == RealizedExpenseDecision.pending,
+      );
+      if (!peersStillPending) return;
       await sim.acceptPendingRealizedExpenseReviewsAfterHumanDecision(
         expenseId: widget.expenseId,
       );
