@@ -20,6 +20,7 @@ import '../../housing/amendment/housing_amendment_screen_padding.dart';
 import '../../housing/amendment/housing_rules_amendment_pending.dart';
 import '../../housing/quiet_hours_week_grid.dart';
 import 'housing_invitation_status_dialog.dart';
+import '../../housing/housing_expenses_step_validation.dart';
 import '../../housing/projection/plan_projection.dart';
 import '../../housing/housing_response_deadline_dialog.dart';
 import '../../housing/proposals/housing_agreement_period_conflict.dart';
@@ -29,7 +30,6 @@ import '../../debug/qa_housing_proposal_semantics.dart';
 import '../../debug/qa_wizard_expense_semantics.dart';
 import '../../housing/proposals/housing_proposal_transport_service.dart';
 import '../../housing/expense_form/expense_plan_line_form_screen.dart';
-import '../../housing/expense_form/expense_recurrence_spec.dart';
 import '../../housing/housing_plan_draft_backup.dart';
 import '../../housing/housing_navigation_intent.dart';
 import '../../housing/proposals/plan_agreement_proposal_service.dart';
@@ -728,10 +728,11 @@ class _HousingPlanScreenState extends State<HousingPlanScreen>
         await _persistPeriod();
       }
       if (_stepIndex == 2) {
-        if (!await _validateExpensesStep()) {
+        final issue = await _expensesStepIssue();
+        if (issue != HousingExpensesStepIssue.none) {
           if (mounted) {
             messenger.showSnackBar(
-              SnackBar(content: Text(l10n.housingPlanAddAtLeastOneExpense)),
+              SnackBar(content: Text(_expensesStepIssueMessage(l10n, issue))),
             );
           }
           return;
@@ -829,17 +830,7 @@ class _HousingPlanScreenState extends State<HousingPlanScreen>
         .go();
   }
 
-  int _ratioWeightBps(List<PlanRatio> ratios, String lineId, String pid) {
-    for (final r in ratios) {
-      if (r.lineId != lineId) continue;
-      if (r.participantId == pid) return r.weight;
-      final tail = pid.split(':').last;
-      if (r.participantId.endsWith(':$tail')) return r.weight;
-    }
-    return 0;
-  }
-
-  Future<bool> _validateExpensesStep() async {
+  Future<HousingExpensesStepIssue> _expensesStepIssue() async {
     if (HousingPlanDraftBackup.appliesToPlan(_planId)) {
       await HousingPlanDraftBackup.restoreIfNeeded(
         _db,
@@ -848,26 +839,41 @@ class _HousingPlanScreenState extends State<HousingPlanScreen>
       );
     }
     final lines = await _db.listPlanLines(_planId);
-    if (lines.isEmpty) return false;
     final pids = _allParticipantIds();
-    if (pids.isEmpty) return false;
     final ratios = await _db.listPlanRatios(_planId);
-    for (final l in lines) {
-      if (l.amountMinor == null || l.amountMinor! <= 0) return false;
-      if (l.isRecurring) {
-        final spec = ExpenseRecurrenceSpec.parseStored(l.recurrenceSpecJson);
-        if (spec == null) {
-          final day = l.recurrenceDayOfMonth;
-          if (day == null || day < 1 || day > 31) return false;
-        }
-      }
-      var sum = 0;
-      for (final pid in pids) {
-        sum += _ratioWeightBps(ratios, l.id, pid);
-      }
-      if (sum != 10000) return false;
+    final issue = validateHousingExpensesStep(
+      lines: lines,
+      participantIds: pids,
+      ratios: ratios,
+    );
+    if (kDebugMode && issue != HousingExpensesStepIssue.none) {
+      debugPrint(
+        'housing wizard expenses step blocked: $issue '
+        '(lines=${lines.length} pids=${pids.length} ratios=${ratios.length})',
+      );
     }
-    return true;
+    return issue;
+  }
+
+  Future<bool> _validateExpensesStep() async =>
+      (await _expensesStepIssue()) == HousingExpensesStepIssue.none;
+
+  String _expensesStepIssueMessage(
+    AppLocalizations l10n,
+    HousingExpensesStepIssue issue,
+  ) {
+    return switch (issue) {
+      HousingExpensesStepIssue.none => '',
+      HousingExpensesStepIssue.noLines => l10n.housingPlanAddAtLeastOneExpense,
+      HousingExpensesStepIssue.noParticipants =>
+        l10n.housingPlanExpenseParticipantsMissing,
+      HousingExpensesStepIssue.invalidAmount =>
+        l10n.housingPlanExpenseAmountsIncomplete,
+      HousingExpensesStepIssue.invalidRecurrence =>
+        l10n.housingPlanExpenseRecurrenceIncomplete,
+      HousingExpensesStepIssue.incompleteSplit =>
+        l10n.housingPlanExpenseSplitsIncomplete,
+    };
   }
 
   /// Clears in-memory wizard fields so a destroyed draft does not keep stale

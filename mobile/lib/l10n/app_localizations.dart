@@ -1360,6 +1360,30 @@ abstract class AppLocalizations {
   /// **'Add at least one expense!'**
   String get housingPlanAddAtLeastOneExpense;
 
+  /// No description provided for @housingPlanExpenseAmountsIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Each expense must have an amount greater than zero.'**
+  String get housingPlanExpenseAmountsIncomplete;
+
+  /// No description provided for @housingPlanExpenseRecurrenceIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Set recurrence for every recurring expense.'**
+  String get housingPlanExpenseRecurrenceIncomplete;
+
+  /// No description provided for @housingPlanExpenseSplitsIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Each expense split must total 100%.'**
+  String get housingPlanExpenseSplitsIncomplete;
+
+  /// No description provided for @housingPlanExpenseParticipantsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants are missing; expenses cannot be validated.'**
+  String get housingPlanExpenseParticipantsMissing;
+
   /// No description provided for @housingPlanSplitNoCategory.
   ///
   /// In en, this message translates to:

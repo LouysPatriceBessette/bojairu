@@ -724,6 +724,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get housingPlanAddAtLeastOneExpense => '¡Añade al menos un gasto!';
 
   @override
+  String get housingPlanExpenseAmountsIncomplete =>
+      'Cada gasto debe tener un importe mayor que cero.';
+
+  @override
+  String get housingPlanExpenseRecurrenceIncomplete =>
+      'Indica la recurrencia de cada gasto recurrente.';
+
+  @override
+  String get housingPlanExpenseSplitsIncomplete =>
+      'El reparto de cada gasto debe sumar el 100 %.';
+
+  @override
+  String get housingPlanExpenseParticipantsMissing =>
+      'Faltan participantes para validar los gastos.';
+
+  @override
   String get housingPlanSplitNoCategory => 'Sin categoría';
 
   @override
