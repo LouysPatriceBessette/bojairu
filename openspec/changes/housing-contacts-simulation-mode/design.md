@@ -20,7 +20,7 @@ Constraints: no `Timer.periodic` for bot expenses; wipe must never appear as a p
 - Export/import **from** sandbox as a user feature.
 - Coexistence of real + sim DBs; re-entering sim after a real plan (MVP).
 - Replacing Google Play’s 12 human × 14-day closed-test rule.
-- Fixing SVG balance overflow for >8 participants (mitigated by max 7 bots).
+- Fixing SVG balance overflow for >8 participants (mitigated by max 5 bots).
 - Relay Go service changes.
 
 ## Decisions
@@ -65,9 +65,9 @@ If DB is already empty / no preservable real data: set flags and restart into Fa
 
 ### D6 — Bot catalog and invite
 
-**Choice:** Ordered catalog (max 7): Louys, Monica, Ròberr, Liuva, Leo, Germaine, Youkie. Random avatar from product pool. Invite = instantiate next unused bot identity → connected contact via FakeRelay hello/ack (or equivalent orchestrator-complete path). No invite-code UI. Exhausted catalog → Ok-only dialog (“Vous avez invité tout les bots.” / localized).
+**Choice:** Ordered catalog (max **5**): Louys, Monica, Ròberr, Liuva, Leo (`SandboxBotCatalog.maxBots = 5`). Stable unique avatars per catalog index. Invite = instantiate next unused bot identity → connected contact via FakeRelay hello/ack (or equivalent orchestrator-complete path). No invite-code UI. Exhausted catalog → Ok-only dialog (“Vous avez invité tout les bots.” / localized). Germaine and Youkie are **out** of the catalog.
 
-**Why:** Simplifies Contacts for sandbox; caps participants at 8 including self for balance chart.
+**Why:** Simplifies Contacts for sandbox; caps in-process peer stacks. Product cut from seven → five after ANR at 7–8 concurrent bot stacks; code and tests assert five names and exclude Germaine/Youkie.
 
 ### D7 — Auto-accept policy
 

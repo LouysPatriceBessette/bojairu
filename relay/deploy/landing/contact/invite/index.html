@@ -18,7 +18,6 @@
       --btn-ghost-bg: transparent;
       --btn-ghost-fg: var(--accent);
       --btn-ghost-border: var(--border);
-      --badge-soon: #e65100;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -29,7 +28,6 @@
         --accent-fg: #15151c;
         --card: #1f1f29;
         --border: #2d2d3a;
-        --badge-soon: #ffb74d;
       }
     }
     * { box-sizing: border-box; }
@@ -171,37 +169,38 @@
     .badge-row {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
-      align-items: flex-start;
-      gap: 24px;
-      margin-top: 12px;
-    }
-    .badge-unit {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
+      justify-content: flex-start;
       align-items: center;
-      text-align: center;
+      gap: 16px;
+      margin-top: 16px;
     }
-    .badge-unit img {
-      height: 40px;
-      width: auto;
+    /* Store badges: clear space ≈ ¼ height (brand guidelines). */
+    .store-badge {
+      display: inline-flex;
+      line-height: 0;
+      padding: 10px;
+      text-decoration: none;
+      margin: 0;
+    }
+    .store-badge img {
       display: block;
+      height: 50px; /* 40px + 25% */
+      width: auto;
     }
-    .badge-unit img.play-badge {
-      height: 56px;
+    /* Google Play SVG has more internal whitespace than App Store — compensate. */
+    .store-badge--google-play {
+      padding: 0;
     }
-    .badge-row .badge-unit:nth-child(2) img {
-      margin: 8px 0;
+    .store-badge--google-play img {
+      height: 74px;
     }
-    .badge-unit img:hover {
-      cursor: wait;
+    .store-badge--soon {
+      cursor: not-allowed;
+      opacity: 0.3;
     }
-    .badge-soon {
-      margin-top: 6px;
-      font-size: 0.8em;
-      color: var(--badge-soon);
-      line-height: 1.2;
+    .store-badge:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
     }
     .sr-only {
       position: absolute;
@@ -332,45 +331,54 @@
 
     <section class="card">
       <div data-i18n="en">
-        <h2>Get the app</h2>
-        <p>Don’t have Bojairũ installed yet? You’ll find it on Google Play and the App Store once it is published. Store links will be added when the app goes live.</p>
+        <h2>Don’t have Bojairũ installed yet?</h2>
+        <p>Available on Google Play. App Store coming soon.</p>
         <div class="badge-row">
-          <figure class="badge-unit">
-            <img class="play-badge" src="badges/google-play-badge.png" width="155" height="60" alt="Get it on Google Play" />
-            <figcaption class="badge-soon">(Soon)</figcaption>
-          </figure>
-          <figure class="badge-unit">
-            <img src="badges/app-store-badge.svg" width="120" height="40" alt="Download on the App Store" />
-            <figcaption class="badge-soon">(Soon)</figcaption>
-          </figure>
+          <a class="store-badge store-badge--google-play"
+             href="https://play.google.com/store/apps/details?id=app.incoherences.bojairu&amp;hl=en_CA"
+             target="_blank" rel="noopener noreferrer">
+            <img src="badges/google-play-en.svg" width="155" height="60"
+                 alt="Get it on Google Play" decoding="async" />
+            <span class="sr-only">(opens in a new tab)</span>
+          </a>
+          <span class="store-badge store-badge--app-store store-badge--soon">
+            <img src="badges/app-store-en.svg" width="135" height="40"
+                 alt="Download on the App Store — coming soon" decoding="async" />
+          </span>
         </div>
       </div>
       <div data-i18n="fr" hidden>
-        <h2>Télécharger l’app</h2>
-        <p>Vous n’avez pas encore installé Bojairũ&nbsp;? Vous la trouverez sur Google Play et sur l’App Store dès sa publication. Les liens vers les boutiques seront ajoutés au lancement.</p>
+        <h2>Vous n’avez pas encore installé Bojairũ&nbsp;?</h2>
+        <p>Disponible sur Google Play. L’App Store arrive bientôt.</p>
         <div class="badge-row">
-          <figure class="badge-unit">
-            <img class="play-badge" src="badges/google-play-badge.png" width="155" height="60" alt="Disponible sur Google Play" />
-            <figcaption class="badge-soon">(Bientôt)</figcaption>
-          </figure>
-          <figure class="badge-unit">
-            <img src="badges/app-store-badge.svg" width="120" height="40" alt="Télécharger sur l’App Store" />
-            <figcaption class="badge-soon">(Bientôt)</figcaption>
-          </figure>
+          <a class="store-badge store-badge--google-play"
+             href="https://play.google.com/store/apps/details?id=app.incoherences.bojairu&amp;hl=fr_CA"
+             target="_blank" rel="noopener noreferrer">
+            <img src="badges/google-play-fr-ca.svg" width="155" height="60"
+                 alt="Disponible sur Google Play" decoding="async" />
+            <span class="sr-only">(ouvre un nouvel onglet)</span>
+          </a>
+          <span class="store-badge store-badge--app-store store-badge--soon">
+            <img src="badges/app-store-fr-ca.svg" width="135" height="40"
+                 alt="Télécharger dans l’App Store — bientôt" decoding="async" />
+          </span>
         </div>
       </div>
       <div data-i18n="es" hidden>
-        <h2>Descargar la app</h2>
-        <p>¿Aún no tienes Bojairũ instalada? La encontrarás en Google Play y en el App Store cuando esté publicada. Los enlaces a las tiendas se añadirán en el lanzamiento.</p>
+        <h2>¿Aún no tienes Bojairũ instalada?</h2>
+        <p>Disponible en Google Play. App Store próximamente.</p>
         <div class="badge-row">
-          <figure class="badge-unit">
-            <img class="play-badge" src="badges/google-play-badge.png" width="155" height="60" alt="Disponible en Google Play" />
-            <figcaption class="badge-soon">(Pronto)</figcaption>
-          </figure>
-          <figure class="badge-unit">
-            <img src="badges/app-store-badge.svg" width="120" height="40" alt="Descarga en el App Store" />
-            <figcaption class="badge-soon">(Pronto)</figcaption>
-          </figure>
+          <a class="store-badge store-badge--google-play"
+             href="https://play.google.com/store/apps/details?id=app.incoherences.bojairu&amp;hl=es_ES"
+             target="_blank" rel="noopener noreferrer">
+            <img src="badges/google-play-es.svg" width="155" height="60"
+                 alt="Disponible en Google Play" decoding="async" />
+            <span class="sr-only">(se abre en una pestaña nueva)</span>
+          </a>
+          <span class="store-badge store-badge--app-store store-badge--soon">
+            <img src="badges/app-store-es.svg" width="135" height="40"
+                 alt="Consíguelo en el App Store — próximamente" decoding="async" />
+          </span>
         </div>
       </div>
     </section>

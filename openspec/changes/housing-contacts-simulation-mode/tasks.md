@@ -29,9 +29,9 @@
 
 ## 5. Sandbox Contacts invite
 
-- [x] 5.1 Define ordered 7-bot catalog (Louys → Youkie) with random avatars from product pool
+- [x] 5.1 Define ordered 5-bot catalog (Louys → Leo; `maxBots = 5`; Germaine/Youkie excluded for ANR) with stable avatars from product pool
 - [x] 5.2 Replace invite-code UI in sandbox with “add next bot” connected via PeerSimulator
-- [x] 5.3 Show Ok-only exhausted-catalog dialog when all seven bots are present
+- [x] 5.3 Show Ok-only exhausted-catalog dialog when all five bots are present
 - [x] 5.4 Gate external code generate/redeem paths with sandbox hard checks
 
 ## 6. Sandbox Housing hub and modules

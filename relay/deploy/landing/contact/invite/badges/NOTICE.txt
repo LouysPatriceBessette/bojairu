@@ -1,0 +1,38 @@
+Store badges
+============
+
+Google Play
+-----------
+
+Localized "Get it on Google Play" SVGs vendored from
+https://github.com/steverichey/google-play-badge-svg
+(img/fr-ca_get.svg, en_get.svg, es_get.svg).
+
+That repository packages badges derived from Google's promotional assets
+under an MIT license for the packaging; Google Play and the Google Play logo
+are trademarks of Google LLC. See Google's brand guidelines before altering
+these files:
+https://developer.android.com/distribute/marketing-tools/brand-guidelines
+
+  google-play-fr-ca.svg  — Français (Canada)
+  google-play-en.svg     — English
+  google-play-es.svg     — Español
+
+App Store
+---------
+
+Localized "Download on the App Store" SVGs vendored from Wikimedia Commons
+(listed as public domain there; App Store and Apple marks remain Apple trademarks).
+Follow Apple Marketing Guidelines before altering these files:
+https://developer.apple.com/app-store/marketing/guidelines/
+
+  app-store-fr-ca.svg  — FRCA (from Wikimedia)
+  app-store-en.svg     — English (from Wikimedia)
+  app-store-es.svg     — ESMX (from Wikimedia; user-provided locale)
+
+Sources:
+  https://commons.wikimedia.org/wiki/File:Download_on_the_App_Store_Badge_FRCA_RGB_blk.svg
+  https://commons.wikimedia.org/wiki/File:Download_on_the_App_Store_Badge.svg
+  https://commons.wikimedia.org/wiki/File:Download_on_the_App_Store_Badge_ESMX_RGB_blk.svg
+
+Do not hotlink upstream hosts; keep copies here.
