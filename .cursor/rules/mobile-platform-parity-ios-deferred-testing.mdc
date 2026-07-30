@@ -37,7 +37,7 @@ Do **not** ask whether iOS should be mentioned in each change. **Always** spec b
 
 - **iOS implementation** MUST be done **to the best of current ability** in code (StoreKit APIs, platform channels, parity with Android paths).
 - **iOS automated and manual QA are deferred** — no Apple test hardware or App Store sandbox runs are available in the current dev setup.
-- **Android** remains the primary verification platform until iOS testing becomes possible.
+- **Android** remains the primary verification platform until iOS testing becomes possible. Physical device: **Samsung Galaxy S25** (**API 35+**) — see `session-test-topology-bootstrap.mdc` (Louys / `run:dev`).
 - Do **not** block spec updates or Android implementation waiting for iOS test confirmation.
 - Do **not** re-ask the user "Android-only or also iOS?" on every feature — this rule is the answer.
 

@@ -33,9 +33,11 @@ Three machines. **Do not collapse them into one “dev machine”.**
 | Terminal | Command | QA persona | Platform |
 | --- | --- | --- | --- |
 | A | `./tool/melosw run run:dev:web` | **Monica** | Flutter **web** (Chrome) |
-| B | `./tool/melosw run run:dev` | **Louys** | Flutter **Android** |
+| B | `./tool/melosw run run:dev` | **Louys** | Flutter **Android** — physical **Samsung Galaxy S25** (**API 35+**; ships with Android 15) |
 
 Each terminal is an independent app instance with its own local DB / web dev session backup.
+
+**Android device (binding):** Louys’s phone for `run:dev` / Play closed-test smoke is a **Samsung Galaxy S25**, therefore **API 35+**. Do **not** tell the user they still need a separate “API 35+ device” for Android 15 edge-to-edge or similar Play Console checks — that hardware already covers it. If they change phone, their message overrides this fact.
 
 ### PC #2 (one terminal)
 

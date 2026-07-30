@@ -1,0 +1,70 @@
+---
+description: >-
+  Filesystem perimeter: only ~/repos/Compartarenta/ and
+  ~/repos/online/bojairu.app/ unless the user explicitly grants more access.
+alwaysApply: true
+---
+
+# Filesystem perimeter (hard)
+
+## Allowed without asking
+
+| Tree | Absolute form (this machine) |
+| --- | --- |
+| `~/repos/Compartarenta/` | `/home/bvii/repos/Compartarenta/` |
+| `~/repos/online/bojairu.app/` | `/home/bvii/repos/online/bojairu.app/` |
+
+Read and write **only** under these two trees, unless the **current** user
+message (or a clearly scoped follow-up they approved) grants another path.
+
+## Forbidden without explicit permission
+
+- Any other path under `~`, other repos (`~/repos/slagada`, …), `Downloads`,
+  `Pictures`, Desktop, USB mounts, cloud sync folders, VPS paths, etc.
+- “Helpful” `find` / `ls` / `Read` / `Write` / `Shell` outside the two trees
+  “just to look”.
+- Treating a past session’s broader search as standing permission.
+
+## If access outside is needed
+
+**Ask clearly in chat first**, naming:
+
+1. the exact path (or pattern) required,
+2. read vs write,
+3. why (one sentence).
+
+Do **not** proceed until the user says yes for that scope.
+
+## Minimal operational exceptions (not a free pass)
+
+These are **not** a license to rummage the home directory:
+
+1. **Disposable OS temp** (`/tmp`, `$TMPDIR`): allowed only as staging for a
+   tool run whose **inputs and final outputs** stay inside the two allowed
+   trees (e.g. LibreOffice convert → copy result into `Compartarenta/…`).
+   Do not leave lasting project artifacts outside the perimeter.
+2. **This workspace’s Cursor harness** under  
+   `~/.cursor/projects/home-bvii-repos-Compartarenta/`  
+   (terminals metadata, agent transcripts) — only as required by existing
+   always-applied project rules (logging, terminal diagnosis). Nowhere else
+   under `~/.cursor/`.
+
+Anything else outside the two trees → **ask**.
+
+## Before saying “introuvable”
+
+When the user names a referent (file, logo, doc, asset…), **search both
+allowed trees** before declaring it missing — not only the open workspace.
+
+1. Search `~/repos/Compartarenta/` **and** `~/repos/online/bojairu.app/`
+   (name patterns, related folders, `find` / Glob / Grep as needed).
+2. Only then say you cannot find it (see `do-not-invent-missing-referents.mdc`).
+3. Do **not** expand outside these trees without permission.
+4. Do **not** skip `bojairu.app` because Cursor was opened on Compartarenta alone.
+
+## Relation
+
+- Complements `do-not-invent-missing-referents.mdc`: invent nothing; after a
+  real search of **both** trees, admit not found; ask before going elsewhere.
+- Complements `untracked-files-discipline.mdc` for gitignored paths **inside**
+  the Compartarenta tree.

@@ -1,0 +1,46 @@
+---
+description: >-
+  When the user names a file, logo, asset, or other referent you cannot find,
+  say so plainly — never invent a substitute, alias, or “close enough” match.
+alwaysApply: true
+---
+
+# Do not invent missing referents
+
+## Hard rule
+
+When the user refers to a **specific** object (file, logo, screenshot, script,
+path, document, asset…):
+
+1. **Search first** under **both** trees of `filesystem-perimeter.mdc`:
+   `~/repos/Compartarenta/` **and** `~/repos/online/bojairu.app/`.
+   A workspace-only glance is not enough.
+2. If that search **does not** find it:
+   - **Say so explicitly** in the user’s language — e.g.  
+     « Désolé, je ne trouve pas de logo créé pour Discord. »
+   - Optionally note that both trees were checked (briefly).
+   - **Stop** on that object (or ask one short clarifying question: path,
+     approximate name, folder, date).
+3. **Do not** invent, rename, alias, or “promote” another file as if it were
+   the missing one.
+4. **Do not** search outside the perimeter without explicit permission.
+
+## Forbidden (incident type — Discord logo, 28 Jul 2026)
+
+| Forbidden | Required |
+| --- | --- |
+| Taking a different logo and creating `logo-tornade-discord-*` aliases | Admit the Discord logo was not found |
+| Embedding / moving a “probable” match into the requested place | Wait for the user to point at the real file |
+| Claiming “found it” when only a related or similarly themed asset exists | Say not found; list what you *did* find only as candidates **if** the user asks |
+
+## Allowed
+
+- Report search scope briefly (folders checked) **without** presenting a
+  non-match as the answer.
+- After the user `@`-points or gives an exact path: move / use **that** file only.
+
+## Relation
+
+Complements `filesystem-perimeter.mdc` (where to search / not to search),
+`no-probability-coding.mdc` (no invented fixes), and
+`agent-scope-discipline.mdc` (do not invent parallel instructions).

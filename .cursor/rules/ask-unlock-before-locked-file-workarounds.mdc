@@ -1,0 +1,41 @@
+---
+description: Stop and ask the user to unlock a locked/inaccessible file; never bypass the lock
+alwaysApply: true
+---
+
+# Ask unlock — no locked-file workarounds
+
+## Hard rule
+
+When the target file is **locked**, **in use**, or otherwise **not safely writable** (LibreOffice/Office `.~lock.*`, editor lock, `EBUSY`, permission denied on the path the user asked to edit, “file open in another program”), **stop**.
+
+1. **Tell** the user which file is blocked and what holds it (if known).
+2. **Ask** them to close / unlock it (or grant access).
+3. **Wait** for their confirmation before writing that path.
+
+**Do not** treat “I can still write bytes” as permission to proceed.
+
+## Forbidden (founder incident — 29 Jul 2026)
+
+Saying or doing the equivalent of *« je corrige quand même »* while a LibreOffice lock is present on `instructions-tests-v1.odt`, then telling the user to close and reopen later.
+
+| Forbidden | Required |
+| --- | --- |
+| Edit / repack / overwrite the locked file “anyway” | Ask to close the app that holds the lock |
+| Copy-edit under another name to avoid the lock without asking | Ask; only use a side path if the user **explicitly** accepts that plan |
+| Patch via unzip/temp and silently replace the live file while locked | Same — ask first |
+| Frame the bypass as “easier” or “faster” than asking | Asking is the default; participation is cheaper than a corrupted save |
+
+## Why
+
+A one-line request to unlock is **simpler and safer** than any agent workaround. Contourner le verrou risque d’écraser la session ouverte de l’utilisateur ou de livrer un fichier que LibreOffice (ou l’éditeur) ne rechargera pas correctement.
+
+## Allowed without asking
+
+- **Read-only** inspection of the locked file or its lock metadata.
+- Continuing **other** work that does not write the locked path.
+- After the user says the file is closed / unlocked: edit normally.
+
+## Self-check
+
+Before any write: “Is there a lock or access block on this path?” If yes → **ask**, do not invent a bypass.
