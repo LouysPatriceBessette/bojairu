@@ -109,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             title: Text(l10n.settingsPrivacyPolicyTitle),
-            subtitle: Text(privacyPolicyUrl.toString()),
+            subtitle: Text(l10n.settingsPrivacyPolicySubtitle),
             onTap: () async {
               await launchUrl(
                 privacyPolicyUrl,

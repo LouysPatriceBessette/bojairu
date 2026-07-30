@@ -108,6 +108,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsPrivacyPolicyTitle => 'Politique de confidentialité';
 
   @override
+  String get settingsPrivacyPolicySubtitle =>
+      'Comment sont traitées vos informations personnelles';
+
+  @override
   String get settingsAppVersionTitle => 'Version de l’application';
 
   @override
@@ -3303,7 +3307,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get helpFaqIntro =>
-      'Réponses aux questions fréquentes sur le fonctionnement de Bojairũ.';
+      'Réponses aux questions fréquentes sur le fonctionnement de Bojairũ';
 
   @override
   String get housingVoteRefusedByAgreementExpiration =>

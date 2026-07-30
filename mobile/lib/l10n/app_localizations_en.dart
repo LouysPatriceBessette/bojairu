@@ -108,6 +108,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPrivacyPolicyTitle => 'Privacy policy';
 
   @override
+  String get settingsPrivacyPolicySubtitle =>
+      'How your personal information is handled';
+
+  @override
   String get settingsAppVersionTitle => 'App version';
 
   @override
@@ -3269,7 +3273,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpFaqIntro =>
-      'Answers to common questions about how Bojairũ works.';
+      'Answers to common questions about how Bojairũ works';
 
   @override
   String get housingVoteRefusedByAgreementExpiration =>

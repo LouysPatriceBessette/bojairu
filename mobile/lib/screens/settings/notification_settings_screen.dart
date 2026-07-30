@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/app_text_field.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../widgets/screen_body_padding.dart';
@@ -7,8 +6,6 @@ import '../../notifications/notification_permission_gate.dart';
 import '../../notifications/push_notification_service.dart';
 import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
-import '../../util/routing_push_country_codes.dart';
-import '../../widgets/routing_push_country_picker_sheet.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({
@@ -28,34 +25,13 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   late Future<NotificationSystemPermissionStatus> _status;
-  late final TextEditingController _countryField;
 
   @override
   void initState() {
     super.initState();
-    _countryField = TextEditingController();
     _status = widget.prefs.notificationsEnabled
         ? _verifyEnabledNotificationsOnLoad()
         : Future.value(NotificationSystemPermissionStatus.unknown);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncCountryFieldText();
-  }
-
-  @override
-  void dispose() {
-    _countryField.dispose();
-    super.dispose();
-  }
-
-  void _syncCountryFieldText() {
-    final label = _effectiveCountryDisplayName(context);
-    if (_countryField.text != label) {
-      _countryField.text = label;
-    }
   }
 
   Future<void> _refreshStatus() async {
@@ -273,102 +249,9 @@ class _NotificationSettingsScreenState
             title: Text(l10n.settingsNotificationsSoundPickerTitle),
             subtitle: Text(l10n.settingsNotificationsSoundPickerBody),
           ),
-          const Divider(),
-          _SectionHeader(title: l10n.settingsNotificationsCountryStatsSection),
-          SwitchListTile(
-            title: Text(l10n.settingsNotificationsCountryStatsSwitchTitle),
-            subtitle: Text(
-              l10n.settingsNotificationsCountryStatsSwitchSubtitle,
-            ),
-            value: widget.prefs.notificationCountryStatisticsEnabled,
-            onChanged: notificationsEnabled
-                ? (value) async {
-                    await widget.prefs
-                        .setNotificationCountryStatisticsEnabled(value);
-                    if (value &&
-                        (widget.prefs.notificationCountryStatisticsCode ==
-                                null ||
-                            widget.prefs.notificationCountryStatisticsCode!
-                                .isEmpty)) {
-                      await widget.prefs.setNotificationCountryStatisticsCode(
-                        kRoutingPushSupportedCountries.first.code,
-                      );
-                    }
-                    HandshakeOrchestrator
-                        .requestClosedAppPushRegistrationSync();
-                    if (mounted) {
-                      _syncCountryFieldText();
-                      setState(() {});
-                    }
-                  }
-                : null,
-          ),
-          if (notificationsEnabled &&
-              widget.prefs.notificationCountryStatisticsEnabled)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: AppTextFormField(
-                key: const ValueKey('countryStatsCountryField'),
-                readOnly: true,
-                canRequestFocus: false,
-                controller: _countryField,
-                decoration: InputDecoration(
-                  labelText: l10n.settingsNotificationsCountryStatsPickerLabel,
-                  hintText:
-                      l10n.settingsNotificationsCountryStatsSearchHint,
-                  suffixIcon: const Icon(Icons.arrow_drop_down),
-                ),
-                onTap: () async {
-                  FocusScope.of(context).unfocus();
-                  final code = await showRoutingPushCountryPicker(
-                    context,
-                    searchHint:
-                        l10n.settingsNotificationsCountryStatsSearchHint,
-                    emptyLabel:
-                        l10n.settingsNotificationsCountryStatsEmpty,
-                    languageCode: _languageCode(context),
-                    selectedCode: _effectiveCountryCode(),
-                  );
-                  if (code == null) return;
-                  await widget.prefs.setNotificationCountryStatisticsCode(
-                    code,
-                  );
-                  HandshakeOrchestrator
-                      .requestClosedAppPushRegistrationSync();
-                  if (mounted) {
-                    _syncCountryFieldText();
-                    setState(() {});
-                  }
-                },
-              ),
-            ),
-          // Extra breathing room below the picker so the trailing dropdown
-          // arrow stays well above the bottom screen edge (~3 lines of body
-          // text).
-          const SizedBox(height: 72),
         ],
       ),
     );
-  }
-
-  String _languageCode(BuildContext context) {
-    return Localizations.localeOf(context).languageCode;
-  }
-
-  String _effectiveCountryDisplayName(BuildContext context) {
-    final code = _effectiveCountryCode();
-    final country = supportedRoutingPushCountryByCode(code);
-    if (country == null) return code;
-    return country.displayName(_languageCode(context));
-  }
-
-  String _effectiveCountryCode() {
-    final raw = widget.prefs.notificationCountryStatisticsCode;
-    if (raw != null && raw.length == 2) {
-      final found = supportedRoutingPushCountryByCode(raw);
-      if (found != null) return found.code;
-    }
-    return kRoutingPushSupportedCountries.first.code;
   }
 
   String _statusLabel(

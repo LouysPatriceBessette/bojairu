@@ -298,6 +298,12 @@ abstract class AppLocalizations {
   /// **'Privacy policy'**
   String get settingsPrivacyPolicyTitle;
 
+  /// No description provided for @settingsPrivacyPolicySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How your personal information is handled'**
+  String get settingsPrivacyPolicySubtitle;
+
   /// No description provided for @settingsAppVersionTitle.
   ///
   /// In en, this message translates to:
@@ -5530,7 +5536,7 @@ abstract class AppLocalizations {
   /// No description provided for @helpFaqIntro.
   ///
   /// In en, this message translates to:
-  /// **'Answers to common questions about how Bojairũ works.'**
+  /// **'Answers to common questions about how Bojairũ works'**
   String get helpFaqIntro;
 
   /// No description provided for @housingVoteRefusedByAgreementExpiration.
