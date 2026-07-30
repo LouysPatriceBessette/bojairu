@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/screen_body_padding.dart';
 
+/// Picks a connected contact to invite; continues to the offer form stub.
 class VehicleSharingOfferScreen extends StatefulWidget {
   const VehicleSharingOfferScreen({
     super.key,
@@ -32,15 +33,28 @@ class _VehicleSharingOfferScreenState extends State<VehicleSharingOfferScreen> {
   }
 
   Future<void> _load() async {
+    final repo = VehiclesRepository(AppDatabase.processScope);
+    final links = await repo.listSharingLinksForVehicle(widget.vehicleId);
+    final activeBorrowerIds = {
+      for (final l in links)
+        if (l.status == VehicleSharingLinkStatus.active.wire) l.borrowerContactId,
+    };
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
+    final connected = contacts
+        .where(
+          (c) =>
+              c.kind == 'connected' && !activeBorrowerIds.contains(c.id),
+        )
+        .toList();
+
     if (!mounted) return;
     setState(() {
-      _contacts = contacts;
+      _contacts = connected;
       _loading = false;
     });
   }
 
-  Future<void> _offer(String contactId) async {
+  void _select(String contactId) {
     final access = const VehicleModuleAccess();
     final l10n = AppLocalizations.of(context);
     if (!access.canOfferSharing) {
@@ -49,15 +63,10 @@ class _VehicleSharingOfferScreenState extends State<VehicleSharingOfferScreen> {
       );
       return;
     }
-    await VehiclesRepository(AppDatabase.processScope).createSharingOffer(
-      vehicleId: widget.vehicleId,
-      borrowerContactId: contactId,
+    final encoded = Uri.encodeComponent(contactId);
+    context.push(
+      '/vehicle-sharing/${widget.vehicleId}/invite-form?contactId=$encoded',
     );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.vehicleSharingOfferSent)),
-    );
-    context.pop();
   }
 
   @override
@@ -78,7 +87,7 @@ class _VehicleSharingOfferScreenState extends State<VehicleSharingOfferScreen> {
                   ..._contacts.map(
                     (c) => ListTile(
                       title: Text(c.displayName),
-                      onTap: () => _offer(c.id),
+                      onTap: () => _select(c.id),
                     ),
                   ),
               ],

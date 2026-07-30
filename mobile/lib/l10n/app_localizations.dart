@@ -7191,23 +7191,77 @@ abstract class AppLocalizations {
   /// **'Borrower'**
   String get vehicleRoleBorrower;
 
+  /// No description provided for @vehicleSharingShareableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shareable vehicle'**
+  String get vehicleSharingShareableTitle;
+
+  /// No description provided for @vehicleSharingShareableTitlePlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Shareable vehicles'**
+  String get vehicleSharingShareableTitlePlural;
+
   /// No description provided for @vehicleSharingAccessibleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Accessible vehicles'**
+  /// **'Accessible vehicle'**
   String get vehicleSharingAccessibleTitle;
 
-  /// No description provided for @vehicleSharingAccessibleEmpty.
+  /// No description provided for @vehicleSharingAccessibleTitlePlural.
   ///
   /// In en, this message translates to:
-  /// **'No shared vehicles yet.'**
-  String get vehicleSharingAccessibleEmpty;
+  /// **'Accessible vehicles'**
+  String get vehicleSharingAccessibleTitlePlural;
 
-  /// No description provided for @vehicleSharingPendingOffers.
+  /// No description provided for @vehicleSharingPendingOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending offer'**
+  String get vehicleSharingPendingOfferTitle;
+
+  /// No description provided for @vehicleSharingPendingOfferTitlePlural.
   ///
   /// In en, this message translates to:
   /// **'Pending offers'**
-  String get vehicleSharingPendingOffers;
+  String get vehicleSharingPendingOfferTitlePlural;
+
+  /// No description provided for @vehicleSharingEmptyNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get vehicleSharingEmptyNone;
+
+  /// No description provided for @vehicleSharingEmptyNoneFeminine.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get vehicleSharingEmptyNoneFeminine;
+
+  /// No description provided for @vehicleSharingSharesDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get vehicleSharingSharesDetailTitle;
+
+  /// No description provided for @vehicleSharingAddShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a share'**
+  String get vehicleSharingAddShare;
+
+  /// No description provided for @vehicleSharingNewShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New share'**
+  String get vehicleSharingNewShareTitle;
+
+  /// No description provided for @vehicleSharingInviteFormStubBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Form content to be defined.'**
+  String get vehicleSharingInviteFormStubBody;
 
   /// No description provided for @vehicleSharingAccept.
   ///

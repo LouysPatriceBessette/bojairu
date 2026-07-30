@@ -4313,14 +4313,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vehicleRoleBorrower => 'Prestatario';
 
   @override
-  String get vehicleSharingAccessibleTitle => 'Vehículos accesibles';
+  String get vehicleSharingShareableTitle => 'Vehículo compartible';
 
   @override
-  String get vehicleSharingAccessibleEmpty =>
-      'Aún no hay vehículos compartidos.';
+  String get vehicleSharingShareableTitlePlural => 'Vehículos compartibles';
 
   @override
-  String get vehicleSharingPendingOffers => 'Ofertas pendientes';
+  String get vehicleSharingAccessibleTitle => 'Vehículo accesible';
+
+  @override
+  String get vehicleSharingAccessibleTitlePlural => 'Vehículos accesibles';
+
+  @override
+  String get vehicleSharingPendingOfferTitle => 'Oferta pendiente';
+
+  @override
+  String get vehicleSharingPendingOfferTitlePlural => 'Ofertas pendientes';
+
+  @override
+  String get vehicleSharingEmptyNone => 'Ninguno';
+
+  @override
+  String get vehicleSharingEmptyNoneFeminine => 'Ninguna';
+
+  @override
+  String get vehicleSharingSharesDetailTitle => 'Compartidos';
+
+  @override
+  String get vehicleSharingAddShare => 'Añadir un compartido';
+
+  @override
+  String get vehicleSharingNewShareTitle => 'Nuevo compartido';
+
+  @override
+  String get vehicleSharingInviteFormStubBody =>
+      'Contenido del formulario por definir.';
 
   @override
   String get vehicleSharingAccept => 'Aceptar';

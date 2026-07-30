@@ -24,6 +24,8 @@ class VehicleSharingHubScreen extends StatefulWidget {
 
 class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   final _access = const VehicleModuleAccess();
+  List<Vehicle> _shareable = const [];
+  Set<String> _vehicleIdsWithActiveShare = const {};
   List<({Vehicle vehicle, VehicleSharingLink link})> _accessible = const [];
   List<VehicleSharingLink> _pendingOffers = const [];
   Map<String, String> _contactLabels = const {};
@@ -40,11 +42,18 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
     final labels = {for (final c in contacts) c.id: c.displayName};
 
+    final shareable = await repo.listActiveOwnedVehicles();
+    final ownerActiveLinks = await repo.listActiveLinksAsOwner();
+    final sharedIds = {
+      for (final link in ownerActiveLinks) link.vehicleId,
+    };
     final accessible = await repo.listBorrowerAccessibleEntries();
     final pending = await repo.listPendingBorrowerOffers();
 
     if (!mounted) return;
     setState(() {
+      _shareable = shareable;
+      _vehicleIdsWithActiveShare = sharedIds;
       _accessible = accessible;
       _pendingOffers = pending;
       _contactLabels = labels;
@@ -80,13 +89,74 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
               child: ListView(
                 padding: screenBodyScrollPadding(context),
                 children: [
-                  if (_pendingOffers.isNotEmpty) ...[
-                    Text(
-                      l10n.vehicleSharingPendingOffers,
-                      style: Theme.of(context).textTheme.titleMedium,
+                  _sectionTitle(
+                    context,
+                    _countTitle(
+                      _shareable.length,
+                      l10n.vehicleSharingShareableTitle,
+                      l10n.vehicleSharingShareableTitlePlural,
                     ),
+                  ),
+                  if (_shareable.isEmpty)
+                    Text(l10n.vehicleSharingEmptyNone)
+                  else
+                    ..._shareable.map(
+                      (vehicle) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: _vehicleIdsWithActiveShare.contains(vehicle.id)
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              )
+                            : const SizedBox(width: 24),
+                        title: Text(vehicle.displayLabel),
+                        onTap: () async {
+                          await context.push(
+                            '/vehicle-sharing/${vehicle.id}/shares',
+                          );
+                          _reload();
+                        },
+                      ),
+                    ),
+                  const Divider(height: 32),
+                  _sectionTitle(
+                    context,
+                    _countTitle(
+                      _accessible.length,
+                      l10n.vehicleSharingAccessibleTitle,
+                      l10n.vehicleSharingAccessibleTitlePlural,
+                    ),
+                  ),
+                  if (_accessible.isEmpty)
+                    Text(l10n.vehicleSharingEmptyNone)
+                  else
+                    ..._accessible.map(
+                      (entry) => _AccessibleCard(
+                        vehicle: entry.vehicle,
+                        link: entry.link,
+                        ownerLabel: _ownerLabel(
+                          entry.vehicle,
+                          _contactLabels,
+                          l10n,
+                        ),
+                        prefs: widget.prefs,
+                      ),
+                    ),
+                  const Divider(height: 32),
+                  _sectionTitle(
+                    context,
+                    _countTitle(
+                      _pendingOffers.length,
+                      l10n.vehicleSharingPendingOfferTitle,
+                      l10n.vehicleSharingPendingOfferTitlePlural,
+                    ),
+                  ),
+                  if (_pendingOffers.isEmpty)
+                    Text(l10n.vehicleSharingEmptyNoneFeminine)
+                  else
                     ..._pendingOffers.map(
                       (link) => ListTile(
+                        contentPadding: EdgeInsets.zero,
                         title: Text(link.vehicleId),
                         trailing: FilledButton(
                           onPressed: () async {
@@ -98,28 +168,24 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                         ),
                       ),
                     ),
-                    const Divider(height: 32),
-                  ],
-                  Text(
-                    l10n.vehicleSharingAccessibleTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  if (_accessible.isEmpty)
-                    Text(l10n.vehicleSharingAccessibleEmpty)
-                  else
-                    ..._accessible.map(
-                      (entry) => _AccessibleCard(
-                        vehicle: entry.vehicle,
-                        link: entry.link,
-                        ownerLabel: _ownerLabel(entry.vehicle, _contactLabels, l10n),
-                        prefs: widget.prefs,
-                      ),
-                    ),
                 ],
               ),
             ),
     );
+  }
+
+  Widget _sectionTitle(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+
+  String _countTitle(int count, String singular, String plural) {
+    return count <= 1 ? singular : plural;
   }
 
   String _ownerLabel(
@@ -161,7 +227,10 @@ class _AccessibleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(vehicle.displayLabel, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              vehicle.displayLabel,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             Text(l10n.vehicleSharingOwnerLabel(ownerLabel)),
             const SizedBox(height: 8),
             Wrap(
