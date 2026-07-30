@@ -67,6 +67,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
 
   Future<List<Contact>>? _future;
   bool _refreshingIncoming = false;
+  bool _sandboxActive = false;
 
   /// Last seen length of [HandshakeOrchestrator.incomingHandshakes]. When it
   /// changes (e.g. inviter accepts the last request), we reload contacts so
@@ -87,6 +88,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   void initState() {
     super.initState();
     _reload();
+    unawaited(_loadSandboxFlag());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _router = GoRouter.of(context);
@@ -106,6 +108,12 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
         unawaited(_maybeShowPendingDuplicateDialog());
       });
     }
+  }
+
+  Future<void> _loadSandboxFlag() async {
+    final prefs = await AppPreferences.load();
+    if (!mounted) return;
+    setState(() => _sandboxActive = SandboxMode.isActive(prefs));
   }
 
   @override
@@ -327,7 +335,9 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
             child: IconButton(
               tooltip: l10n.contactsEnterInviteCodeTitle,
               icon: const Icon(Icons.qr_code_scanner),
-              onPressed: () => navigateTo(context, '/contacts/redeem'),
+              onPressed: _sandboxActive
+                  ? null
+                  : () => navigateTo(context, '/contacts/redeem'),
             ),
           ),
           IconButton(

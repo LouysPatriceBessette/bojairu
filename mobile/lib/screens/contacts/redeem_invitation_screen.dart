@@ -17,6 +17,7 @@ import '../../notifications/contact_notification_service.dart';
 import '../../notifications/notification_flow_permission_trigger.dart';
 import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
+import '../../sandbox/sandbox_mode.dart';
 import '../../util/deadline_remaining.dart';
 import '../../util/display_date.dart';
 import '../../util/product_legal_urls.dart';
@@ -72,14 +73,23 @@ class _RedeemInvitationScreenState extends State<RedeemInvitationScreen> {
   @override
   void initState() {
     super.initState();
-    final initial = widget.initialInvitationUri?.trim();
-    if (initial != null && initial.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await AppPreferences.load();
+      if (!mounted) return;
+      if (SandboxMode.isActive(prefs)) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.sandboxModuleDisabled)),
+        );
+        Navigator.of(context).maybePop();
+        return;
+      }
+      final initial = widget.initialInvitationUri?.trim();
+      if (initial != null && initial.isNotEmpty) {
         _controller.text = initial;
         _validate();
-      });
-    }
+      }
+    });
   }
 
   @override
@@ -136,6 +146,13 @@ class _RedeemInvitationScreenState extends State<RedeemInvitationScreen> {
     if (!mounted) return;
     final prefs = await AppPreferences.load();
     if (!mounted) return;
+    if (SandboxMode.isActive(prefs)) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.sandboxModuleDisabled)),
+      );
+      return;
+    }
     final notificationResult = await const NotificationFlowPermissionTrigger()
         .ensure(
           context: context,

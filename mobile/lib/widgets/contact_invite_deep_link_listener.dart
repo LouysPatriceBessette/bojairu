@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../contacts/invitation_code.dart';
+import '../l10n/app_localizations.dart';
 import '../prefs/app_preferences.dart';
+import '../sandbox/sandbox_mode.dart';
 
 /// Listens for `bojairu://contact/invite?...` app links and navigates
 /// to the redeem screen with the full URI as [GoRouterState.extra].
@@ -66,6 +68,21 @@ class _ContactInviteDeepLinkListenerState
           'Contact invite deep link ignored until onboarding completes.',
         );
       }
+      return;
+    }
+    if (SandboxMode.isActive(widget.prefs)) {
+      if (kDebugMode) {
+        debugPrint(
+          'Contact invite deep link ignored while simulation mode is active.',
+        );
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.sandboxModuleDisabled)),
+        );
+      });
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
