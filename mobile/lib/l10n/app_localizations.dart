@@ -3581,6 +3581,39 @@ abstract class AppLocalizations {
   /// **'Open the app to review the proposal.'**
   String get pushNotificationHousingProposalBody;
 
+  /// No description provided for @pushNotificationVehicleSharingOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing offer'**
+  String get pushNotificationVehicleSharingOfferTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingOfferBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Vehicle sharing to review the offer.'**
+  String get pushNotificationVehicleSharingOfferBody;
+
+  /// No description provided for @pushNotificationVehicleSharingOfferBodyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} offered to share {vehicle} with you.'**
+  String pushNotificationVehicleSharingOfferBodyFrom(
+    String name,
+    String vehicle,
+  );
+
+  /// No description provided for @vehicleSharingOfferRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer saved here, but sending to the contact failed. Try again later.'**
+  String get vehicleSharingOfferRelayFailed;
+
+  /// No description provided for @vehicleSharingAcceptRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance saved here, but sending to the owner failed. Try again later.'**
+  String get vehicleSharingAcceptRelayFailed;
+
   /// No description provided for @pushNotificationHousingAgreementActivatedTitle.
   ///
   /// In en, this message translates to:

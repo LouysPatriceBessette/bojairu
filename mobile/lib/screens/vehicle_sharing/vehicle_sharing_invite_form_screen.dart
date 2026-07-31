@@ -11,6 +11,8 @@ import '../../db/repositories/vehicles_repository.dart';
 import '../../housing/quiet_hours_week_grid.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
+import '../../relay/relay_client.dart';
 import '../../util/format_money.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/app_dialog.dart';
@@ -311,7 +313,8 @@ class _VehicleSharingInviteFormScreenState
       final currency = widget.prefs.currency.trim().isEmpty
           ? 'CAD'
           : widget.prefs.currency.trim();
-      await VehiclesRepository(AppDatabase.processScope).createSharingOffer(
+      final link =
+          await VehiclesRepository(AppDatabase.processScope).createSharingOffer(
         vehicleId: widget.vehicleId,
         borrowerContactId: widget.contactId,
         ratePerKmMinor: rateCents,
@@ -319,6 +322,43 @@ class _VehicleSharingInviteFormScreenState
         availabilityWeekJson: _encodeAvailabilityWeekJson(),
         ownerRulesText: _rulesController.text.trim(),
       );
+      final orch = HandshakeOrchestrator.maybeInstance;
+      if (orch != null) {
+        try {
+          await orch.sendVehicleSharingOffer(
+            linkId: link.id,
+            borrowerContactId: widget.contactId,
+          );
+        } on HandshakeOrchestratorError {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingOfferRelayFailed)),
+          );
+          context.pop();
+          return;
+        } on RelayClientError {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingOfferRelayFailed)),
+          );
+          context.pop();
+          return;
+        } on RelayUnreachableException {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingOfferRelayFailed)),
+          );
+          context.pop();
+          return;
+        } on TimeoutException {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingOfferRelayFailed)),
+          );
+          context.pop();
+          return;
+        }
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.vehicleSharingOfferSent)),

@@ -798,6 +798,17 @@
   "housingInviteReceivedOpenAction": "Ver",
   "pushNotificationHousingProposalTitle": "Propuesta de vivienda",
   "pushNotificationHousingProposalBody": "Abra la aplicación para revisar la propuesta.",
+  "pushNotificationVehicleSharingOfferTitle": "Oferta de uso compartido de vehículo",
+  "pushNotificationVehicleSharingOfferBody": "Abra Uso compartido de vehículo para revisar la oferta.",
+  "pushNotificationVehicleSharingOfferBodyFrom": "{name} le ofrece compartir {vehicle}.",
+  "@pushNotificationVehicleSharingOfferBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "vehicleSharingOfferRelayFailed": "Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.",
+  "vehicleSharingAcceptRelayFailed": "Aceptación guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
   "pushNotificationHousingAgreementActivatedTitle": "Acuerdo unánime",
   "pushNotificationHousingAgreementActivatedBody": "Su grupo ha alcanzado un acuerdo de vivienda unánime.",
   "pushNotificationHousingRealizedExpenseTitle": "Gasto por revisar",

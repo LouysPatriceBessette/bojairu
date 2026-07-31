@@ -26,6 +26,8 @@ class EnvelopeKind {
   static const int contactEstablishmentRequest = 13;
   static const int contactEstablishmentResponse = 14;
   static const int participantInstallationMigration = 15;
+  static const int vehicleSharingOffer = 16;
+  static const int vehicleSharingOfferAccept = 17;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -257,6 +259,28 @@ class ContactEstablishmentResponseEnvelope {
   final String responderAvatarId;
 }
 
+/// Steady-state vehicle sharing offer (Propriétaire → Emprunteur).
+class VehicleSharingOfferEnvelope {
+  VehicleSharingOfferEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.offerJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String offerJson;
+}
+
+/// Steady-state accept of a vehicle sharing offer (Emprunteur → Propriétaire).
+class VehicleSharingOfferAcceptEnvelope {
+  VehicleSharingOfferAcceptEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.acceptJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String acceptJson;
+}
+
 // ---------- HKDF info strings ----------
 
 const String _helloAeadInfo = 'compartarenta/handshake-v1/hello-aead';
@@ -284,6 +308,10 @@ const String _contactEstablishmentRequestAeadInfo =
     'compartarenta/steady-v1/contact-establishment-request-aead';
 const String _contactEstablishmentResponseAeadInfo =
     'compartarenta/steady-v1/contact-establishment-response-aead';
+const String _vehicleSharingOfferAeadInfo =
+    'compartarenta/steady-v1/vehicle-sharing-offer-aead';
+const String _vehicleSharingOfferAcceptAeadInfo =
+    'compartarenta/steady-v1/vehicle-sharing-offer-accept-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -1319,6 +1347,139 @@ class EnvelopeCodec {
       accepted: accepted,
       responderDisplayName: (json['responder_display_name'] as String?) ?? '',
       responderAvatarId: (json['responder_avatar_id'] as String?) ?? '',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle sharing offer envelope.
+  static Future<Uint8List> encryptVehicleSharingOffer({
+    required VehicleSharingOfferEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleSharingOfferAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleSharingOffer,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'offer_json': envelope.offerJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle sharing offer envelope.
+  static Future<VehicleSharingOfferEnvelope> decryptVehicleSharingOffer({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleSharingOffer);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleSharingOfferAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleSharingOfferEnvelope(
+      senderLongTermPublicKey: senderPub,
+      offerJson: (json['offer_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle sharing offer accept envelope.
+  static Future<Uint8List> encryptVehicleSharingOfferAccept({
+    required VehicleSharingOfferAcceptEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleSharingOfferAcceptAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleSharingOfferAccept,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'accept_json': envelope.acceptJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle sharing offer accept envelope.
+  static Future<VehicleSharingOfferAcceptEnvelope>
+  decryptVehicleSharingOfferAccept({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleSharingOfferAccept);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleSharingOfferAcceptAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleSharingOfferAcceptEnvelope(
+      senderLongTermPublicKey: senderPub,
+      acceptJson: (json['accept_json'] as String?) ?? '{}',
     );
   }
 }

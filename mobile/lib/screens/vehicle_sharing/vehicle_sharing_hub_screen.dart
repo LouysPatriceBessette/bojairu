@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +8,8 @@ import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
+import '../../relay/relay_client.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../vehicle/vehicle_module_exit.dart';
 import '../../vehicle/vehicle_owner_contact.dart';
@@ -27,13 +31,28 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   List<Vehicle> _shareable = const [];
   Set<String> _vehicleIdsWithActiveShare = const {};
   List<({Vehicle vehicle, VehicleSharingLink link})> _accessible = const [];
-  List<VehicleSharingLink> _pendingOffers = const [];
+  List<({VehicleSharingLink link, String vehicleLabel})> _pendingOffers =
+      const [];
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
+  HandshakeOrchestrator? _steadyOrch;
 
   @override
   void initState() {
     super.initState();
+    _steadyOrch = HandshakeOrchestrator.maybeInstance;
+    _steadyOrch?.steadyStateInboxTick.addListener(_onSteadyInboxTick);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _steadyOrch?.steadyStateInboxTick.removeListener(_onSteadyInboxTick);
+    super.dispose();
+  }
+
+  void _onSteadyInboxTick() {
+    if (!mounted) return;
     _reload();
   }
 
@@ -48,7 +67,17 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       for (final link in ownerActiveLinks) link.vehicleId,
     };
     final accessible = await repo.listBorrowerAccessibleEntries();
-    final pending = await repo.listPendingBorrowerOffers();
+    final pendingLinks = await repo.listPendingBorrowerOffers();
+    final pending = <({VehicleSharingLink link, String vehicleLabel})>[];
+    for (final link in pendingLinks) {
+      final v = await repo.getVehicle(link.vehicleId);
+      pending.add((
+        link: link,
+        vehicleLabel: v?.displayLabel.trim().isNotEmpty == true
+            ? v!.displayLabel
+            : link.vehicleId,
+      ));
+    }
 
     if (!mounted) return;
     setState(() {
@@ -59,6 +88,39 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       _contactLabels = labels;
       _loading = false;
     });
+  }
+
+  Future<void> _acceptOffer(VehicleSharingLink link) async {
+    final l10n = AppLocalizations.of(context);
+    final repo = VehiclesRepository(AppDatabase.processScope);
+    await repo.acceptSharingLink(link.id);
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch != null) {
+      try {
+        await orch.sendVehicleSharingOfferAccept(linkId: link.id);
+      } on HandshakeOrchestratorError {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+        );
+      } on RelayClientError {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+        );
+      } on RelayUnreachableException {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+        );
+      } on TimeoutException {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+        );
+      }
+    }
+    await _reload();
   }
 
   @override
@@ -155,15 +217,11 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                     Text(l10n.vehicleSharingEmptyNoneFeminine)
                   else
                     ..._pendingOffers.map(
-                      (link) => ListTile(
+                      (entry) => ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(link.vehicleId),
+                        title: Text(entry.vehicleLabel),
                         trailing: FilledButton(
-                          onPressed: () async {
-                            await VehiclesRepository(AppDatabase.processScope)
-                                .acceptSharingLink(link.id);
-                            _reload();
-                          },
+                          onPressed: () => _acceptOffer(entry.link),
                           child: Text(l10n.vehicleSharingAccept),
                         ),
                       ),

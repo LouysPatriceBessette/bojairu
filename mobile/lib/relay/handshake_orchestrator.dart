@@ -40,6 +40,8 @@ import '../notifications/contact_notification_service.dart';
 import '../notifications/push_notification_service.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
+import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
+import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
 import 'identity_keystore.dart';
 import 'relay_client.dart';
@@ -1255,6 +1257,22 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleSharingOffer) {
+            await _handleInboundVehicleSharingOffer(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleSharingOfferAccept) {
+            await _handleInboundVehicleSharingOfferAccept(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else {
             await _relay.ackEnvelope(
               envelopeId: env.envelopeId,
@@ -1637,6 +1655,122 @@ class HandshakeOrchestrator {
     await _applyHousingProposalResponse(
       decrypted,
       senderDisplayName: contact.displayName,
+    );
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  Future<void> _handleInboundVehicleSharingOffer({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleSharingOfferEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleSharingOffer(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_sharing_offer decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        debugPrint(
+          'vehicle_sharing_offer sender pubkey mismatch for ${contact.id} '
+          '(envelope ${envelope.envelopeId})',
+        );
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    final imported =
+        await VehicleSharingOfferTransportService(_db).importReceivedOffer(
+      offerJson: decrypted.offerJson,
+      senderContactId: senderContact.id,
+    );
+    debugPrint(
+      'vehicle_sharing_offer imported from ${senderContact.id} '
+      'link=${imported.linkId} vehicle=${imported.vehicleLabel}',
+    );
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+    if (_ownsDeviceHousingNotifications) {
+      await PushNotificationService.showLocalVehicleSharingOfferNotification(
+        senderDisplayName: senderContact.displayName,
+        vehicleLabel: imported.vehicleLabel,
+      );
+    }
+    startPolling();
+    requestClosedAppPushRegistrationSync();
+  }
+
+  Future<void> _handleInboundVehicleSharingOfferAccept({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleSharingOfferAcceptEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleSharingOfferAccept(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_sharing_offer_accept decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+    }
+
+    final applied = await VehicleSharingOfferTransportService(_db)
+        .importReceivedAccept(acceptJson: decrypted.acceptJson);
+    debugPrint(
+      'vehicle_sharing_offer_accept from ${contact.id} applied=$applied',
     );
     await _relay.ackEnvelope(
       envelopeId: envelope.envelopeId,
@@ -3937,6 +4071,111 @@ class HandshakeOrchestrator {
     } on TimeoutException {
       // best-effort
     }
+  }
+
+  /// Posts an encrypted vehicle-sharing offer to [borrowerContactId].
+  Future<void> sendVehicleSharingOffer({
+    required String linkId,
+    required String borrowerContactId,
+  }) async {
+    final contact = await _contacts.get(borrowerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final offerJson =
+        await VehicleSharingOfferTransportService(_db).exportOfferJson(linkId);
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleSharingOffer(
+      envelope: VehicleSharingOfferEnvelope(
+        senderLongTermPublicKey: selfPub,
+        offerJson: offerJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleSharingOffer,
+      ttl: _steadyTtl,
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts an encrypted accept for [linkId] to the Propriétaire contact.
+  Future<void> sendVehicleSharingOfferAccept({required String linkId}) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final acceptedAt = link.acceptedAt ?? DateTime.now().toUtc();
+    final acceptJson = VehicleSharingOfferTransportService(_db).exportAcceptJson(
+      linkId: linkId,
+      acceptedAt: acceptedAt,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleSharingOfferAccept(
+      envelope: VehicleSharingOfferAcceptEnvelope(
+        senderLongTermPublicKey: selfPub,
+        acceptJson: acceptJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleSharingOfferAccept,
+      ttl: _steadyTtl,
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
 
   /// Sends a `disconnect` envelope to a single connected contact and

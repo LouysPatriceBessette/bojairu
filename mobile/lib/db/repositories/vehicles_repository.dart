@@ -1285,6 +1285,147 @@ class VehiclesRepository {
     );
   }
 
+  Future<VehicleSharingLink?> getSharingLink(String linkId) {
+    return (_db.select(_db.vehicleSharingLinks)
+          ..where((t) => t.id.equals(linkId)))
+        .getSingleOrNull();
+  }
+
+  /// Upserts a peer-owned vehicle snapshot received with a sharing offer.
+  Future<void> upsertExternalOwnedVehicle({
+    required String vehicleId,
+    required String ownerContactId,
+    required String vehicleKind,
+    required String displayLabel,
+    String make = '',
+    String model = '',
+    String color = '',
+    int? modelYear,
+    String licensePlate = '',
+    double? fuelTankCapacityLiters,
+    String consumptionEstimationMode = 'detailed',
+    bool requireDetailedDrivingMixForBorrowers = false,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final existing = await getVehicle(vehicleId);
+    if (existing != null) {
+      if (existing.ownerContactId == kVehicleOwnerSelfContactId) {
+        throw StateError('cannot overwrite locally owned vehicle $vehicleId');
+      }
+      await (_db.update(_db.vehicles)..where((t) => t.id.equals(vehicleId)))
+          .write(
+        VehiclesCompanion(
+          ownerContactId: drift.Value(ownerContactId),
+          vehicleKind: drift.Value(vehicleKind),
+          displayLabel: drift.Value(displayLabel.trim()),
+          make: drift.Value(make.trim()),
+          model: drift.Value(model.trim()),
+          color: drift.Value(color.trim()),
+          modelYear: drift.Value(modelYear),
+          licensePlate: drift.Value(licensePlate.trim()),
+          fuelTankCapacityLiters: drift.Value(fuelTankCapacityLiters),
+          consumptionEstimationMode: drift.Value(consumptionEstimationMode),
+          requireDetailedDrivingMixForBorrowers: drift.Value(
+            requireDetailedDrivingMixForBorrowers,
+          ),
+          updatedAt: drift.Value(now),
+        ),
+      );
+      return;
+    }
+    await _db.into(_db.vehicles).insert(
+          VehiclesCompanion.insert(
+            id: vehicleId,
+            ownerContactId: ownerContactId,
+            vehicleKind: vehicleKind,
+            displayLabel: displayLabel.trim(),
+            make: drift.Value(make.trim()),
+            model: drift.Value(model.trim()),
+            color: drift.Value(color.trim()),
+            modelYear: drift.Value(modelYear),
+            licensePlate: drift.Value(licensePlate.trim()),
+            fuelTankCapacityLiters: drift.Value(fuelTankCapacityLiters),
+            consumptionEstimationMode: drift.Value(consumptionEstimationMode),
+            requireDetailedDrivingMixForBorrowers: drift.Value(
+              requireDetailedDrivingMixForBorrowers,
+            ),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+  }
+
+  /// Upserts a pending inbound sharing offer for the local Emprunteur.
+  Future<VehicleSharingLink> upsertInboundPendingOffer({
+    required String linkId,
+    required String vehicleId,
+    required String ownerContactId,
+    required DateTime createdAt,
+    int ratePerKmMinor = 0,
+    String rateCurrency = '',
+    String availabilityWeekJson = '',
+    String ownerRulesText = '',
+  }) async {
+    final existing = await getSharingLink(linkId);
+    if (existing != null) {
+      if (existing.status == VehicleSharingLinkStatus.active.wire ||
+          existing.status == VehicleSharingLinkStatus.revoked.wire) {
+        return existing;
+      }
+      await (_db.update(_db.vehicleSharingLinks)
+            ..where((t) => t.id.equals(linkId)))
+          .write(
+        VehicleSharingLinksCompanion(
+          vehicleId: drift.Value(vehicleId),
+          ownerContactId: drift.Value(ownerContactId),
+          borrowerContactId: const drift.Value(kVehicleBorrowerSelfContactId),
+          status: drift.Value(VehicleSharingLinkStatus.pending.wire),
+          ratePerKmMinor: drift.Value(ratePerKmMinor),
+          rateCurrency: drift.Value(rateCurrency),
+          availabilityWeekJson: drift.Value(availabilityWeekJson),
+          ownerRulesText: drift.Value(ownerRulesText),
+        ),
+      );
+      return (await getSharingLink(linkId))!;
+    }
+    await _db.into(_db.vehicleSharingLinks).insert(
+          VehicleSharingLinksCompanion.insert(
+            id: linkId,
+            vehicleId: vehicleId,
+            ownerContactId: ownerContactId,
+            borrowerContactId: kVehicleBorrowerSelfContactId,
+            status: VehicleSharingLinkStatus.pending.wire,
+            createdAt: createdAt.toUtc(),
+            ratePerKmMinor: drift.Value(ratePerKmMinor),
+            rateCurrency: drift.Value(rateCurrency),
+            availabilityWeekJson: drift.Value(availabilityWeekJson),
+            ownerRulesText: drift.Value(ownerRulesText),
+          ),
+        );
+    return (await getSharingLink(linkId))!;
+  }
+
+  /// Applies a remote accept on the Propriétaire device (link stays owned locally).
+  Future<bool> applyRemoteSharingOfferAccept({
+    required String linkId,
+    DateTime? acceptedAt,
+  }) async {
+    final existing = await getSharingLink(linkId);
+    if (existing == null) return false;
+    if (existing.status == VehicleSharingLinkStatus.active.wire) return true;
+    if (existing.status != VehicleSharingLinkStatus.pending.wire) return false;
+    final at = (acceptedAt ?? DateTime.now()).toUtc();
+    await (_db.update(_db.vehicleSharingLinks)
+          ..where((t) => t.id.equals(linkId)))
+        .write(
+      VehicleSharingLinksCompanion(
+        status: drift.Value(VehicleSharingLinkStatus.active.wire),
+        acceptedAt: drift.Value(at),
+      ),
+    );
+    return true;
+  }
+
   Future<void> revokeSharingLink(String linkId) async {
     final now = DateTime.now().toUtc();
     await (_db.update(_db.vehicleSharingLinks)

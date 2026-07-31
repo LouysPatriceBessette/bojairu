@@ -2074,6 +2074,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open the app to review the proposal.';
 
   @override
+  String get pushNotificationVehicleSharingOfferTitle =>
+      'Vehicle sharing offer';
+
+  @override
+  String get pushNotificationVehicleSharingOfferBody =>
+      'Open Vehicle sharing to review the offer.';
+
+  @override
+  String pushNotificationVehicleSharingOfferBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name offered to share $vehicle with you.';
+  }
+
+  @override
+  String get vehicleSharingOfferRelayFailed =>
+      'Offer saved here, but sending to the contact failed. Try again later.';
+
+  @override
+  String get vehicleSharingAcceptRelayFailed =>
+      'Acceptance saved here, but sending to the owner failed. Try again later.';
+
+  @override
   String get pushNotificationHousingAgreementActivatedTitle =>
       'Unanimous agreement';
 

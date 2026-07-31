@@ -466,5 +466,65 @@ void main() {
 
       expect(decoded.participantInstallationId, 'inst-responder-web');
     });
+
+    test('vehicle_sharing_offer round-trips offer_json', () async {
+      final aliceKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => i + 1)),
+      );
+      final bobKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => 0x40 + i)),
+      );
+      final alicePriv = await aliceKeystore.loadOrCreatePrivateKey();
+      final alicePub = await aliceKeystore.publicKey();
+      final bobPriv = await bobKeystore.loadOrCreatePrivateKey();
+      final bobPub = await bobKeystore.publicKey();
+
+      const payload = '{"kind":"vehicleSharingOffer","linkId":"vshare:1"}';
+      final frame = await EnvelopeCodec.encryptVehicleSharingOffer(
+        envelope: VehicleSharingOfferEnvelope(
+          senderLongTermPublicKey: alicePub,
+          offerJson: payload,
+        ),
+        senderLongTermPrivateKey: alicePriv,
+        peerLongTermPublicKey: bobPub,
+      );
+      expect(frame[1], EnvelopeKind.vehicleSharingOffer);
+      final decoded = await EnvelopeCodec.decryptVehicleSharingOffer(
+        frame: frame,
+        receiverLongTermPrivateKey: bobPriv,
+      );
+      expect(decoded.offerJson, payload);
+      expect(decoded.senderLongTermPublicKey, equals(alicePub));
+    });
+
+    test('vehicle_sharing_offer_accept round-trips accept_json', () async {
+      final aliceKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => i + 1)),
+      );
+      final bobKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => 0x40 + i)),
+      );
+      final alicePriv = await aliceKeystore.loadOrCreatePrivateKey();
+      final alicePub = await aliceKeystore.publicKey();
+      final bobPriv = await bobKeystore.loadOrCreatePrivateKey();
+      final bobPub = await bobKeystore.publicKey();
+
+      const payload =
+          '{"kind":"vehicleSharingOfferAccept","linkId":"vshare:1"}';
+      final frame = await EnvelopeCodec.encryptVehicleSharingOfferAccept(
+        envelope: VehicleSharingOfferAcceptEnvelope(
+          senderLongTermPublicKey: alicePub,
+          acceptJson: payload,
+        ),
+        senderLongTermPrivateKey: alicePriv,
+        peerLongTermPublicKey: bobPub,
+      );
+      expect(frame[1], EnvelopeKind.vehicleSharingOfferAccept);
+      final decoded = await EnvelopeCodec.decryptVehicleSharingOfferAccept(
+        frame: frame,
+        receiverLongTermPrivateKey: bobPriv,
+      );
+      expect(decoded.acceptJson, payload);
+    });
   });
 }

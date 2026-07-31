@@ -50,6 +50,23 @@ class PushNotificationService {
     importance: Importance.high,
     playSound: false,
   );
+  static const AndroidNotificationChannel _vehicleSharingChannel =
+      AndroidNotificationChannel(
+        'vehicle_sharing_offers_v1',
+        'Vehicle sharing offers',
+        description:
+            'Alerts when a contact offers to share a vehicle with you.',
+        importance: Importance.high,
+      );
+  static const AndroidNotificationChannel _vehicleSharingSilentChannel =
+      AndroidNotificationChannel(
+        'vehicle_sharing_offers_silent_v1',
+        'Vehicle sharing offers (silent)',
+        description:
+            'Silent alerts when a contact offers to share a vehicle with you.',
+        importance: Importance.high,
+        playSound: false,
+      );
 
   static const String _housingTapPayload = 'housing_proposal';
   static const String _housingProposalPrefix = 'housing_proposal:';
@@ -63,6 +80,7 @@ class PushNotificationService {
   static const String _housingActiveHubPrefix = 'housing_active_hub:';
   static const String _housingPaymentReminderPrefix = 'housing_payment_reminder|';
   static const String _contactsPayload = 'contacts';
+  static const String _vehicleSharingOfferTapPayload = 'vehicle_sharing_offer';
 
   static const List<String> _housingKinds = <String>[
     'housing_proposal',
@@ -131,6 +149,8 @@ class PushNotificationService {
         >();
     await android?.createNotificationChannel(_androidChannel);
     await android?.createNotificationChannel(_androidSilentChannel);
+    await android?.createNotificationChannel(_vehicleSharingChannel);
+    await android?.createNotificationChannel(_vehicleSharingSilentChannel);
   }
 
   static Future<void> _ensureLocalNotificationsInitialized(
@@ -162,6 +182,10 @@ class PushNotificationService {
   static void dispatchLocalNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
+    if (payload == _vehicleSharingOfferTapPayload) {
+      _navigateToVehicleSharing();
+      return;
+    }
     if (payload == _housingTapPayload) {
       _navigateToHousing();
       return;
@@ -471,6 +495,50 @@ class PushNotificationService {
         iOS: DarwinNotificationDetails(presentSound: playSound),
       ),
       payload: payload,
+    );
+  }
+
+  static Future<void> showLocalVehicleSharingOfferNotification({
+    String? senderDisplayName,
+    String? vehicleLabel,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final title = l10n.pushNotificationVehicleSharingOfferTitle;
+    final name = (senderDisplayName ?? '').trim();
+    final vehicle = (vehicleLabel ?? '').trim();
+    final body = name.isNotEmpty && vehicle.isNotEmpty
+        ? l10n.pushNotificationVehicleSharingOfferBodyFrom(name, vehicle)
+        : l10n.pushNotificationVehicleSharingOfferBody;
+
+    if (kIsWeb) {
+      // Web: no dedicated browser helper yet; rely on in-app hub refresh.
+      return;
+    }
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: _vehicleSharingOfferTapPayload,
     );
   }
 
@@ -1092,6 +1160,14 @@ class PushNotificationService {
       '/housing',
       skipPushWhenAlreadyAt: (location) => location.startsWith('/housing'),
       beforeNavigate: _prepareHousingForNotificationTap,
+    );
+  }
+
+  static void _navigateToVehicleSharing() {
+    pushFromNotificationTapWhenReady(
+      '/vehicle-sharing',
+      skipPushWhenAlreadyAt: (location) =>
+          location.startsWith('/vehicle-sharing'),
     );
   }
 

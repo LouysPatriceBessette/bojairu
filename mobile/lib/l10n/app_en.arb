@@ -942,6 +942,17 @@
   "housingInviteReceivedOpenAction": "View",
   "pushNotificationHousingProposalTitle": "Housing proposal",
   "pushNotificationHousingProposalBody": "Open the app to review the proposal.",
+  "pushNotificationVehicleSharingOfferTitle": "Vehicle sharing offer",
+  "pushNotificationVehicleSharingOfferBody": "Open Vehicle sharing to review the offer.",
+  "pushNotificationVehicleSharingOfferBodyFrom": "{name} offered to share {vehicle} with you.",
+  "@pushNotificationVehicleSharingOfferBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "vehicleSharingOfferRelayFailed": "Offer saved here, but sending to the contact failed. Try again later.",
+  "vehicleSharingAcceptRelayFailed": "Acceptance saved here, but sending to the owner failed. Try again later.",
   "pushNotificationHousingAgreementActivatedTitle": "Unanimous agreement",
   "pushNotificationHousingAgreementActivatedBody": "Your group has reached a unanimous housing agreement.",
   "pushNotificationHousingRealizedExpenseTitle": "Expense to review",
