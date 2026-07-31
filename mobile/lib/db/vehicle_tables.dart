@@ -182,6 +182,16 @@ class VehicleSharingLinks extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get acceptedAt => dateTime().nullable()();
   DateTimeColumn get revokedAt => dateTime().nullable()();
+  /// Usage compensation rate in minor currency units per km (0 = free).
+  IntColumn get ratePerKmMinor => integer().withDefault(const Constant(0))();
+  TextColumn get rateCurrency => text().withDefault(const Constant(''))();
+  /// Legacy date-range columns (unused; week grid supersedes).
+  DateTimeColumn get availabilityStart => dateTime().nullable()();
+  DateTimeColumn get availabilityEnd => dateTime().nullable()();
+  /// Half-hour week grid JSON (same shape as housing quiet hours), or empty.
+  TextColumn get availabilityWeekJson =>
+      text().withDefault(const Constant(''))();
+  TextColumn get ownerRulesText => text().withDefault(const Constant(''))();
 
   @override
   Set<Column> get primaryKey => {id};

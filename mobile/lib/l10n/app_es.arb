@@ -1771,7 +1771,29 @@
   "vehicleSharingSharesDetailTitle": "Compartidos",
   "vehicleSharingAddShare": "Añadir un compartido",
   "vehicleSharingNewShareTitle": "Nuevo compartido",
-  "vehicleSharingInviteFormStubBody": "Contenido del formulario por definir.",
+  "vehicleSharingInviteForContact": "Invitación para {name}",
+  "@vehicleSharingInviteForContact": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "vehicleSharingInviteRateLabel": "Centavos por km de uso (opcional)",
+  "vehicleSharingInviteRateHelper": "Compensa el desgaste normal.",
+  "vehicleSharingInviteRateInvalid": "Indica un número entero de centavos (≥ 0).",
+  "vehicleSharingInviteRatePer100Km": "{amount} por 100 km",
+  "@vehicleSharingInviteRatePer100Km": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "vehicleSharingInviteAvailabilitySection": "Periodo de disponibilidad (opcional)",
+  "vehicleSharingAvailabilityLevelPrimary": "Disponible",
+  "vehicleSharingInviteAvailabilitySaveFirst": "Guarda o cancela el periodo de disponibilidad antes de enviar.",
+  "vehicleSharingInviteRulesLabel": "Otras reglas",
+  "vehicleSharingInviteSend": "Enviar invitación",
+  "vehicleSharingInviteDisclaimerBody1": "Solo el importe por kilómetro es seguido por la aplicación.",
+  "vehicleSharingInviteDisclaimerBody2": "La disponibilidad y las demás reglas son solo orientativas para su prestatario.",
+  "vehicleSharingInviteDisclaimerDoNotShow": "No volver a mostrar",
   "vehicleSharingAccept": "Aceptar",
   "vehicleSharingOffer": "Ofrecer uso compartido",
   "vehicleSharingOfferPickContact": "Elegir un contacto conectado",

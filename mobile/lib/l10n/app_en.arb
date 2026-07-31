@@ -1980,7 +1980,29 @@
   "vehicleSharingSharesDetailTitle": "Sharing",
   "vehicleSharingAddShare": "Add a share",
   "vehicleSharingNewShareTitle": "New share",
-  "vehicleSharingInviteFormStubBody": "Form content to be defined.",
+  "vehicleSharingInviteForContact": "Invitation for {name}",
+  "@vehicleSharingInviteForContact": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "vehicleSharingInviteRateLabel": "Cents per km of use (optional)",
+  "vehicleSharingInviteRateHelper": "Compensates normal wear.",
+  "vehicleSharingInviteRateInvalid": "Enter a whole number of cents (≥ 0).",
+  "vehicleSharingInviteRatePer100Km": "{amount} for 100 km",
+  "@vehicleSharingInviteRatePer100Km": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "vehicleSharingInviteAvailabilitySection": "Availability period (optional)",
+  "vehicleSharingAvailabilityLevelPrimary": "Available",
+  "vehicleSharingInviteAvailabilitySaveFirst": "Save or cancel the availability period before sending.",
+  "vehicleSharingInviteRulesLabel": "Other rules",
+  "vehicleSharingInviteSend": "Send invitation",
+  "vehicleSharingInviteDisclaimerBody1": "Only the amount per kilometre is tracked by the app.",
+  "vehicleSharingInviteDisclaimerBody2": "Availability and other rules are for your borrower's information only.",
+  "vehicleSharingInviteDisclaimerDoNotShow": "Don't show again",
   "vehicleSharingAccept": "Accept",
   "vehicleSharingOffer": "Offer sharing",
   "vehicleSharingOfferPickContact": "Select a connected contact",

@@ -673,6 +673,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
             builder: (context, state) => VehicleSharingInviteFormScreen(
               vehicleId: state.pathParameters['vehicleId']!,
               contactId: state.uri.queryParameters['contactId'] ?? '',
+              prefs: prefs,
             ),
           ),
           GoRoute(

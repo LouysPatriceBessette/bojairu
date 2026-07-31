@@ -7257,11 +7257,83 @@ abstract class AppLocalizations {
   /// **'New share'**
   String get vehicleSharingNewShareTitle;
 
-  /// No description provided for @vehicleSharingInviteFormStubBody.
+  /// No description provided for @vehicleSharingInviteForContact.
   ///
   /// In en, this message translates to:
-  /// **'Form content to be defined.'**
-  String get vehicleSharingInviteFormStubBody;
+  /// **'Invitation for {name}'**
+  String vehicleSharingInviteForContact(String name);
+
+  /// No description provided for @vehicleSharingInviteRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cents per km of use (optional)'**
+  String get vehicleSharingInviteRateLabel;
+
+  /// No description provided for @vehicleSharingInviteRateHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensates normal wear.'**
+  String get vehicleSharingInviteRateHelper;
+
+  /// No description provided for @vehicleSharingInviteRateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number of cents (≥ 0).'**
+  String get vehicleSharingInviteRateInvalid;
+
+  /// No description provided for @vehicleSharingInviteRatePer100Km.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} for 100 km'**
+  String vehicleSharingInviteRatePer100Km(String amount);
+
+  /// No description provided for @vehicleSharingInviteAvailabilitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability period (optional)'**
+  String get vehicleSharingInviteAvailabilitySection;
+
+  /// No description provided for @vehicleSharingAvailabilityLevelPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get vehicleSharingAvailabilityLevelPrimary;
+
+  /// No description provided for @vehicleSharingInviteAvailabilitySaveFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Save or cancel the availability period before sending.'**
+  String get vehicleSharingInviteAvailabilitySaveFirst;
+
+  /// No description provided for @vehicleSharingInviteRulesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Other rules'**
+  String get vehicleSharingInviteRulesLabel;
+
+  /// No description provided for @vehicleSharingInviteSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send invitation'**
+  String get vehicleSharingInviteSend;
+
+  /// No description provided for @vehicleSharingInviteDisclaimerBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the amount per kilometre is tracked by the app.'**
+  String get vehicleSharingInviteDisclaimerBody1;
+
+  /// No description provided for @vehicleSharingInviteDisclaimerBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability and other rules are for your borrower\'s information only.'**
+  String get vehicleSharingInviteDisclaimerBody2;
+
+  /// No description provided for @vehicleSharingInviteDisclaimerDoNotShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show again'**
+  String get vehicleSharingInviteDisclaimerDoNotShow;
 
   /// No description provided for @vehicleSharingAccept.
   ///

@@ -67,6 +67,10 @@ class AppPreferences extends ChangeNotifier {
   static const _kHousingDefaultSummaryReached =
       'housing.default.summaryReached';
 
+  /// Vehicle sharing invite form: user dismissed the tracking disclaimer.
+  static const _kVehicleSharingInviteDisclaimerDismissed =
+      'vehicleSharing.invite.disclaimerDismissed';
+
   static const _kSandboxMode = 'sandbox.mode';
   static const _kSandboxEnteredAtMs = 'sandbox.enteredAtMs';
   static const _kSandboxInvitedBotCount = 'sandbox.invitedBotCount';
@@ -209,6 +213,14 @@ class AppPreferences extends ChangeNotifier {
 
   Future<void> setSandboxShowHomeWelcome(bool value) async {
     await _prefs.setBool(_kSandboxShowHomeWelcome, value);
+    notifyListeners();
+  }
+
+  bool get vehicleSharingInviteDisclaimerDismissed =>
+      _prefs.getBool(_kVehicleSharingInviteDisclaimerDismissed) ?? false;
+
+  Future<void> setVehicleSharingInviteDisclaimerDismissed(bool value) async {
+    await _prefs.setBool(_kVehicleSharingInviteDisclaimerDismissed, value);
     notifyListeners();
   }
 

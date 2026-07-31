@@ -20318,6 +20318,78 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ratePerKmMinorMeta = const VerificationMeta(
+    'ratePerKmMinor',
+  );
+  @override
+  late final GeneratedColumn<int> ratePerKmMinor = GeneratedColumn<int>(
+    'rate_per_km_minor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _rateCurrencyMeta = const VerificationMeta(
+    'rateCurrency',
+  );
+  @override
+  late final GeneratedColumn<String> rateCurrency = GeneratedColumn<String>(
+    'rate_currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _availabilityStartMeta = const VerificationMeta(
+    'availabilityStart',
+  );
+  @override
+  late final GeneratedColumn<DateTime> availabilityStart =
+      GeneratedColumn<DateTime>(
+        'availability_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _availabilityEndMeta = const VerificationMeta(
+    'availabilityEnd',
+  );
+  @override
+  late final GeneratedColumn<DateTime> availabilityEnd =
+      GeneratedColumn<DateTime>(
+        'availability_end',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _availabilityWeekJsonMeta =
+      const VerificationMeta('availabilityWeekJson');
+  @override
+  late final GeneratedColumn<String> availabilityWeekJson =
+      GeneratedColumn<String>(
+        'availability_week_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
+  static const VerificationMeta _ownerRulesTextMeta = const VerificationMeta(
+    'ownerRulesText',
+  );
+  @override
+  late final GeneratedColumn<String> ownerRulesText = GeneratedColumn<String>(
+    'owner_rules_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -20328,6 +20400,12 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
     createdAt,
     acceptedAt,
     revokedAt,
+    ratePerKmMinor,
+    rateCurrency,
+    availabilityStart,
+    availabilityEnd,
+    availabilityWeekJson,
+    ownerRulesText,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -20404,6 +20482,60 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
         revokedAt.isAcceptableOrUnknown(data['revoked_at']!, _revokedAtMeta),
       );
     }
+    if (data.containsKey('rate_per_km_minor')) {
+      context.handle(
+        _ratePerKmMinorMeta,
+        ratePerKmMinor.isAcceptableOrUnknown(
+          data['rate_per_km_minor']!,
+          _ratePerKmMinorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rate_currency')) {
+      context.handle(
+        _rateCurrencyMeta,
+        rateCurrency.isAcceptableOrUnknown(
+          data['rate_currency']!,
+          _rateCurrencyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('availability_start')) {
+      context.handle(
+        _availabilityStartMeta,
+        availabilityStart.isAcceptableOrUnknown(
+          data['availability_start']!,
+          _availabilityStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('availability_end')) {
+      context.handle(
+        _availabilityEndMeta,
+        availabilityEnd.isAcceptableOrUnknown(
+          data['availability_end']!,
+          _availabilityEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('availability_week_json')) {
+      context.handle(
+        _availabilityWeekJsonMeta,
+        availabilityWeekJson.isAcceptableOrUnknown(
+          data['availability_week_json']!,
+          _availabilityWeekJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('owner_rules_text')) {
+      context.handle(
+        _ownerRulesTextMeta,
+        ownerRulesText.isAcceptableOrUnknown(
+          data['owner_rules_text']!,
+          _ownerRulesTextMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -20445,6 +20577,30 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
         DriftSqlType.dateTime,
         data['${effectivePrefix}revoked_at'],
       ),
+      ratePerKmMinor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rate_per_km_minor'],
+      )!,
+      rateCurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rate_currency'],
+      )!,
+      availabilityStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}availability_start'],
+      ),
+      availabilityEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}availability_end'],
+      ),
+      availabilityWeekJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}availability_week_json'],
+      )!,
+      ownerRulesText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_rules_text'],
+      )!,
     );
   }
 
@@ -20464,6 +20620,18 @@ class VehicleSharingLink extends DataClass
   final DateTime createdAt;
   final DateTime? acceptedAt;
   final DateTime? revokedAt;
+
+  /// Usage compensation rate in minor currency units per km (0 = free).
+  final int ratePerKmMinor;
+  final String rateCurrency;
+
+  /// Legacy date-range columns (unused; week grid supersedes).
+  final DateTime? availabilityStart;
+  final DateTime? availabilityEnd;
+
+  /// Half-hour week grid JSON (same shape as housing quiet hours), or empty.
+  final String availabilityWeekJson;
+  final String ownerRulesText;
   const VehicleSharingLink({
     required this.id,
     required this.vehicleId,
@@ -20473,6 +20641,12 @@ class VehicleSharingLink extends DataClass
     required this.createdAt,
     this.acceptedAt,
     this.revokedAt,
+    required this.ratePerKmMinor,
+    required this.rateCurrency,
+    this.availabilityStart,
+    this.availabilityEnd,
+    required this.availabilityWeekJson,
+    required this.ownerRulesText,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -20489,6 +20663,16 @@ class VehicleSharingLink extends DataClass
     if (!nullToAbsent || revokedAt != null) {
       map['revoked_at'] = Variable<DateTime>(revokedAt);
     }
+    map['rate_per_km_minor'] = Variable<int>(ratePerKmMinor);
+    map['rate_currency'] = Variable<String>(rateCurrency);
+    if (!nullToAbsent || availabilityStart != null) {
+      map['availability_start'] = Variable<DateTime>(availabilityStart);
+    }
+    if (!nullToAbsent || availabilityEnd != null) {
+      map['availability_end'] = Variable<DateTime>(availabilityEnd);
+    }
+    map['availability_week_json'] = Variable<String>(availabilityWeekJson);
+    map['owner_rules_text'] = Variable<String>(ownerRulesText);
     return map;
   }
 
@@ -20506,6 +20690,16 @@ class VehicleSharingLink extends DataClass
       revokedAt: revokedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(revokedAt),
+      ratePerKmMinor: Value(ratePerKmMinor),
+      rateCurrency: Value(rateCurrency),
+      availabilityStart: availabilityStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(availabilityStart),
+      availabilityEnd: availabilityEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(availabilityEnd),
+      availabilityWeekJson: Value(availabilityWeekJson),
+      ownerRulesText: Value(ownerRulesText),
     );
   }
 
@@ -20523,6 +20717,16 @@ class VehicleSharingLink extends DataClass
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       acceptedAt: serializer.fromJson<DateTime?>(json['acceptedAt']),
       revokedAt: serializer.fromJson<DateTime?>(json['revokedAt']),
+      ratePerKmMinor: serializer.fromJson<int>(json['ratePerKmMinor']),
+      rateCurrency: serializer.fromJson<String>(json['rateCurrency']),
+      availabilityStart: serializer.fromJson<DateTime?>(
+        json['availabilityStart'],
+      ),
+      availabilityEnd: serializer.fromJson<DateTime?>(json['availabilityEnd']),
+      availabilityWeekJson: serializer.fromJson<String>(
+        json['availabilityWeekJson'],
+      ),
+      ownerRulesText: serializer.fromJson<String>(json['ownerRulesText']),
     );
   }
   @override
@@ -20537,6 +20741,12 @@ class VehicleSharingLink extends DataClass
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'acceptedAt': serializer.toJson<DateTime?>(acceptedAt),
       'revokedAt': serializer.toJson<DateTime?>(revokedAt),
+      'ratePerKmMinor': serializer.toJson<int>(ratePerKmMinor),
+      'rateCurrency': serializer.toJson<String>(rateCurrency),
+      'availabilityStart': serializer.toJson<DateTime?>(availabilityStart),
+      'availabilityEnd': serializer.toJson<DateTime?>(availabilityEnd),
+      'availabilityWeekJson': serializer.toJson<String>(availabilityWeekJson),
+      'ownerRulesText': serializer.toJson<String>(ownerRulesText),
     };
   }
 
@@ -20549,6 +20759,12 @@ class VehicleSharingLink extends DataClass
     DateTime? createdAt,
     Value<DateTime?> acceptedAt = const Value.absent(),
     Value<DateTime?> revokedAt = const Value.absent(),
+    int? ratePerKmMinor,
+    String? rateCurrency,
+    Value<DateTime?> availabilityStart = const Value.absent(),
+    Value<DateTime?> availabilityEnd = const Value.absent(),
+    String? availabilityWeekJson,
+    String? ownerRulesText,
   }) => VehicleSharingLink(
     id: id ?? this.id,
     vehicleId: vehicleId ?? this.vehicleId,
@@ -20558,6 +20774,16 @@ class VehicleSharingLink extends DataClass
     createdAt: createdAt ?? this.createdAt,
     acceptedAt: acceptedAt.present ? acceptedAt.value : this.acceptedAt,
     revokedAt: revokedAt.present ? revokedAt.value : this.revokedAt,
+    ratePerKmMinor: ratePerKmMinor ?? this.ratePerKmMinor,
+    rateCurrency: rateCurrency ?? this.rateCurrency,
+    availabilityStart: availabilityStart.present
+        ? availabilityStart.value
+        : this.availabilityStart,
+    availabilityEnd: availabilityEnd.present
+        ? availabilityEnd.value
+        : this.availabilityEnd,
+    availabilityWeekJson: availabilityWeekJson ?? this.availabilityWeekJson,
+    ownerRulesText: ownerRulesText ?? this.ownerRulesText,
   );
   VehicleSharingLink copyWithCompanion(VehicleSharingLinksCompanion data) {
     return VehicleSharingLink(
@@ -20575,6 +20801,24 @@ class VehicleSharingLink extends DataClass
           ? data.acceptedAt.value
           : this.acceptedAt,
       revokedAt: data.revokedAt.present ? data.revokedAt.value : this.revokedAt,
+      ratePerKmMinor: data.ratePerKmMinor.present
+          ? data.ratePerKmMinor.value
+          : this.ratePerKmMinor,
+      rateCurrency: data.rateCurrency.present
+          ? data.rateCurrency.value
+          : this.rateCurrency,
+      availabilityStart: data.availabilityStart.present
+          ? data.availabilityStart.value
+          : this.availabilityStart,
+      availabilityEnd: data.availabilityEnd.present
+          ? data.availabilityEnd.value
+          : this.availabilityEnd,
+      availabilityWeekJson: data.availabilityWeekJson.present
+          ? data.availabilityWeekJson.value
+          : this.availabilityWeekJson,
+      ownerRulesText: data.ownerRulesText.present
+          ? data.ownerRulesText.value
+          : this.ownerRulesText,
     );
   }
 
@@ -20588,7 +20832,13 @@ class VehicleSharingLink extends DataClass
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('acceptedAt: $acceptedAt, ')
-          ..write('revokedAt: $revokedAt')
+          ..write('revokedAt: $revokedAt, ')
+          ..write('ratePerKmMinor: $ratePerKmMinor, ')
+          ..write('rateCurrency: $rateCurrency, ')
+          ..write('availabilityStart: $availabilityStart, ')
+          ..write('availabilityEnd: $availabilityEnd, ')
+          ..write('availabilityWeekJson: $availabilityWeekJson, ')
+          ..write('ownerRulesText: $ownerRulesText')
           ..write(')'))
         .toString();
   }
@@ -20603,6 +20853,12 @@ class VehicleSharingLink extends DataClass
     createdAt,
     acceptedAt,
     revokedAt,
+    ratePerKmMinor,
+    rateCurrency,
+    availabilityStart,
+    availabilityEnd,
+    availabilityWeekJson,
+    ownerRulesText,
   );
   @override
   bool operator ==(Object other) =>
@@ -20615,7 +20871,13 @@ class VehicleSharingLink extends DataClass
           other.status == this.status &&
           other.createdAt == this.createdAt &&
           other.acceptedAt == this.acceptedAt &&
-          other.revokedAt == this.revokedAt);
+          other.revokedAt == this.revokedAt &&
+          other.ratePerKmMinor == this.ratePerKmMinor &&
+          other.rateCurrency == this.rateCurrency &&
+          other.availabilityStart == this.availabilityStart &&
+          other.availabilityEnd == this.availabilityEnd &&
+          other.availabilityWeekJson == this.availabilityWeekJson &&
+          other.ownerRulesText == this.ownerRulesText);
 }
 
 class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
@@ -20627,6 +20889,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
   final Value<DateTime> createdAt;
   final Value<DateTime?> acceptedAt;
   final Value<DateTime?> revokedAt;
+  final Value<int> ratePerKmMinor;
+  final Value<String> rateCurrency;
+  final Value<DateTime?> availabilityStart;
+  final Value<DateTime?> availabilityEnd;
+  final Value<String> availabilityWeekJson;
+  final Value<String> ownerRulesText;
   final Value<int> rowid;
   const VehicleSharingLinksCompanion({
     this.id = const Value.absent(),
@@ -20637,6 +20905,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     this.createdAt = const Value.absent(),
     this.acceptedAt = const Value.absent(),
     this.revokedAt = const Value.absent(),
+    this.ratePerKmMinor = const Value.absent(),
+    this.rateCurrency = const Value.absent(),
+    this.availabilityStart = const Value.absent(),
+    this.availabilityEnd = const Value.absent(),
+    this.availabilityWeekJson = const Value.absent(),
+    this.ownerRulesText = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehicleSharingLinksCompanion.insert({
@@ -20648,6 +20922,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     required DateTime createdAt,
     this.acceptedAt = const Value.absent(),
     this.revokedAt = const Value.absent(),
+    this.ratePerKmMinor = const Value.absent(),
+    this.rateCurrency = const Value.absent(),
+    this.availabilityStart = const Value.absent(),
+    this.availabilityEnd = const Value.absent(),
+    this.availabilityWeekJson = const Value.absent(),
+    this.ownerRulesText = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        vehicleId = Value(vehicleId),
@@ -20664,6 +20944,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? acceptedAt,
     Expression<DateTime>? revokedAt,
+    Expression<int>? ratePerKmMinor,
+    Expression<String>? rateCurrency,
+    Expression<DateTime>? availabilityStart,
+    Expression<DateTime>? availabilityEnd,
+    Expression<String>? availabilityWeekJson,
+    Expression<String>? ownerRulesText,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -20675,6 +20961,13 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
       if (createdAt != null) 'created_at': createdAt,
       if (acceptedAt != null) 'accepted_at': acceptedAt,
       if (revokedAt != null) 'revoked_at': revokedAt,
+      if (ratePerKmMinor != null) 'rate_per_km_minor': ratePerKmMinor,
+      if (rateCurrency != null) 'rate_currency': rateCurrency,
+      if (availabilityStart != null) 'availability_start': availabilityStart,
+      if (availabilityEnd != null) 'availability_end': availabilityEnd,
+      if (availabilityWeekJson != null)
+        'availability_week_json': availabilityWeekJson,
+      if (ownerRulesText != null) 'owner_rules_text': ownerRulesText,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -20688,6 +20981,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     Value<DateTime>? createdAt,
     Value<DateTime?>? acceptedAt,
     Value<DateTime?>? revokedAt,
+    Value<int>? ratePerKmMinor,
+    Value<String>? rateCurrency,
+    Value<DateTime?>? availabilityStart,
+    Value<DateTime?>? availabilityEnd,
+    Value<String>? availabilityWeekJson,
+    Value<String>? ownerRulesText,
     Value<int>? rowid,
   }) {
     return VehicleSharingLinksCompanion(
@@ -20699,6 +20998,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
       createdAt: createdAt ?? this.createdAt,
       acceptedAt: acceptedAt ?? this.acceptedAt,
       revokedAt: revokedAt ?? this.revokedAt,
+      ratePerKmMinor: ratePerKmMinor ?? this.ratePerKmMinor,
+      rateCurrency: rateCurrency ?? this.rateCurrency,
+      availabilityStart: availabilityStart ?? this.availabilityStart,
+      availabilityEnd: availabilityEnd ?? this.availabilityEnd,
+      availabilityWeekJson: availabilityWeekJson ?? this.availabilityWeekJson,
+      ownerRulesText: ownerRulesText ?? this.ownerRulesText,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -20730,6 +21035,26 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     if (revokedAt.present) {
       map['revoked_at'] = Variable<DateTime>(revokedAt.value);
     }
+    if (ratePerKmMinor.present) {
+      map['rate_per_km_minor'] = Variable<int>(ratePerKmMinor.value);
+    }
+    if (rateCurrency.present) {
+      map['rate_currency'] = Variable<String>(rateCurrency.value);
+    }
+    if (availabilityStart.present) {
+      map['availability_start'] = Variable<DateTime>(availabilityStart.value);
+    }
+    if (availabilityEnd.present) {
+      map['availability_end'] = Variable<DateTime>(availabilityEnd.value);
+    }
+    if (availabilityWeekJson.present) {
+      map['availability_week_json'] = Variable<String>(
+        availabilityWeekJson.value,
+      );
+    }
+    if (ownerRulesText.present) {
+      map['owner_rules_text'] = Variable<String>(ownerRulesText.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -20747,6 +21072,12 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
           ..write('createdAt: $createdAt, ')
           ..write('acceptedAt: $acceptedAt, ')
           ..write('revokedAt: $revokedAt, ')
+          ..write('ratePerKmMinor: $ratePerKmMinor, ')
+          ..write('rateCurrency: $rateCurrency, ')
+          ..write('availabilityStart: $availabilityStart, ')
+          ..write('availabilityEnd: $availabilityEnd, ')
+          ..write('availabilityWeekJson: $availabilityWeekJson, ')
+          ..write('ownerRulesText: $ownerRulesText, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -31600,6 +31931,12 @@ typedef $$VehicleSharingLinksTableCreateCompanionBuilder =
       required DateTime createdAt,
       Value<DateTime?> acceptedAt,
       Value<DateTime?> revokedAt,
+      Value<int> ratePerKmMinor,
+      Value<String> rateCurrency,
+      Value<DateTime?> availabilityStart,
+      Value<DateTime?> availabilityEnd,
+      Value<String> availabilityWeekJson,
+      Value<String> ownerRulesText,
       Value<int> rowid,
     });
 typedef $$VehicleSharingLinksTableUpdateCompanionBuilder =
@@ -31612,6 +31949,12 @@ typedef $$VehicleSharingLinksTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime?> acceptedAt,
       Value<DateTime?> revokedAt,
+      Value<int> ratePerKmMinor,
+      Value<String> rateCurrency,
+      Value<DateTime?> availabilityStart,
+      Value<DateTime?> availabilityEnd,
+      Value<String> availabilityWeekJson,
+      Value<String> ownerRulesText,
       Value<int> rowid,
     });
 
@@ -31661,6 +32004,36 @@ class $$VehicleSharingLinksTableFilterComposer
 
   ColumnFilters<DateTime> get revokedAt => $composableBuilder(
     column: $table.revokedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ratePerKmMinor => $composableBuilder(
+    column: $table.ratePerKmMinor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rateCurrency => $composableBuilder(
+    column: $table.rateCurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get availabilityStart => $composableBuilder(
+    column: $table.availabilityStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get availabilityEnd => $composableBuilder(
+    column: $table.availabilityEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get availabilityWeekJson => $composableBuilder(
+    column: $table.availabilityWeekJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerRulesText => $composableBuilder(
+    column: $table.ownerRulesText,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -31713,6 +32086,36 @@ class $$VehicleSharingLinksTableOrderingComposer
     column: $table.revokedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get ratePerKmMinor => $composableBuilder(
+    column: $table.ratePerKmMinor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rateCurrency => $composableBuilder(
+    column: $table.rateCurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get availabilityStart => $composableBuilder(
+    column: $table.availabilityStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get availabilityEnd => $composableBuilder(
+    column: $table.availabilityEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get availabilityWeekJson => $composableBuilder(
+    column: $table.availabilityWeekJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerRulesText => $composableBuilder(
+    column: $table.ownerRulesText,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VehicleSharingLinksTableAnnotationComposer
@@ -31753,6 +32156,36 @@ class $$VehicleSharingLinksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get revokedAt =>
       $composableBuilder(column: $table.revokedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get ratePerKmMinor => $composableBuilder(
+    column: $table.ratePerKmMinor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rateCurrency => $composableBuilder(
+    column: $table.rateCurrency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get availabilityStart => $composableBuilder(
+    column: $table.availabilityStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get availabilityEnd => $composableBuilder(
+    column: $table.availabilityEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get availabilityWeekJson => $composableBuilder(
+    column: $table.availabilityWeekJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ownerRulesText => $composableBuilder(
+    column: $table.ownerRulesText,
+    builder: (column) => column,
+  );
 }
 
 class $$VehicleSharingLinksTableTableManager
@@ -31806,6 +32239,12 @@ class $$VehicleSharingLinksTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> acceptedAt = const Value.absent(),
                 Value<DateTime?> revokedAt = const Value.absent(),
+                Value<int> ratePerKmMinor = const Value.absent(),
+                Value<String> rateCurrency = const Value.absent(),
+                Value<DateTime?> availabilityStart = const Value.absent(),
+                Value<DateTime?> availabilityEnd = const Value.absent(),
+                Value<String> availabilityWeekJson = const Value.absent(),
+                Value<String> ownerRulesText = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleSharingLinksCompanion(
                 id: id,
@@ -31816,6 +32255,12 @@ class $$VehicleSharingLinksTableTableManager
                 createdAt: createdAt,
                 acceptedAt: acceptedAt,
                 revokedAt: revokedAt,
+                ratePerKmMinor: ratePerKmMinor,
+                rateCurrency: rateCurrency,
+                availabilityStart: availabilityStart,
+                availabilityEnd: availabilityEnd,
+                availabilityWeekJson: availabilityWeekJson,
+                ownerRulesText: ownerRulesText,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -31828,6 +32273,12 @@ class $$VehicleSharingLinksTableTableManager
                 required DateTime createdAt,
                 Value<DateTime?> acceptedAt = const Value.absent(),
                 Value<DateTime?> revokedAt = const Value.absent(),
+                Value<int> ratePerKmMinor = const Value.absent(),
+                Value<String> rateCurrency = const Value.absent(),
+                Value<DateTime?> availabilityStart = const Value.absent(),
+                Value<DateTime?> availabilityEnd = const Value.absent(),
+                Value<String> availabilityWeekJson = const Value.absent(),
+                Value<String> ownerRulesText = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleSharingLinksCompanion.insert(
                 id: id,
@@ -31838,6 +32289,12 @@ class $$VehicleSharingLinksTableTableManager
                 createdAt: createdAt,
                 acceptedAt: acceptedAt,
                 revokedAt: revokedAt,
+                ratePerKmMinor: ratePerKmMinor,
+                rateCurrency: rateCurrency,
+                availabilityStart: availabilityStart,
+                availabilityEnd: availabilityEnd,
+                availabilityWeekJson: availabilityWeekJson,
+                ownerRulesText: ownerRulesText,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

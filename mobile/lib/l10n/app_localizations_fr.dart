@@ -4344,8 +4344,53 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehicleSharingNewShareTitle => 'Nouveau partage';
 
   @override
-  String get vehicleSharingInviteFormStubBody =>
-      'Contenu du formulaire à définir.';
+  String vehicleSharingInviteForContact(String name) {
+    return 'Invitation pour $name';
+  }
+
+  @override
+  String get vehicleSharingInviteRateLabel =>
+      'Sous par km d\'utilisation (optionnel)';
+
+  @override
+  String get vehicleSharingInviteRateHelper => 'Compense l\'usure normale.';
+
+  @override
+  String get vehicleSharingInviteRateInvalid =>
+      'Indiquez un nombre entier de sous (≥ 0).';
+
+  @override
+  String vehicleSharingInviteRatePer100Km(String amount) {
+    return '$amount pour 100 km';
+  }
+
+  @override
+  String get vehicleSharingInviteAvailabilitySection =>
+      'Période de disponibilité (optionnel)';
+
+  @override
+  String get vehicleSharingAvailabilityLevelPrimary => 'Disponible';
+
+  @override
+  String get vehicleSharingInviteAvailabilitySaveFirst =>
+      'Enregistrez ou annulez la période de disponibilité avant d\'envoyer.';
+
+  @override
+  String get vehicleSharingInviteRulesLabel => 'Autres règles';
+
+  @override
+  String get vehicleSharingInviteSend => 'Envoyer l\'invitation';
+
+  @override
+  String get vehicleSharingInviteDisclaimerBody1 =>
+      'Seul le montant par kilomètre sera suivi par l\'application.';
+
+  @override
+  String get vehicleSharingInviteDisclaimerBody2 =>
+      'La disponibilité et les autres règles ne sont qu\'à titre indicatif pour votre emprunteur.';
+
+  @override
+  String get vehicleSharingInviteDisclaimerDoNotShow => 'Ne plus afficher';
 
   @override
   String get vehicleSharingAccept => 'Accepter';

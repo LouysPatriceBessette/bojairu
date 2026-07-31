@@ -724,7 +724,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1095,6 +1095,40 @@ class AppDatabase extends _$AppDatabase {
           m,
           vehicles,
           vehicles.saleImportUndoAvailable,
+        );
+      }
+      if (from < 37) {
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.ratePerKmMinor,
+        );
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.rateCurrency,
+        );
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.availabilityStart,
+        );
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.availabilityEnd,
+        );
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.ownerRulesText,
+        );
+      }
+      if (from < 38) {
+        await _migrateAddColumn(
+          m,
+          vehicleSharingLinks,
+          vehicleSharingLinks.availabilityWeekJson,
         );
       }
     },

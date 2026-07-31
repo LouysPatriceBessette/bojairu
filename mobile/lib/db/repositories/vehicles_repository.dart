@@ -1246,6 +1246,10 @@ class VehiclesRepository {
   Future<VehicleSharingLink> createSharingOffer({
     required String vehicleId,
     required String borrowerContactId,
+    int ratePerKmMinor = 0,
+    String rateCurrency = '',
+    String availabilityWeekJson = '',
+    String ownerRulesText = '',
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('vshare:');
@@ -1258,6 +1262,10 @@ class VehiclesRepository {
             borrowerContactId: borrowerContactId,
             status: VehicleSharingLinkStatus.pending.wire,
             createdAt: now,
+            ratePerKmMinor: drift.Value(ratePerKmMinor),
+            rateCurrency: drift.Value(rateCurrency),
+            availabilityWeekJson: drift.Value(availabilityWeekJson),
+            ownerRulesText: drift.Value(ownerRulesText),
           ),
         );
     return (await (_db.select(_db.vehicleSharingLinks)
