@@ -239,6 +239,21 @@ until a successful run with a fresh build):
 ./tool/melosw run qa:run-multi-scenario -- housing_proposal_happy_path
 ```
 
+**Vehicle sharing offer happy path (owner Louys-QA + borrower Monica-QA):**
+
+Seeds install a **pre-connected** Louys↔Monica pair (fixed debug keys; no
+handshake phase) and QA Civic on Louys. The multi-scenario runner seeds once;
+the coordinator does **not** `pm clear` again. Monica is warm-started and kept
+polling during Louys’s send; the coordinator waits for logcat
+`vehicle_sharing_offer imported` before asserting the shade. `KEYCODE_HOME` only
+backgrounds Monica for the shade check (it does not kill the process). Flow:
+Louys offers QA Civic → Monica’s notification shade (French title/body) →
+Monica accepts.
+
+```bash
+./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_offer_happy_path
+```
+
 **Bug 1.22 regression (1 attempt, four phases, writes `bug_122_result.txt`) — resolved Jul 2026:**
 
 Regression guard and duplicate-handshake outcomes after device-binding merge (commit `4489d77`).
@@ -651,6 +666,15 @@ from flows as:
 | `qa-housing-expense-split-pct-0` / `-1` | Split grid — percent row (0-based) |
 | `qa-housing-expense-recurrence-confirm` | Recurrence confirm dialog |
 | `qa-housing-expense-recurring-switch` | Expense form — Récurrent toggle |
+| `qa-home-vehicle-sharing` | Home → Partage de véhicule tile |
+| `qa-vehicle-sharing-hub` | Vehicle sharing hub AppBar title |
+| `qa-vehicle-sharing-shareable-qa-civic` | Hub → shareable QA Civic row |
+| `qa-vehicle-sharing-add-share` | Shares detail → Ajouter un partage |
+| `qa-vehicle-sharing-invite-disclaimer-ok` | Invite form disclaimer Ok |
+| `qa-vehicle-sharing-invite-send` | Invite form → Envoyer l'invitation |
+| `qa-vehicle-sharing-pending-qa-civic` | Hub pending offer label |
+| `qa-vehicle-sharing-pending-accept` | Hub pending → Accepter |
+| `qa-vehicle-sharing-accessible-qa-civic` | Hub accessible vehicle after accept |
 
 **Verifier** (`verify_qa_semantics.py`):
 

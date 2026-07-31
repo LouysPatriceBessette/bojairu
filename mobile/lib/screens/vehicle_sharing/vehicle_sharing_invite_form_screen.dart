@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/app_database.dart';
 import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
+import '../../debug/qa_vehicle_sharing_semantics.dart';
 import '../../housing/quiet_hours_week_grid.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
@@ -104,17 +105,32 @@ class _VehicleSharingInviteFormScreenState
                           ),
                         ),
                       ),
-                      FilledButton(
-                        onPressed: () async {
-                          if (doNotShowAgain) {
-                            await widget.prefs
-                                .setVehicleSharingInviteDisclaimerDismissed(
-                              true,
-                            );
-                          }
-                          if (ctx.mounted) Navigator.of(ctx).pop();
+                      qaVehicleSharingSemantics(
+                        identifier: kQaVehicleSharingInviteDisclaimerOk,
+                        button: true,
+                        onTap: () {
+                          () async {
+                            if (doNotShowAgain) {
+                              await widget.prefs
+                                  .setVehicleSharingInviteDisclaimerDismissed(
+                                true,
+                              );
+                            }
+                            if (ctx.mounted) Navigator.of(ctx).pop();
+                          }();
                         },
-                        child: Text(l10n.commonOk),
+                        child: FilledButton(
+                          onPressed: () async {
+                            if (doNotShowAgain) {
+                              await widget.prefs
+                                  .setVehicleSharingInviteDisclaimerDismissed(
+                                true,
+                              );
+                            }
+                            if (ctx.mounted) Navigator.of(ctx).pop();
+                          },
+                          child: Text(l10n.commonOk),
+                        ),
                       ),
                     ],
                   ),
@@ -596,9 +612,18 @@ class _VehicleSharingInviteFormScreenState
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _submitting ? null : _submit,
-            child: Text(l10n.vehicleSharingInviteSend),
+          qaVehicleSharingSemantics(
+            identifier: kQaVehicleSharingInviteSend,
+            button: true,
+            onTap: _submitting
+                ? null
+                : () {
+                    _submit();
+                  },
+            child: FilledButton(
+              onPressed: _submitting ? null : _submit,
+              child: Text(l10n.vehicleSharingInviteSend),
+            ),
           ),
         ],
       ),

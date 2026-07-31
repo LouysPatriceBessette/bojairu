@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/app_database.dart';
 import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
+import '../../debug/qa_vehicle_sharing_semantics.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../sandbox/sandbox_mode.dart';
@@ -114,9 +115,14 @@ class _VehicleSharingSharesScreenState
                     ),
                   ),
                 const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _onAddShare,
-                  child: Text(l10n.vehicleSharingAddShare),
+                qaVehicleSharingSemantics(
+                  identifier: kQaVehicleSharingAddShare,
+                  button: true,
+                  onTap: _onAddShare,
+                  child: FilledButton(
+                    onPressed: _onAddShare,
+                    child: Text(l10n.vehicleSharingAddShare),
+                  ),
                 ),
               ],
             ),

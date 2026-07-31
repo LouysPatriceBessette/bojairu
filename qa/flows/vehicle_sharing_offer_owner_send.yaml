@@ -1,0 +1,52 @@
+appId: app.incoherences.bojairu.dev
+---
+# Louys (owner): Partage de véhicule → QA Civic → Ajouter → Monica → disclaimer → Envoyer
+# stopApp:true once — coordinator already force-stopped Louys after seed; do not
+# add extra kills in later flows.
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: "qa-home-vehicle-sharing"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    file: _accept_notification_prompt.yaml
+- tapOn:
+    id: "qa-home-vehicle-sharing"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- tapOn:
+    id: "qa-vehicle-sharing-shareable-qa-civic"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-add-share"
+    timeout: 45000
+- tapOn:
+    id: "qa-vehicle-sharing-add-share"
+- extendedWaitUntil:
+    visible:
+      id: "qa-contacts-picker-sheet"
+    timeout: 30000
+- tapOn:
+    id: "qa-contacts-row-monica-qa"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-invite-disclaimer-ok"
+    timeout: 30000
+- tapOn:
+    id: "qa-vehicle-sharing-invite-disclaimer-ok"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-invite-send"
+    timeout: 30000
+- tapOn:
+    id: "qa-vehicle-sharing-invite-send"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-add-share"
+    timeout: 60000
+- takeScreenshot: owner_offer_sent

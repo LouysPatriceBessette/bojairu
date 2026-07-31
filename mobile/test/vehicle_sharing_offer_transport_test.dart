@@ -73,6 +73,68 @@ void main() {
     expect((await repo.listPendingBorrowerOffers()).length, 1);
   });
 
+  test('import offer revokes older pending from same owner', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final transport = VehicleSharingOfferTransportService(db);
+    final repo = VehiclesRepository(db);
+    const ownerContactId = 'contact:owner';
+
+    String payload({
+      required String linkId,
+      required String vehicleId,
+      required String label,
+    }) =>
+        '''
+{
+  "kind": "vehicleSharingOffer",
+  "linkId": "$linkId",
+  "createdAt": "2026-07-31T12:00:00.000Z",
+  "ratePerKmMinor": 25,
+  "rateCurrency": "CAD",
+  "availabilityWeekJson": "",
+  "ownerRulesText": "",
+  "vehicle": {
+    "id": "$vehicleId",
+    "vehicleKind": "${VehicleKind.car.wire}",
+    "displayLabel": "$label",
+    "make": "Honda",
+    "model": "Civic",
+    "color": "Blue",
+    "modelYear": 2018,
+    "licensePlate": "",
+    "fuelTankCapacityLiters": 47.0,
+    "consumptionEstimationMode": "detailed",
+    "requireDetailedDrivingMixForBorrowers": false
+  }
+}
+''';
+
+    await transport.importReceivedOffer(
+      offerJson: payload(
+        linkId: 'vshare:old',
+        vehicleId: 'vehicle:old',
+        label: 'QA Civic',
+      ),
+      senderContactId: ownerContactId,
+    );
+    await transport.importReceivedOffer(
+      offerJson: payload(
+        linkId: 'vshare:new',
+        vehicleId: 'vehicle:new',
+        label: 'QA Civic',
+      ),
+      senderContactId: ownerContactId,
+    );
+
+    final pending = await repo.listPendingBorrowerOffers();
+    expect(pending.map((e) => e.id), ['vshare:new']);
+    expect(
+      (await repo.getSharingLink('vshare:old'))!.status,
+      VehicleSharingLinkStatus.revoked.wire,
+    );
+  });
+
   test('owner create + export + borrower import + accept round-trip fields',
       () async {
     final ownerDb = AppDatabase.forTesting(NativeDatabase.memory());

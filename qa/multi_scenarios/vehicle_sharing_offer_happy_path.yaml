@@ -1,0 +1,14 @@
+id: vehicle_sharing_offer_happy_path
+description: Vehicle sharing offer only — Louys (owner, QA Civic) + Monica already connected; notification texts; Monica accepts
+device_date: current
+timezone: America/Toronto
+coordinator: vehicle_sharing_offer
+mode: happy_path
+role_owner:
+  avd: Louys-QA
+  seed: vehicle_sharing_offer_owner
+  flow: qa/flows/vehicle_sharing_offer_owner_send.yaml
+role_borrower:
+  avd: Monica-QA
+  seed: vehicle_sharing_offer_borrower
+  flow: qa/flows/vehicle_sharing_offer_borrower_accept.yaml

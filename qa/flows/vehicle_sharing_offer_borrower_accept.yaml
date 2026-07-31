@@ -1,0 +1,32 @@
+appId: app.incoherences.bojairu.dev
+---
+# Monica: open hub and accept pending QA Civic offer.
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: "qa-home-vehicle-sharing"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    file: _accept_notification_prompt.yaml
+- tapOn:
+    id: "qa-home-vehicle-sharing"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-pending-qa-civic"
+    timeout: 90000
+- tapOn:
+    id: "qa-vehicle-sharing-pending-accept"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-accessible-qa-civic"
+    timeout: 90000
+- assertNotVisible:
+    id: "qa-vehicle-sharing-pending-qa-civic"
+- takeScreenshot: borrower_offer_accepted

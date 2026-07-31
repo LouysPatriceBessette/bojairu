@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../db/app_database.dart';
 import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
+import '../../debug/qa_vehicle_sharing_semantics.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
@@ -94,6 +95,8 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
     final l10n = AppLocalizations.of(context);
     final repo = VehiclesRepository(AppDatabase.processScope);
     await repo.acceptSharingLink(link.id);
+    // Refresh immediately so Maestro / user see accessible before relay RTT.
+    await _reload();
     final orch = HandshakeOrchestrator.maybeInstance;
     if (orch != null) {
       try {
@@ -120,7 +123,6 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
         );
       }
     }
-    await _reload();
   }
 
   @override
@@ -142,7 +144,10 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
         leading: BackButton(
           onPressed: () => exitVehicleSharingModule(context),
         ),
-        title: Text(l10n.homeModuleVehicleSharing),
+        title: qaVehicleSharingSemantics(
+          identifier: kQaVehicleSharingHub,
+          child: Text(l10n.homeModuleVehicleSharing),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -163,22 +168,34 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                     Text(l10n.vehicleSharingEmptyNone)
                   else
                     ..._shareable.map(
-                      (vehicle) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: _vehicleIdsWithActiveShare.contains(vehicle.id)
-                            ? const Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                              )
-                            : const SizedBox(width: 24),
-                        title: Text(vehicle.displayLabel),
-                        onTap: () async {
+                      (vehicle) {
+                        Future<void> openShares() async {
                           await context.push(
                             '/vehicle-sharing/${vehicle.id}/shares',
                           );
                           _reload();
-                        },
-                      ),
+                        }
+
+                        return qaVehicleSharingSemantics(
+                          identifier: qaVehicleSharingShareableRowSemanticsId(
+                            vehicle.displayLabel,
+                          ),
+                          button: true,
+                          onTap: openShares,
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading:
+                                _vehicleIdsWithActiveShare.contains(vehicle.id)
+                                    ? const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                      )
+                                    : const SizedBox(width: 24),
+                            title: Text(vehicle.displayLabel),
+                            onTap: openShares,
+                          ),
+                        );
+                      },
                     ),
                   const Divider(height: 32),
                   _sectionTitle(
@@ -217,12 +234,35 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                     Text(l10n.vehicleSharingEmptyNoneFeminine)
                   else
                     ..._pendingOffers.map(
-                      (entry) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(entry.vehicleLabel),
-                        trailing: FilledButton(
-                          onPressed: () => _acceptOffer(entry.link),
-                          child: Text(l10n.vehicleSharingAccept),
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: qaVehicleSharingSemantics(
+                                identifier:
+                                    qaVehicleSharingPendingRowSemanticsId(
+                                  entry.vehicleLabel,
+                                ),
+                                child: Text(entry.vehicleLabel),
+                              ),
+                            ),
+                            // Put qa-* on the label *inside* FilledButton so
+                            // Maestro bounds stay button-sized. A Semantics
+                            // wrapping the whole Row/trailing under ListView
+                            // reports full-width bounds; tapOn COMPLETED then
+                            // hits the title, not Accepter (hierarchy
+                            // 20260731T225710Z: accept [42,850][1038,997]).
+                            FilledButton(
+                              onPressed: () => _acceptOffer(entry.link),
+                              child: qaVehicleSharingSemantics(
+                                identifier: kQaVehicleSharingPendingAccept,
+                                button: true,
+                                onTap: () => _acceptOffer(entry.link),
+                                child: Text(l10n.vehicleSharingAccept),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -280,39 +320,44 @@ class _AccessibleCard extends StatelessWidget {
     );
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              vehicle.displayLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text(l10n.vehicleSharingOwnerLabel(ownerLabel)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                ActionChip(
-                  label: Text(l10n.vehicleQuickActionOdometer),
-                  onPressed: () => _openForm(
-                    context,
-                    'use',
-                    usageContext,
+      child: qaVehicleSharingSemantics(
+        identifier: qaVehicleSharingAccessibleCardSemanticsId(
+          vehicle.displayLabel,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                vehicle.displayLabel,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Text(l10n.vehicleSharingOwnerLabel(ownerLabel)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ActionChip(
+                    label: Text(l10n.vehicleQuickActionOdometer),
+                    onPressed: () => _openForm(
+                      context,
+                      'use',
+                      usageContext,
+                    ),
                   ),
-                ),
-                ActionChip(
-                  label: Text(l10n.vehicleQuickActionFuel),
-                  onPressed: () => _openForm(
-                    context,
-                    'fuel',
-                    usageContext,
+                  ActionChip(
+                    label: Text(l10n.vehicleQuickActionFuel),
+                    onPressed: () => _openForm(
+                      context,
+                      'fuel',
+                      usageContext,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

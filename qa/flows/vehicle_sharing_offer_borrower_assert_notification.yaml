@@ -1,0 +1,10 @@
+appId: app.incoherences.bojairu.dev
+---
+# Monica: assert OS notification title + body (shade already expanded by coordinator).
+# Product strings from app_fr.arb (no QA # prefix on this channel).
+- extendedWaitUntil:
+    visible: "Offre de partage de véhicule"
+    timeout: 45000
+- assertVisible: "Offre de partage de véhicule"
+- assertVisible: ".*Louys QA vous propose de partager QA Civic.*"
+- takeScreenshot: borrower_offer_notification_shade

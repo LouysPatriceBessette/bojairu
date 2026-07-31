@@ -1356,6 +1356,9 @@ class VehiclesRepository {
   }
 
   /// Upserts a pending inbound sharing offer for the local Emprunteur.
+  ///
+  /// Revokes other pending offers from the same owner so a re-offer (or a
+  /// leftover relay envelope after a prior QA run) does not stack duplicates.
   Future<VehicleSharingLink> upsertInboundPendingOffer({
     required String linkId,
     required String vehicleId,
@@ -1366,6 +1369,10 @@ class VehiclesRepository {
     String availabilityWeekJson = '',
     String ownerRulesText = '',
   }) async {
+    await _revokeOtherPendingOffersFromOwner(
+      ownerContactId: ownerContactId,
+      exceptLinkId: linkId,
+    );
     final existing = await getSharingLink(linkId);
     if (existing != null) {
       if (existing.status == VehicleSharingLinkStatus.active.wire ||
@@ -1403,6 +1410,23 @@ class VehiclesRepository {
           ),
         );
     return (await getSharingLink(linkId))!;
+  }
+
+  Future<void> _revokeOtherPendingOffersFromOwner({
+    required String ownerContactId,
+    required String exceptLinkId,
+  }) async {
+    final others = await (_db.select(_db.vehicleSharingLinks)
+          ..where(
+            (t) =>
+                t.ownerContactId.equals(ownerContactId) &
+                t.status.equals(VehicleSharingLinkStatus.pending.wire) &
+                t.id.equals(exceptLinkId).not(),
+          ))
+        .get();
+    for (final row in others) {
+      await revokeSharingLink(row.id);
+    }
   }
 
   /// Applies a remote accept on the Propriétaire device (link stays owned locally).
