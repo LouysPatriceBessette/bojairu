@@ -5,16 +5,22 @@ import '../../db/app_database.dart';
 import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../../prefs/app_preferences.dart';
+import '../../sandbox/sandbox_mode.dart';
+import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/screen_body_padding.dart';
+import '../contacts/contact_picker_sheet.dart';
 
 /// Active sharing links for one owned vehicle (Propriétaire view).
 class VehicleSharingSharesScreen extends StatefulWidget {
   const VehicleSharingSharesScreen({
     super.key,
     required this.vehicleId,
+    required this.prefs,
   });
 
   final String vehicleId;
+  final AppPreferences prefs;
 
   @override
   State<VehicleSharingSharesScreen> createState() =>
@@ -23,6 +29,7 @@ class VehicleSharingSharesScreen extends StatefulWidget {
 
 class _VehicleSharingSharesScreenState
     extends State<VehicleSharingSharesScreen> {
+  final _access = const VehicleModuleAccess();
   Vehicle? _vehicle;
   List<VehicleSharingLink> _activeLinks = const [];
   Map<String, String> _contactLabels = const {};
@@ -51,6 +58,31 @@ class _VehicleSharingSharesScreenState
       _contactLabels = labels;
       _loading = false;
     });
+  }
+
+  Future<void> _onAddShare() async {
+    final l10n = AppLocalizations.of(context);
+    if (!_access.canOfferSharing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleSharingOfferBlocked)),
+      );
+      return;
+    }
+    final excluded = {
+      for (final link in _activeLinks) link.borrowerContactId,
+    };
+    final selected = await showContactPickerSheet(
+      context: context,
+      db: AppDatabase.processScope,
+      excludeContactIds: excluded,
+      allowInvite: !SandboxMode.isActive(widget.prefs),
+    );
+    if (selected == null || !mounted) return;
+    final encoded = Uri.encodeComponent(selected.id);
+    await context.push(
+      '/vehicle-sharing/${widget.vehicleId}/invite-form?contactId=$encoded',
+    );
+    if (mounted) await _reload();
   }
 
   @override
@@ -83,12 +115,7 @@ class _VehicleSharingSharesScreenState
                   ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () async {
-                    await context.push(
-                      '/vehicle-sharing/${widget.vehicleId}/invite',
-                    );
-                    _reload();
-                  },
+                  onPressed: _onAddShare,
                   child: Text(l10n.vehicleSharingAddShare),
                 ),
               ],

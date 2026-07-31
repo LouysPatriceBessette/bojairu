@@ -33,7 +33,6 @@ import 'screens/vehicle/vehicle_use_session_screen.dart';
 import 'screens/vehicle/vehicle_quick_action_screens.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_hub_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_invite_form_screen.dart';
-import 'screens/vehicle_sharing/vehicle_sharing_offer_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_shares_screen.dart';
 import 'vehicle/vehicle_usage_context.dart';
 import 'screens/contacts/contact_detail_screen.dart';
@@ -663,21 +662,10 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
             VehicleSharingHubScreen(prefs: prefs),
         routes: [
           GoRoute(
-            path: 'offer',
-            builder: (context, state) => VehicleSharingOfferScreen(
-              vehicleId: state.uri.queryParameters['vehicleId'] ?? '',
-            ),
-          ),
-          GoRoute(
             path: ':vehicleId/shares',
             builder: (context, state) => VehicleSharingSharesScreen(
               vehicleId: state.pathParameters['vehicleId']!,
-            ),
-          ),
-          GoRoute(
-            path: ':vehicleId/invite',
-            builder: (context, state) => VehicleSharingOfferScreen(
-              vehicleId: state.pathParameters['vehicleId']!,
+              prefs: prefs,
             ),
           ),
           GoRoute(
