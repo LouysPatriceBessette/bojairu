@@ -8,6 +8,7 @@ class AppConfig {
     this.gitSha = '',
     bool screenshotMode = false,
     this.simulationLocked = false,
+    this.carDevSeed = false,
   }) : screenshotMode = environment == AppEnvironment.dev && screenshotMode;
 
   final AppEnvironment environment;
@@ -40,6 +41,10 @@ class AppConfig {
   /// closed-test builds; normal product builds omit this define.
   final bool simulationLocked;
 
+  /// When true (`--dart-define=CARDEV=true`), flush local DB and seed vehicle-
+  /// sharing development data (Simulation catalog contacts + QA Civic).
+  final bool carDevSeed;
+
   static AppEnvironment _parseEnv(String value) {
     switch (value.trim().toLowerCase()) {
       case 'dev':
@@ -68,6 +73,10 @@ class AppConfig {
       'SIMULATION',
       defaultValue: false,
     );
+    const carDevSeed = bool.fromEnvironment(
+      'CARDEV',
+      defaultValue: false,
+    );
 
     Uri? entitlementBaseUrl;
     if (entitlementBaseUrlRaw.trim().isNotEmpty) {
@@ -81,6 +90,7 @@ class AppConfig {
       gitSha: gitSha,
       screenshotMode: screenshotMode,
       simulationLocked: simulationLocked,
+      carDevSeed: carDevSeed,
     );
   }
 }

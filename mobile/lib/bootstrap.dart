@@ -6,6 +6,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app.dart';
 import 'config/app_config.dart';
+import 'debug/car_dev_seed.dart';
 import 'debug/local_storage_startup_log.dart';
 import 'debug/qa_db_snapshot.dart';
 import 'debug/qa_e2e_environment.dart';
@@ -83,6 +84,10 @@ Future<void> bootstrap() async {
           prefs: earlyPrefs,
           db: appDb,
         );
+        if (kDebugMode && config.carDevSeed) {
+          await maybeApplyCarDevSeed(appDb, enabled: true);
+          earlyPrefs = await AppPreferences.load();
+        }
         if (kDebugMode && !kIsWeb) {
           await restoreQaE2eEnvironmentIfPresent();
           await maybeApplyQaAndroidSeed(appDb);

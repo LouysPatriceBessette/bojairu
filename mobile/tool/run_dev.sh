@@ -19,9 +19,12 @@ ensure_workspace_pub_get "${ROOT}"
 #   ./tool/melosw run run:dev -- --skip-build
 # Wipe app data while reusing that APK:
 #   ./tool/melosw run run:dev -- --skip-build --fresh
+# Vehicle-sharing local seed (flush DB + Simulation catalog contacts + QA Civic):
+#   ./tool/melosw run run:dev -- --cardev
 screenshot_mode=false
 skip_build=false
 fresh_install=false
+cardev_seed=false
 extra=()
 for arg in "$@"; do
   if [[ "${arg}" == "--screenshot" ]]; then
@@ -30,6 +33,8 @@ for arg in "$@"; do
     skip_build=true
   elif [[ "${arg}" == "--fresh" ]]; then
     fresh_install=true
+  elif [[ "${arg}" == "--cardev" ]]; then
+    cardev_seed=true
   else
     extra+=("${arg}")
   fi
@@ -70,6 +75,10 @@ if [[ "${fresh_install}" == "true" && "${skip_build}" != "true" ]]; then
   echo "--fresh requires --skip-build (normal run:dev already uninstalls first)." >&2
   exit 2
 fi
+if [[ "${cardev_seed}" == "true" && "${skip_build}" == "true" ]]; then
+  echo "--cardev needs a rebuild (CARDEV dart-define). Do not combine with --skip-build." >&2
+  exit 2
+fi
 
 QA_APK="${DIR}/build/app/outputs/flutter-apk/app-dev-debug.apk"
 
@@ -103,6 +112,10 @@ else
   )
   if [[ "${screenshot_mode}" == "true" ]]; then
     run_args+=(--dart-define=SCREENSHOT=true)
+  fi
+  if [[ "${cardev_seed}" == "true" ]]; then
+    echo "Cardev seed: flush DB + Simulation contacts + QA Civic on startup."
+    run_args+=(--dart-define=CARDEV=true)
   fi
   if [[ -n "${ENTITLEMENT_BASE_URL_VALUE}" ]]; then
     run_args+=(--dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}")

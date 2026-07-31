@@ -57,7 +57,9 @@ melos:
         Add --skip-build on Android to install/run the existing
         app-dev-debug.apk without rebuilding (e.g. after qa:build-apk
         -- --simulation). Add --fresh with --skip-build to uninstall
-        first and wipe app data.
+        first and wipe app data. Add --cardev to flush the local DB and
+        seed Simulation-catalog contacts plus a QA Civic vehicle (vehicle
+        sharing module development).
       run: cd mobile && ./tool/run_dev.sh "$@"
 
     run:dev:web:
