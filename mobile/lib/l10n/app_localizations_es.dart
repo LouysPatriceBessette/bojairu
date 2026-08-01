@@ -2150,6 +2150,22 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationVehicleSessionGapTitle =>
+      'Posible diferencia de kilometraje';
+
+  @override
+  String get pushNotificationVehicleSessionGapBody =>
+      'Es posible que una sesión no se haya cerrado. Abra las correcciones pendientes para revisar la lectura.';
+
+  @override
+  String pushNotificationVehicleSessionGapBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name inició una sesión en $vehicle. Es posible que una sesión anterior siga abierta.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.';
 
@@ -4494,6 +4510,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String vehicleSharingOwnerLabel(String name) {
     return 'Propietario: $name';
   }
+
+  @override
+  String get vehicleSharingSessionStartAction => 'Iniciar una sesión';
+
+  @override
+  String get vehicleSharingSessionEndAction => 'Terminar una sesión';
+
+  @override
+  String get vehicleSharingOtherActions => 'Otras acciones';
+
+  @override
+  String get vehicleSharingOtherActionsTitle => 'Otras acciones';
+
+  @override
+  String get vehicleSharingSessionRelayFailed =>
+      'Sesión guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.';
 
   @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>

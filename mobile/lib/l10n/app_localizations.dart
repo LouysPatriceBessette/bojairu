@@ -3647,6 +3647,24 @@ abstract class AppLocalizations {
     String vehicle,
   );
 
+  /// No description provided for @pushNotificationVehicleSessionGapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible odometer gap'**
+  String get pushNotificationVehicleSessionGapTitle;
+
+  /// No description provided for @pushNotificationVehicleSessionGapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A session may not have been ended. Open pending corrections to review the reading.'**
+  String get pushNotificationVehicleSessionGapBody;
+
+  /// No description provided for @pushNotificationVehicleSessionGapBodyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} started a session on {vehicle}. A previous session may still be open.'**
+  String pushNotificationVehicleSessionGapBodyFrom(String name, String vehicle);
+
   /// No description provided for @vehicleSharingOfferRelayFailed.
   ///
   /// In en, this message translates to:
@@ -7484,6 +7502,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Owner: {name}'**
   String vehicleSharingOwnerLabel(String name);
+
+  /// No description provided for @vehicleSharingSessionStartAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a session'**
+  String get vehicleSharingSessionStartAction;
+
+  /// No description provided for @vehicleSharingSessionEndAction.
+  ///
+  /// In en, this message translates to:
+  /// **'End a session'**
+  String get vehicleSharingSessionEndAction;
+
+  /// No description provided for @vehicleSharingOtherActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Other actions'**
+  String get vehicleSharingOtherActions;
+
+  /// No description provided for @vehicleSharingOtherActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Other actions'**
+  String get vehicleSharingOtherActionsTitle;
+
+  /// No description provided for @vehicleSharingSessionRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Session saved here, but sending to the owner failed. Try again later.'**
+  String get vehicleSharingSessionRelayFailed;
 
   /// No description provided for @vehicleUsageBlockedOwnOnBorrowerPath.
   ///

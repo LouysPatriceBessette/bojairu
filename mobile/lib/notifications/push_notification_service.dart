@@ -83,6 +83,7 @@ class PushNotificationService {
   static const String _vehicleSharingOfferTapPayload = 'vehicle_sharing_offer';
   static const String _vehicleSharingOfferAcceptTapPayload =
       'vehicle_sharing_offer_accept';
+  static const String _vehicleSessionGapTapPrefix = 'vehicle_session_gap|';
 
   static const List<String> _housingKinds = <String>[
     'housing_proposal',
@@ -187,6 +188,23 @@ class PushNotificationService {
     if (payload == _vehicleSharingOfferTapPayload ||
         payload == _vehicleSharingOfferAcceptTapPayload) {
       _navigateToVehicleSharing();
+      return;
+    }
+    if (payload.startsWith(_vehicleSessionGapTapPrefix)) {
+      final rest = payload.substring(_vehicleSessionGapTapPrefix.length);
+      final parts = rest.split('|');
+      final vehicleId = parts.isNotEmpty ? parts[0] : '';
+      final correctionReadingId = parts.length >= 2 ? parts[1] : '';
+      if (vehicleId.isNotEmpty && correctionReadingId.isNotEmpty) {
+        _navigateToVehiclePendingCorrection(
+          vehicleId: vehicleId,
+          correctionReadingId: correctionReadingId,
+        );
+      } else if (vehicleId.isNotEmpty) {
+        _navigateToVehiclePendingCorrections(vehicleId);
+      } else {
+        _navigateToVehicleSharing();
+      }
       return;
     }
     if (payload == _housingTapPayload) {
@@ -1233,6 +1251,72 @@ class PushNotificationService {
       skipPushWhenAlreadyAt: (location) =>
           location == '/vehicle-sharing' || location == '/vehicle-sharing/',
     );
+  }
+
+  static void _navigateToVehiclePendingCorrections(String vehicleId) {
+    pushFromNotificationTapWhenReady(
+      '/vehicle/$vehicleId/pending-corrections',
+    );
+  }
+
+  static void _navigateToVehiclePendingCorrection({
+    required String vehicleId,
+    required String correctionReadingId,
+  }) {
+    pushFromNotificationTapWhenReady(
+      '/vehicle/$vehicleId/pending-corrections/$correctionReadingId',
+    );
+  }
+
+  /// Propriétaire: borrower started while a session was already open.
+  static Future<void> showLocalVehicleSessionGapNotification({
+    String? borrowerDisplayName,
+    String? vehicleLabel,
+    required String vehicleId,
+    String? correctionReadingId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final title = l10n.pushNotificationVehicleSessionGapTitle;
+    final name = (borrowerDisplayName ?? '').trim();
+    final vehicle = (vehicleLabel ?? '').trim();
+    final body = name.isNotEmpty && vehicle.isNotEmpty
+        ? l10n.pushNotificationVehicleSessionGapBodyFrom(name, vehicle)
+        : l10n.pushNotificationVehicleSessionGapBody;
+
+    if (kIsWeb) {
+      return;
+    }
+
+    final payload = correctionReadingId != null && correctionReadingId.isNotEmpty
+        ? '$_vehicleSessionGapTapPrefix$vehicleId|$correctionReadingId'
+        : '$_vehicleSessionGapTapPrefix$vehicleId|';
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: payload,
+    );
+    debugPrint('vehicle_use_session_start gap notification shown');
   }
 
   /// Notification tap: open housing module, then proposal screen above it.

@@ -41,6 +41,7 @@ import '../notifications/push_notification_service.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
 import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
+import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
 import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
 import 'identity_keystore.dart';
@@ -1273,6 +1274,22 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleUseSessionStart) {
+            await _handleInboundVehicleUseSessionStart(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleUseSessionEnd) {
+            await _handleInboundVehicleUseSessionEnd(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else {
             await _relay.ackEnvelope(
               envelopeId: env.envelopeId,
@@ -1817,6 +1834,157 @@ class HandshakeOrchestrator {
           vehicleLabel: vehicleLabel,
         );
       }
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _handleInboundVehicleUseSessionStart({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleUseSessionStartEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleUseSessionStart(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_use_session_start decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final imported =
+          await VehicleUseSessionTransportService(_db).importReceivedSessionStart(
+        sessionJson: decrypted.sessionJson,
+        borrowerContactId: senderContact.id,
+      );
+      debugPrint(
+        'vehicle_use_session_start imported from ${senderContact.id} '
+        'vehicle=${imported.vehicleId} conflict=${imported.conflictWithOpenSession}',
+      );
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleUseSessionStartReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: senderContact.id,
+        initiatorDisplayName: senderContact.displayName,
+        details: {
+          'vehicleId': imported.vehicleId,
+          'conflict': imported.conflictWithOpenSession,
+          if (imported.localUseId != null) 'localUseId': imported.localUseId,
+          if (imported.correctionReadingId != null)
+            'correctionReadingId': imported.correctionReadingId,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (imported.conflictWithOpenSession && _ownsDeviceHousingNotifications) {
+        await PushNotificationService.showLocalVehicleSessionGapNotification(
+          borrowerDisplayName: senderContact.displayName,
+          vehicleLabel: imported.vehicleLabel,
+          vehicleId: imported.vehicleId,
+          correctionReadingId: imported.correctionReadingId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_use_session_start import failed for ${senderContact.id}: $e\n$st',
+      );
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _handleInboundVehicleUseSessionEnd({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleUseSessionEndEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleUseSessionEnd(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_use_session_end decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final closed =
+          await VehicleUseSessionTransportService(_db).importReceivedSessionEnd(
+        sessionJson: decrypted.sessionJson,
+        borrowerContactId: senderContact.id,
+      );
+      debugPrint(
+        'vehicle_use_session_end imported from ${senderContact.id} '
+        'closed=$closed',
+      );
+      if (closed) {
+        await RelayActivityLogService(_db).append(
+          kind: RelayActivityLogKinds.vehicleUseSessionEndReceived,
+          initiatorKind: RelayActivityLogService.initiatorContact,
+          initiatorContactId: senderContact.id,
+          initiatorDisplayName: senderContact.displayName,
+        );
+        steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_use_session_end import failed for ${senderContact.id}: $e\n$st',
+      );
     }
     await _relay.ackEnvelope(
       envelopeId: envelope.envelopeId,
@@ -4232,6 +4400,154 @@ class HandshakeOrchestrator {
       kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
       initiatorKind: RelayActivityLogService.initiatorSelf,
       details: {'linkId': linkId, 'status': 'accepted'},
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts encrypted borrower session start facts to the Propriétaire.
+  Future<void> sendVehicleUseSessionStart({
+    required String linkId,
+    required String vehicleId,
+    required String remoteUseId,
+    required String startReadingId,
+  }) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final sessionJson =
+        await VehicleUseSessionTransportService(_db).exportSessionStartJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteUseId: remoteUseId,
+      startReadingId: startReadingId,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleUseSessionStart(
+      envelope: VehicleUseSessionStartEnvelope(
+        senderLongTermPublicKey: selfPub,
+        sessionJson: sessionJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleUseSessionStart,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleUseSessionStartSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remoteUseId': remoteUseId,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts encrypted borrower session end facts to the Propriétaire.
+  Future<void> sendVehicleUseSessionEnd({
+    required String linkId,
+    required String vehicleId,
+    required String remoteUseId,
+    required String endReadingId,
+    int? drivingRoutePercent,
+    int? drivingCityPercent,
+    int? drivingTrafficPercent,
+  }) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final sessionJson =
+        await VehicleUseSessionTransportService(_db).exportSessionEndJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteUseId: remoteUseId,
+      endReadingId: endReadingId,
+      drivingRoutePercent: drivingRoutePercent,
+      drivingCityPercent: drivingCityPercent,
+      drivingTrafficPercent: drivingTrafficPercent,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleUseSessionEnd(
+      envelope: VehicleUseSessionEndEnvelope(
+        senderLongTermPublicKey: selfPub,
+        sessionJson: sessionJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleUseSessionEnd,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleUseSessionEndSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remoteUseId': remoteUseId,
+      },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }

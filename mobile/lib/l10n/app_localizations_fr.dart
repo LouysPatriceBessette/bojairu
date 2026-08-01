@@ -2147,6 +2147,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationVehicleSessionGapTitle =>
+      'Écart de kilométrage possible';
+
+  @override
+  String get pushNotificationVehicleSessionGapBody =>
+      'Une session n\'a peut-être pas été terminée. Ouvrez les corrections en attente pour vérifier la lecture.';
+
+  @override
+  String pushNotificationVehicleSessionGapBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name a débuté une session sur $vehicle. Une session précédente est peut-être restée ouverte.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Offre enregistrée ici, mais l\'envoi au contact a échoué. Réessayez plus tard.';
 
@@ -4493,6 +4509,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String vehicleSharingOwnerLabel(String name) {
     return 'Propriétaire : $name';
   }
+
+  @override
+  String get vehicleSharingSessionStartAction => 'Débuter une session';
+
+  @override
+  String get vehicleSharingSessionEndAction => 'Terminer une session';
+
+  @override
+  String get vehicleSharingOtherActions => 'Autres actions';
+
+  @override
+  String get vehicleSharingOtherActionsTitle => 'Autres actions';
+
+  @override
+  String get vehicleSharingSessionRelayFailed =>
+      'Session enregistrée ici, mais l\'envoi au propriétaire a échoué. Réessayez plus tard.';
 
   @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>

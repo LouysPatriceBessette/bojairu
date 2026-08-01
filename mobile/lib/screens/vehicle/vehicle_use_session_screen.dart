@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +9,8 @@ import '../../db/app_database.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
+import '../../relay/relay_client.dart';
 import '../../util/display_units.dart';
 import '../../util/vehicle_meter_display.dart';
 import '../../vehicle/vehicle_meter_photo_path.dart';
@@ -437,11 +441,28 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       }
 
       if (openUse == null) {
-        await repo.openUseSession(
+        final opened = await repo.openUseSession(
           vehicleId: v.id,
           attributedContactId: actingId,
           startReadingId: reading.id,
         );
+        if (widget.usageContext.forwardsToOwner) {
+          final relayOk = await _forwardSessionStartToOwner(
+            vehicleId: v.id,
+            remoteUseId: opened.id,
+            startReadingId: reading.id,
+          );
+          if (!mounted) return;
+          if (!relayOk) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.vehicleSharingSessionRelayFailed)),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.vehicleSharingForwarded)),
+            );
+          }
+        }
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.vehicleUseSessionStarted)),
@@ -451,31 +472,49 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       }
 
       final collectedDetailedMix = _requiresDetailedDrivingMix;
+      final routePct = collectedDetailedMix
+          ? parseDrivingMixPercent(_routePercent.text)
+          : null;
+      final cityPct = collectedDetailedMix
+          ? parseDrivingMixPercent(_cityPercent.text)
+          : null;
+      final trafficPct = collectedDetailedMix
+          ? parseDrivingMixPercent(_trafficPercent.text)
+          : null;
       await repo.closeUseSession(
         useId: openUse.id,
         endReadingId: reading.id,
-        drivingRoutePercent: collectedDetailedMix
-            ? parseDrivingMixPercent(_routePercent.text)
-            : null,
-        drivingCityPercent: collectedDetailedMix
-            ? parseDrivingMixPercent(_cityPercent.text)
-            : null,
-        drivingTrafficPercent: collectedDetailedMix
-            ? parseDrivingMixPercent(_trafficPercent.text)
-            : null,
+        drivingRoutePercent: routePct,
+        drivingCityPercent: cityPct,
+        drivingTrafficPercent: trafficPct,
         sessionConsumptionMode: sessionConsumptionModeForClose(
           collectedDetailedMix: collectedDetailedMix,
         ),
       );
+      if (widget.usageContext.forwardsToOwner) {
+        final relayOk = await _forwardSessionEndToOwner(
+          vehicleId: v.id,
+          remoteUseId: openUse.id,
+          endReadingId: reading.id,
+          drivingRoutePercent: routePct,
+          drivingCityPercent: cityPct,
+          drivingTrafficPercent: trafficPct,
+        );
+        if (!mounted) return;
+        if (!relayOk) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingSessionRelayFailed)),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.vehicleSharingForwarded)),
+          );
+        }
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.vehicleUseSessionEnded)),
       );
-      if (widget.usageContext.forwardsToOwner) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.vehicleSharingForwarded)),
-        );
-      }
       context.pop();
     } catch (_) {
       if (!mounted) return;
@@ -484,6 +523,79 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       );
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<String?> _activeBorrowerLinkId(String vehicleId) async {
+    final links = await VehiclesRepository(AppDatabase.processScope)
+        .listSharingLinksForVehicle(vehicleId);
+    for (final link in links) {
+      if (link.status == VehicleSharingLinkStatus.active.wire) {
+        return link.id;
+      }
+    }
+    return null;
+  }
+
+  Future<bool> _forwardSessionStartToOwner({
+    required String vehicleId,
+    required String remoteUseId,
+    required String startReadingId,
+  }) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return false;
+    final linkId = await _activeBorrowerLinkId(vehicleId);
+    if (linkId == null) return false;
+    try {
+      await orch.sendVehicleUseSessionStart(
+        linkId: linkId,
+        vehicleId: vehicleId,
+        remoteUseId: remoteUseId,
+        startReadingId: startReadingId,
+      );
+      return true;
+    } on HandshakeOrchestratorError {
+      return false;
+    } on RelayClientError {
+      return false;
+    } on RelayUnreachableException {
+      return false;
+    } on TimeoutException {
+      return false;
+    }
+  }
+
+  Future<bool> _forwardSessionEndToOwner({
+    required String vehicleId,
+    required String remoteUseId,
+    required String endReadingId,
+    int? drivingRoutePercent,
+    int? drivingCityPercent,
+    int? drivingTrafficPercent,
+  }) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return false;
+    final linkId = await _activeBorrowerLinkId(vehicleId);
+    if (linkId == null) return false;
+    try {
+      await orch.sendVehicleUseSessionEnd(
+        linkId: linkId,
+        vehicleId: vehicleId,
+        remoteUseId: remoteUseId,
+        endReadingId: endReadingId,
+        drivingRoutePercent: drivingRoutePercent,
+        drivingCityPercent: drivingCityPercent,
+        drivingTrafficPercent: drivingTrafficPercent,
+      );
+      return true;
+    } on HandshakeOrchestratorError {
+      return false;
+    } on RelayClientError {
+      return false;
+    } on RelayUnreachableException {
+      return false;
+    } on TimeoutException {
+      return false;
     }
   }
 

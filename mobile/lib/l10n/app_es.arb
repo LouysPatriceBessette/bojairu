@@ -820,6 +820,15 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationVehicleSessionGapTitle": "Posible diferencia de kilometraje",
+  "pushNotificationVehicleSessionGapBody": "Es posible que una sesión no se haya cerrado. Abra las correcciones pendientes para revisar la lectura.",
+  "pushNotificationVehicleSessionGapBodyFrom": "{name} inició una sesión en {vehicle}. Es posible que una sesión anterior siga abierta.",
+  "@pushNotificationVehicleSessionGapBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.",
   "vehicleSharingAcceptRelayFailed": "Aceptación guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
   "pushNotificationHousingAgreementActivatedTitle": "Acuerdo unánime",
@@ -1836,6 +1845,11 @@
   "vehicleSharingForwarded": "Registrado en el vehículo del propietario.",
   "vehicleSharingBorrowerLabel": "Prestatario: {name}",
   "vehicleSharingOwnerLabel": "Propietario: {name}",
+  "vehicleSharingSessionStartAction": "Iniciar una sesión",
+  "vehicleSharingSessionEndAction": "Terminar una sesión",
+  "vehicleSharingOtherActions": "Otras acciones",
+  "vehicleSharingOtherActionsTitle": "Otras acciones",
+  "vehicleSharingSessionRelayFailed": "Sesión guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "Este vehículo es suyo. Use el módulo Vehículo para registrar su uso — no Uso compartido.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "Este vehículo no está en su lista de vehículos propios. Use Uso compartido para un vehículo compartido con usted.",

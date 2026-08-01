@@ -964,6 +964,15 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationVehicleSessionGapTitle": "Possible odometer gap",
+  "pushNotificationVehicleSessionGapBody": "A session may not have been ended. Open pending corrections to review the reading.",
+  "pushNotificationVehicleSessionGapBodyFrom": "{name} started a session on {vehicle}. A previous session may still be open.",
+  "@pushNotificationVehicleSessionGapBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Offer saved here, but sending to the contact failed. Try again later.",
   "vehicleSharingAcceptRelayFailed": "Acceptance saved here, but sending to the owner failed. Try again later.",
   "pushNotificationHousingAgreementActivatedTitle": "Unanimous agreement",
@@ -2047,6 +2056,11 @@
   "@vehicleSharingBorrowerLabel": { "placeholders": { "name": { "type": "String" } } },
   "vehicleSharingOwnerLabel": "Owner: {name}",
   "@vehicleSharingOwnerLabel": { "placeholders": { "name": { "type": "String" } } },
+  "vehicleSharingSessionStartAction": "Start a session",
+  "vehicleSharingSessionEndAction": "End a session",
+  "vehicleSharingOtherActions": "Other actions",
+  "vehicleSharingOtherActionsTitle": "Other actions",
+  "vehicleSharingSessionRelayFailed": "Session saved here, but sending to the owner failed. Try again later.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "This vehicle is yours. Use the Vehicle module to record owner usage — not Vehicle sharing.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "This vehicle is not in your owned list. Use Vehicle sharing for a vehicle shared with you.",

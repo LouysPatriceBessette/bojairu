@@ -208,4 +208,9 @@ abstract final class RelayActivityLogKinds {
   static const vehicleSharingOfferReceived = 'vehicle_sharing_offer_received';
   static const vehicleSharingOfferResponse = 'vehicle_sharing_offer_response';
   static const vehicleSharingOfferExpired = 'vehicle_sharing_offer_expired';
+  static const vehicleUseSessionStartSent = 'vehicle_use_session_start_sent';
+  static const vehicleUseSessionStartReceived =
+      'vehicle_use_session_start_received';
+  static const vehicleUseSessionEndSent = 'vehicle_use_session_end_sent';
+  static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
 }

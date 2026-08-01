@@ -59,6 +59,20 @@ String qaVehicleSharingAccessibleCardSemanticsId(String displayLabel) =>
 const kQaVehicleSharingAccessibleQaCivic =
     'qa-vehicle-sharing-accessible-qa-civic';
 
+/// Start / end session chip on an accessible card.
+const kQaVehicleSharingSessionAction = 'qa-vehicle-sharing-session-action';
+
+/// Other actions chip on an accessible card.
+const kQaVehicleSharingOtherActions = 'qa-vehicle-sharing-other-actions';
+
+/// Other-actions screen (fuel and future actions).
+const kQaVehicleSharingOtherActionsScreen =
+    'qa-vehicle-sharing-other-actions-screen';
+
+/// Fuel action on the other-actions screen.
+const kQaVehicleSharingOtherActionsFuel =
+    'qa-vehicle-sharing-other-actions-fuel';
+
 Widget qaVehicleSharingSemantics({
   required String identifier,
   required Widget child,

@@ -227,7 +227,6 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                           _contactLabels,
                           l10n,
                         ),
-                        prefs: widget.prefs,
                       ),
                     ),
                   const Divider(height: 32),
@@ -308,30 +307,63 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   }
 }
 
-class _AccessibleCard extends StatelessWidget {
+class _AccessibleCard extends StatefulWidget {
   const _AccessibleCard({
     required this.vehicle,
     required this.link,
     required this.ownerLabel,
-    required this.prefs,
   });
 
   final Vehicle vehicle;
   final VehicleSharingLink link;
   final String ownerLabel;
-  final AppPreferences prefs;
+
+  @override
+  State<_AccessibleCard> createState() => _AccessibleCardState();
+}
+
+class _AccessibleCardState extends State<_AccessibleCard> {
+  bool _sessionOpen = false;
+  bool _loadingSession = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOpenSession();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AccessibleCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.vehicle.id != widget.vehicle.id) {
+      _loadOpenSession();
+    }
+  }
+
+  Future<void> _loadOpenSession() async {
+    final open = await VehiclesRepository(AppDatabase.processScope)
+        .openUseForVehicle(widget.vehicle.id);
+    if (!mounted) return;
+    setState(() {
+      _sessionOpen = open != null;
+      _loadingSession = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final usageContext = VehicleUsageContext.borrower(
-      actingContactId: link.borrowerContactId,
+      actingContactId: widget.link.borrowerContactId,
     );
+    final sessionLabel = _sessionOpen
+        ? l10n.vehicleSharingSessionEndAction
+        : l10n.vehicleSharingSessionStartAction;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: qaVehicleSharingSemantics(
         identifier: qaVehicleSharingAccessibleCardSemanticsId(
-          vehicle.displayLabel,
+          widget.vehicle.displayLabel,
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -339,32 +371,42 @@ class _AccessibleCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                vehicle.displayLabel,
+                widget.vehicle.displayLabel,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              Text(l10n.vehicleSharingOwnerLabel(ownerLabel)),
+              Text(l10n.vehicleSharingOwnerLabel(widget.ownerLabel)),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  ActionChip(
-                    label: Text(l10n.vehicleQuickActionOdometer),
-                    onPressed: () => _openForm(
-                      context,
-                      'use',
-                      usageContext,
+              if (_loadingSession)
+                const SizedBox(
+                  height: 32,
+                  width: 32,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ActionChip(
+                      label: qaVehicleSharingSemantics(
+                        identifier: kQaVehicleSharingSessionAction,
+                        button: true,
+                        onTap: () => _openSession(context, usageContext),
+                        child: Text(sessionLabel),
+                      ),
+                      onPressed: () => _openSession(context, usageContext),
                     ),
-                  ),
-                  ActionChip(
-                    label: Text(l10n.vehicleQuickActionFuel),
-                    onPressed: () => _openForm(
-                      context,
-                      'fuel',
-                      usageContext,
+                    ActionChip(
+                      label: qaVehicleSharingSemantics(
+                        identifier: kQaVehicleSharingOtherActions,
+                        button: true,
+                        onTap: () => _openOtherActions(context, usageContext),
+                        child: Text(l10n.vehicleSharingOtherActions),
+                      ),
+                      onPressed: () => _openOtherActions(context, usageContext),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -372,15 +414,25 @@ class _AccessibleCard extends StatelessWidget {
     );
   }
 
-  void _openForm(
+  Future<void> _openSession(
     BuildContext context,
-    String kind,
     VehicleUsageContext usageContext,
-  ) {
+  ) async {
     final borrower = Uri.encodeComponent(usageContext.actingContactId);
-    final path = kind == 'use'
-        ? '/vehicle-sharing/${vehicle.id}/use?borrower=$borrower'
-        : '/vehicle-sharing/${vehicle.id}/fuel?borrower=$borrower';
-    context.push(path);
+    await context.push(
+      '/vehicle-sharing/${widget.vehicle.id}/use?borrower=$borrower',
+    );
+    await _loadOpenSession();
+  }
+
+  Future<void> _openOtherActions(
+    BuildContext context,
+    VehicleUsageContext usageContext,
+  ) async {
+    final borrower = Uri.encodeComponent(usageContext.actingContactId);
+    await context.push(
+      '/vehicle-sharing/${widget.vehicle.id}/other-actions?borrower=$borrower',
+    );
+    await _loadOpenSession();
   }
 }

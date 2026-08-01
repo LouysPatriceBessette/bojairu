@@ -264,6 +264,21 @@ would clear local notifications). Flow:
 ./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_offer_happy_path
 ```
 
+**Vehicle sharing active seed (manual follow-up):**
+
+Seeds both AVDs directly to the **end state** of
+`vehicle_sharing_offer_happy_path` (connected Louys↔Monica, active QA Civic
+share — no offer/accept/notification path). Asserts Louys hub green check and
+Monica accessible card (session + other-actions chips), then leaves both apps
+on home for manual exploration.
+
+```bash
+./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_active_seed
+```
+
+After product Dart changes under `mobile/`, rebuild the APK (omit `--skip-build`).
+YAML/bash-only: `--skip-build` is fine.
+
 **Bug 1.22 regression (1 attempt, four phases, writes `bug_122_result.txt`) — resolved Jul 2026:**
 
 Regression guard and duplicate-handshake outcomes after device-binding merge (commit `4489d77`).

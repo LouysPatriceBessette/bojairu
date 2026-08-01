@@ -28,6 +28,8 @@ class EnvelopeKind {
   static const int participantInstallationMigration = 15;
   static const int vehicleSharingOffer = 16;
   static const int vehicleSharingOfferAccept = 17;
+  static const int vehicleUseSessionStart = 18;
+  static const int vehicleUseSessionEnd = 19;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -281,6 +283,28 @@ class VehicleSharingOfferAcceptEnvelope {
   final String acceptJson;
 }
 
+/// Steady-state borrower use-session start (Emprunteur → Propriétaire).
+class VehicleUseSessionStartEnvelope {
+  VehicleUseSessionStartEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.sessionJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String sessionJson;
+}
+
+/// Steady-state borrower use-session end (Emprunteur → Propriétaire).
+class VehicleUseSessionEndEnvelope {
+  VehicleUseSessionEndEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.sessionJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String sessionJson;
+}
+
 // ---------- HKDF info strings ----------
 
 const String _helloAeadInfo = 'compartarenta/handshake-v1/hello-aead';
@@ -312,6 +336,10 @@ const String _vehicleSharingOfferAeadInfo =
     'compartarenta/steady-v1/vehicle-sharing-offer-aead';
 const String _vehicleSharingOfferAcceptAeadInfo =
     'compartarenta/steady-v1/vehicle-sharing-offer-accept-aead';
+const String _vehicleUseSessionStartAeadInfo =
+    'compartarenta/steady-v1/vehicle-use-session-start-aead';
+const String _vehicleUseSessionEndAeadInfo =
+    'compartarenta/steady-v1/vehicle-use-session-end-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -1480,6 +1508,138 @@ class EnvelopeCodec {
     return VehicleSharingOfferAcceptEnvelope(
       senderLongTermPublicKey: senderPub,
       acceptJson: (json['accept_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle use session start envelope.
+  static Future<Uint8List> encryptVehicleUseSessionStart({
+    required VehicleUseSessionStartEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleUseSessionStartAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleUseSessionStart,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'session_json': envelope.sessionJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle use session start envelope.
+  static Future<VehicleUseSessionStartEnvelope> decryptVehicleUseSessionStart({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleUseSessionStart);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleUseSessionStartAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleUseSessionStartEnvelope(
+      senderLongTermPublicKey: senderPub,
+      sessionJson: (json['session_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle use session end envelope.
+  static Future<Uint8List> encryptVehicleUseSessionEnd({
+    required VehicleUseSessionEndEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleUseSessionEndAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleUseSessionEnd,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'session_json': envelope.sessionJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle use session end envelope.
+  static Future<VehicleUseSessionEndEnvelope> decryptVehicleUseSessionEnd({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleUseSessionEnd);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleUseSessionEndAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleUseSessionEndEnvelope(
+      senderLongTermPublicKey: senderPub,
+      sessionJson: (json['session_json'] as String?) ?? '{}',
     );
   }
 }

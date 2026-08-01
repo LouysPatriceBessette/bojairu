@@ -28,6 +28,7 @@ import 'qa_scenario_seed_helpers.dart';
 import 'qa_vehicle_consumption_seed.dart';
 import 'qa_vehicle_sale_portability_seed.dart';
 import 'qa_vehicle_seed_helpers.dart';
+import 'qa_vehicle_sharing_active_seed.dart';
 import 'qa_vehicle_sharing_offer_seed.dart';
 import 'web_dev_db_snapshot.dart';
 
@@ -63,6 +64,8 @@ const kQaScenarioIds = <String>{
   'contact_handshake_invitee',
   'vehicle_sharing_offer_owner',
   'vehicle_sharing_offer_borrower',
+  'vehicle_sharing_active_owner',
+  'vehicle_sharing_active_borrower',
   'fcm_wake_push_proposer',
   'fcm_wake_push_recipient',
   'housing_payment_reminder_simulate_before_due',
@@ -146,7 +149,9 @@ bool _qaNotificationsEnabledForScenario(String scenarioId) {
   return scenarioId == 'fcm_wake_push_recipient' ||
       scenarioId == 'housing_payment_reminder_simulate_before_due' ||
       scenarioId == 'vehicle_sharing_offer_owner' ||
-      scenarioId == 'vehicle_sharing_offer_borrower';
+      scenarioId == 'vehicle_sharing_offer_borrower' ||
+      scenarioId == 'vehicle_sharing_active_owner' ||
+      scenarioId == 'vehicle_sharing_active_borrower';
 }
 
 Future<void> _applyQaPaymentReminderPrefs(
@@ -183,6 +188,10 @@ Future<void> _persistQaE2eForScenario(String scenarioId) async {
       displayName: 'Louys QA',
       avatarId: 'a02',
     ),
+    'vehicle_sharing_active_owner' => (
+      displayName: 'Louys QA',
+      avatarId: 'a02',
+    ),
     'vehicle_sale_export_import_buyer' => (
       displayName: 'Louys QA',
       avatarId: 'a02',
@@ -196,6 +205,10 @@ Future<void> _persistQaE2eForScenario(String scenarioId) async {
       avatarId: 'a01',
     ),
     'vehicle_sharing_offer_borrower' => (
+      displayName: 'Monica QA',
+      avatarId: 'a01',
+    ),
+    'vehicle_sharing_active_borrower' => (
       displayName: 'Monica QA',
       avatarId: 'a01',
     ),
@@ -244,6 +257,10 @@ Future<void> applyQaScenario(AppDatabase db, String scenarioId) async {
       await seedQaVehicleSharingOfferOwner(db);
     case 'vehicle_sharing_offer_borrower':
       await seedQaVehicleSharingOfferBorrower(db);
+    case 'vehicle_sharing_active_owner':
+      await seedQaVehicleSharingActiveOwner(db);
+    case 'vehicle_sharing_active_borrower':
+      await seedQaVehicleSharingActiveBorrower(db);
     case 'fcm_wake_push_proposer':
       await seedQaFcmWakePushProposer(db);
     case 'fcm_wake_push_recipient':

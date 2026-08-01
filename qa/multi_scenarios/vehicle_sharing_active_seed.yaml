@@ -1,0 +1,17 @@
+id: vehicle_sharing_active_seed
+description: >-
+  Seed-only — Louys + Monica already at the END state of
+  vehicle_sharing_offer_happy_path (connected pair, active QA Civic share).
+  No offer/accept UI. Leaves both apps ready for manual exploration.
+device_date: current
+timezone: America/Toronto
+coordinator: vehicle_sharing_active_seed
+mode: seed_only
+role_owner:
+  avd: Louys-QA
+  seed: vehicle_sharing_active_owner
+  flow: qa/flows/vehicle_sharing_active_owner_assert_hub.yaml
+role_borrower:
+  avd: Monica-QA
+  seed: vehicle_sharing_active_borrower
+  flow: qa/flows/vehicle_sharing_active_borrower_assert_hub.yaml

@@ -837,6 +837,15 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationVehicleSessionGapTitle": "Écart de kilométrage possible",
+  "pushNotificationVehicleSessionGapBody": "Une session n'a peut-être pas été terminée. Ouvrez les corrections en attente pour vérifier la lecture.",
+  "pushNotificationVehicleSessionGapBodyFrom": "{name} a débuté une session sur {vehicle}. Une session précédente est peut-être restée ouverte.",
+  "@pushNotificationVehicleSessionGapBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Offre enregistrée ici, mais l'envoi au contact a échoué. Réessayez plus tard.",
   "vehicleSharingAcceptRelayFailed": "Acceptation enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
   "pushNotificationHousingAgreementActivatedTitle": "Entente unanime",
@@ -1853,6 +1862,11 @@
   "vehicleSharingForwarded": "Enregistré sur le véhicule du propriétaire.",
   "vehicleSharingBorrowerLabel": "Emprunteur : {name}",
   "vehicleSharingOwnerLabel": "Propriétaire : {name}",
+  "vehicleSharingSessionStartAction": "Débuter une session",
+  "vehicleSharingSessionEndAction": "Terminer une session",
+  "vehicleSharingOtherActions": "Autres actions",
+  "vehicleSharingOtherActionsTitle": "Autres actions",
+  "vehicleSharingSessionRelayFailed": "Session enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "Ce véhicule est le vôtre. Utilisez le module Véhicule pour enregistrer votre usage — pas Partage de véhicule.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "Ce véhicule n'est pas dans vos véhicules possédés. Utilisez Partage de véhicule pour un véhicule partagé avec vous.",

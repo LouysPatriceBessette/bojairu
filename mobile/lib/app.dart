@@ -33,6 +33,7 @@ import 'screens/vehicle/vehicle_use_session_screen.dart';
 import 'screens/vehicle/vehicle_quick_action_screens.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_hub_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_invite_form_screen.dart';
+import 'screens/vehicle_sharing/vehicle_sharing_other_actions_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_shares_screen.dart';
 import 'vehicle/vehicle_usage_context.dart';
 import 'screens/contacts/contact_detail_screen.dart';
@@ -675,6 +676,17 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
               contactId: state.uri.queryParameters['contactId'] ?? '',
               prefs: prefs,
             ),
+          ),
+          GoRoute(
+            path: ':vehicleId/other-actions',
+            builder: (context, state) {
+              final borrower = state.uri.queryParameters['borrower'] ?? '';
+              return VehicleSharingOtherActionsScreen(
+                vehicleId: state.pathParameters['vehicleId']!,
+                borrowerContactId: borrower,
+                prefs: prefs,
+              );
+            },
           ),
           GoRoute(
             path: ':vehicleId/use',

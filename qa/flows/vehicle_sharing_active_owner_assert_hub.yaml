@@ -1,0 +1,24 @@
+appId: app.incoherences.bojairu.dev
+---
+# Louys: seed end-state — hub shows active-share check on QA Civic.
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: "qa-home-vehicle-sharing"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    file: _accept_notification_prompt.yaml
+- tapOn:
+    id: "qa-home-vehicle-sharing"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-shareable-active-qa-civic"
+    timeout: 45000
+- takeScreenshot: owner_active_share_seeded

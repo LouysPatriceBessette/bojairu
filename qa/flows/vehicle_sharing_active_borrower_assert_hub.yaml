@@ -1,0 +1,32 @@
+appId: app.incoherences.bojairu.dev
+---
+# Monica: seed end-state — accessible QA Civic with session / other-actions chips.
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: "qa-home-vehicle-sharing"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow:
+    file: _accept_notification_prompt.yaml
+- tapOn:
+    id: "qa-home-vehicle-sharing"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-accessible-qa-civic"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-session-action"
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-other-actions"
+    timeout: 30000
+- takeScreenshot: borrower_accessible_seeded
