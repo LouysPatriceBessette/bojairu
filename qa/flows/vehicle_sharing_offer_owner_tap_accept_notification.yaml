@@ -1,0 +1,10 @@
+appId: app.incoherences.bojairu.dev
+---
+# Louys: OS shade already open — assert accept notification then TAP it.
+- extendedWaitUntil:
+    visible: "Partage de véhicule accepté"
+    timeout: 30000
+- assertVisible: ".*Monica QA a accepté de partager QA Civic.*"
+- takeScreenshot: owner_accept_notification_shade
+- tapOn: "Partage de véhicule accepté"
+- takeScreenshot: owner_after_accept_notification_tap

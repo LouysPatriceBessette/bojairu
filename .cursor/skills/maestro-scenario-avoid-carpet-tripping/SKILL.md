@@ -65,6 +65,25 @@ Write **one sentence** each:
 2. **Pass observable** — which `qa-*` id(s) or logcat line proves success.
 3. **Reference** — closest existing scenario id to **copy structure from** (not reinvent).
 
+### Blocking questions — ask in chat before writing YAML (do not invent the answer)
+
+If the request names a surface but **not** the pass criterion, **stop and ask**. Do not
+guess a “minimal” path that skips the human action under test.
+
+| Topic mentioned | Ask before coding |
+|-----------------|-------------------|
+| **Notifications** | Shade **visibility only**, or **tap** the notification? If tap: which screen/`qa-*` must appear after the tap? |
+| **Accept / respond** | Hub button, dialog, or another control? (Do not invent a dialog the app does not show.) |
+| **Owner + borrower** | Pass = borrower only, or **both** sides (owner active state / journal / notif)? |
+| **Contacts / handshake** | Must the scenario re-handshake, or are peers **pre-seeded connected**? |
+
+**Demonstrated failure (2026-08-01, `vehicle_sharing_offer_happy_path`):** agents iterated
+shade **assert-only** + `launchApp`/`stopApp` around notifications for multiple runs, then
+claimed the scenario tested “notifications”, without asking whether the objective required
+**tapping** the notification. User correction: testing freshly added notifications without a
+tap means the test objective was never confirmed. Fix path: rewrite coordinator around
+shade **tap** → destination assert (see Error cases below).
+
 ### Orchestrator success line (mandatory)
 
 Every Maestro orchestrator / coordinator success path **must** print an explicit
@@ -237,6 +256,15 @@ Rebuild APK when `mobile/` changed; `--skip-build` only for YAML/bash-only edits
 - **Full-stop before every non-first seed on the same AVD instance (proven 2026-07-14):** when a scenario needs a **second** (or later) `seed_qa_scenario` / `pm clear` on the same emulator process, **fully stop the emulator** (`adb emu kill` / `qa_kill_emulator`) and **cold-boot** before that seed. A second `pm clear` + cold-start on a still-running AVD after Maestro (or after System UI stress) often never writes `seed_applied` (`poll … applied=<empty>` then seed timeout). First seed after a fresh AVD start is fine; mid-run reseeds are not. Reference orchestrator: `tool/run_vehicle_sale_export_import_scenario.sh` phases 4→5.
 - **Right-aligned control + full-width Semantics hitbox (demonstrated 2026-07-14):** `Align(alignment: centerRight)` wrapping `Semantics(excludeSemantics: true, …)` can report a **full-row** `bounds` in Maestro hierarchy while the visible `TextButton` sits on the right. `tapOn id:` then COMPLETED (center of bounds) without firing `onPressed` — dialog never opens. Hierarchy proof: `qa-vehicle-import-action` bounds `[42,325][1038,451]` with visual « Importer » on the right edge. **Fix (situational):** size the Semantics to the control (`Row` + `MainAxisAlignment.end`, or equivalent intrinsic width), not the full cross-axis of the list. (`Row`+`end` alone did **not** shrink bounds under `ListView` — still `[42,325][1038,451]` as child of `ScrollView` after rebuild; see next bullet.)
   - **Alternative (demonstrated 2026-07-14, `mobile/terminal.log` run `20260714T224815Z`):** same id still full-width under ancestor `android.widget.ScrollView` after `Row`+`end`. Situation difference: list max cross-axis + scrollable parent. **Fix that recovered:** move the Maestro target to `AppBar.actions` (outside the scrollable body). Demonstration: Maestro steps `qa-vehicle-import-action` → `qa-vehicle-import-confirm` → `qa-vehicle-card-qa-civic` all COMPLETED; orchestrator then printed `Scenario vehicle_sale_export_import complete` (that run predates the mandatory `PASSED` log line). Do **not** delete the Align/`Row` lessons.
+  - **Alternative (demonstrated 2026-07-31, `vehicle_sharing_offer_happy_path`):** hub pending **Accepter** — `Semantics(excludeSemantics: true)` wrapping a `FilledButton` in a `Row` under `ListView` still reported full-width bounds `[42,850][1038,997]` with `qa-vehicle-sharing-pending-qa-civic` nested under the accept id; `tapOn` COMPLETED without accepting. Situation difference: trailing/Row control inside scrollable hub body (not AppBar). **Fix that recovered:** put the Maestro `identifier` on the **label inside** `FilledButton` (bounds = button face) and `_reload()` immediately after local `acceptSharingLink` (do not wait for relay RTT before UI update). Evidence: hierarchy in `qa/artifacts/multi-vehicle_sharing_offer_happy_path/20260731T225710Z`; green run `20260731T232523Z` printed `Scenario PASSED | vehicle_sharing_offer_happy_path`.
+- **UI flash / inbox tick ≠ sync applied (observed 2026-07-31, owner Partages after borrower accept):** listening to `steadyStateInboxTick` and calling `_reload()` can flash the screen while the row still shows the old state (e.g. « Invitation envoyée… »). Causes to check before blaming « navigation »: (1) tick bumped even when `applyRemoteSharingOfferAccept` returns `false` (handler still acks + ticks); (2) concurrent `_reload()` without a generation token — an older read can `setState` after a newer one; (3) owner never got a successful apply — Settings **Journal d'événements** missing « Réponse à une offre… » while borrower has it is stronger evidence than a flash. **Maestro:** do not treat a visual flash or “screen refreshed” as pass for owner accept sync; assert an owner-side outcome id / journal kind / logcat `vehicle_sharing_offer_accept applied=true`.
+  - **Product path (demonstrated 2026-08-01, run `20260801T174900Z`):** foreground FCM wake must call `HandshakeOrchestrator.maybeInstance.pollSteadyStateInboxes()` — not `runWakeInboxPollOnce()` (second `AppDatabase` + non-installed orchestrator). Same run: coordinator saw `vehicle_sharing_offer_accept applied=true`; failure screenshot still showed the **green check** on QA Civic. Tick-only-when-applied + reload generation tokens shipped with that path.
+  - **Maestro assert trap (same run; selector established `20260801T184651Z`):** `qa-vehicle-sharing-shareable-active-qa-civic` nested under the shareable row’s `Semantics(button: true, excludeSemantics: true)` never appears in hierarchy (only `qa-vehicle-sharing-shareable-qa-civic`). Put the active id on the **row** when `listActiveLinksAsOwner` includes the vehicle. Green run `20260801T184651Z` printed `Scenario PASSED | vehicle_sharing_offer_happy_path` with that row id visible after accept-notification tap.
+- **Notification shade path — no force-stop / no `stopApp` around shade (demonstrated 2026-08-01):** `force-stop` / Maestro `launchApp: stopApp: true` **cancels local notifications** (same class as `housing_payment_reminder`). To open the shade: `KEYCODE_HOME` only (background, keep process + notifs) → `qa_open_notification_shade_on_serial` → Maestro tap product title → assert in-app `qa-*`. **Do not** replace a notification tap with a later cold start + manual navigation to the destination — that tests restart, not the notification.
+  - **Retired wrong path (same scenario):** `vehicle_sharing_offer_borrower_assert_notification.yaml` (shade assert, no tap) + borrower/owner flows with `stopApp: true` to reach hub/Partages. Replaced by `*_tap_notification.yaml` + `*_accept_from_hub.yaml` / `*_assert_hub_active.yaml`. Leave dead flows unused or delete them so the next agent does not re-wire the assert-only path.
+- **Notification navigation — `skipPushWhenAlreadyAt` must be the hub route only (demonstrated 2026-08-01):** `pushFromNotificationTapWhenReady('/vehicle-sharing', skipPushWhenAlreadyAt: location.startsWith('/vehicle-sharing'))` **skips** navigation when the user is already on a **child** route (e.g. Partages `/vehicle-sharing/:id/shares`). Tap then looks like a no-op; Maestro burns the full hub `extendedWaitUntil` timeout while the hierarchy still shows Partages + « Retour ». **Fix:** skip only when `location == '/vehicle-sharing'` (exact hub). Evidence: fail `20260801T183315Z` assert hub duration **89594 ms** on Partages; pass `20260801T184651Z` hub assert **~0.5 s** after product fix. Do not paper over with a Maestro `back` unless the product intentionally leaves the user on the child route.
+- **Failed `extendedWaitUntil` costs the full timeout (measured 20260801T183315Z vs `20260801T184651Z`):** penultimate fail spent **~90 s** on `qa-vehicle-sharing-hub` (timeout 90000); last pass spent **~0.8 s** on the same flow. Artifact wall (folder name → `multi-scenario.yaml`): **316 s → 288 s**. Maestro command-duration sums for all five phases: **~155 s → ~76 s** (almost entirely that failed wait). Dropping a duplicate `assertVisible` after `extendedWaitUntil` saved under one second. Shrinking `sleep 1` → `0.4` after HOME/shade is likewise seconds. **Do not** set comfort timeouts of 90 s for a screen that must appear immediately after a tap — a wrong destination then burns ~1.5 minutes per run. Prefer tighter timeouts once the happy path is green; keep long waits only for true async (logcat import/apply).
+- **Dual-device seed + APK rebuild dominate wall clock:** each role’s `pm clear` + cold start + `seed_applied` polls (~15–20 × ~1.5 s) runs **before** the coordinator. Micro-edits to shade sleeps/asserts cannot make a multi-scenario feel “1 minute”. Do not add a **second** seed or mid-run `stopApp` cold start to “fix” navigation — that multiplies the expensive part. Compare runs with Maestro `commands-*.json` `metadata.duration` and artifact folder timestamps, not vibes.
 - **Ne jamais utiliser des timeout exagérément long** (ex: 120 secondes pour attendre la fin d'une animation de 800ms).
 
 ### QA integrity
@@ -336,17 +364,21 @@ New scenario checklist: manifest fields (`id`, `device_date`, `seed`, `flow`) ma
 - [ ] Every `maestro` line logs serial + role
 - [ ] Maestro failure stops the attempt (`|| return 1`)
 - [ ] No double seed
+- [ ] No `force-stop` / `stopApp: true` between shade open and notification tap (cancels local notifs)
+- [ ] Notification scenarios: shade **tap** + destination `qa-*` when that is the product under test — not assert-only + cold restart
 - [ ] No stdout hidden so user cannot see steps
 - [ ] Success ends with a log line containing **`PASSED`** and the scenario id (not only `complete`)
 
 **Process**
 
 - [ ] Skills + code inventory **before** edit
+- [ ] Pass criterion confirmed in chat when ambiguous (especially notifications / both roles)
 - [ ] One change per failed run
 - [ ] No app patch to hide test failure; no test patch to hide app bug
 - [ ] Confirm with user before fixing same bug class in multiple modules
 - [ ] Agent **never** launches the scenario — user runs it (silent hang + no visible emulator)
 - [ ] No claim PASS without **user** run proof **and** a `PASSED` orchestrator line
+- [ ] After a coordinator rewrite, unused sibling flows are not left as the “easy” re-wire target
 
 ---
 

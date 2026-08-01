@@ -1,6 +1,6 @@
 appId: app.incoherences.bojairu.dev
 ---
-# Louys (owner): Partage de véhicule → QA Civic → Ajouter → Monica → disclaimer → Envoyer
+# Louys (owner): Partage de véhicule → QA Civic → Ajouter → Monica → disclaimer → Envoyer → délai
 # stopApp:true once — coordinator already force-stopped Louys after seed; do not
 # add extra kills in later flows.
 - launchApp:
@@ -47,6 +47,12 @@ appId: app.incoherences.bojairu.dev
     id: "qa-vehicle-sharing-invite-send"
 - extendedWaitUntil:
     visible:
-      id: "qa-vehicle-sharing-add-share"
+      id: "qa-vehicle-sharing-offer-deadline-dialog"
+    timeout: 30000
+- tapOn:
+    id: "qa-vehicle-sharing-offer-deadline-continue"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-outbound-pending-invite"
     timeout: 60000
 - takeScreenshot: owner_offer_sent

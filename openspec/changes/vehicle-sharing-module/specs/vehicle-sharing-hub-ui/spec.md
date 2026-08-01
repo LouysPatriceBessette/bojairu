@@ -60,5 +60,13 @@ The app SHALL provide a path from the Vehicle sharing hub (or owned vehicle deta
 - **WHEN** a Propriétaire with both modules taps offer sharing on a owned vehicle
 - **THEN** the user can select a connected Contact and send a vehicle-specific offer
 
+### Requirement: Propriétaire sees pending outbound invitations on shares detail
+On the per-vehicle **Partages** / shares detail screen, while a sharing link is **pending**, the app SHALL show an outbound invitation status line that names the invitee and the send date/time (locale-formatted), not an empty “none” state that hides the pending offer.
+
+#### Scenario: Pending invitation visible after send
+- **WHEN** the Propriétaire has sent an offer that is still pending
+- **THEN** the shares detail for that vehicle shows a line equivalent to “invitation sent to {name} on {dateTime}”
+- **THEN** active Emprunteurs remain listed separately when present
+
 ### Requirement: Hub is a guide not a layout straitjacket
 As with the Vehicle module hub, layout and visual hierarchy are **guidance for the first implementation** only. Reordering sections or merging statistics into cards is allowed if capabilities remain reachable.

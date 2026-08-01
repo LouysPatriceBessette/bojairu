@@ -7,12 +7,14 @@ import '../../db/repositories/vehicles_repository.dart';
 import '../../debug/qa_vehicle_sharing_semantics.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
 import '../../sandbox/sandbox_mode.dart';
+import '../../util/display_date.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/screen_body_padding.dart';
 import '../contacts/contact_picker_sheet.dart';
 
-/// Active sharing links for one owned vehicle (Propriétaire view).
+/// Active and pending sharing links for one owned vehicle (Propriétaire view).
 class VehicleSharingSharesScreen extends StatefulWidget {
   const VehicleSharingSharesScreen({
     super.key,
@@ -33,29 +35,50 @@ class _VehicleSharingSharesScreenState
   final _access = const VehicleModuleAccess();
   Vehicle? _vehicle;
   List<VehicleSharingLink> _activeLinks = const [];
+  List<VehicleSharingLink> _pendingLinks = const [];
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
+  HandshakeOrchestrator? _steadyOrch;
+  int _reloadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    _steadyOrch = HandshakeOrchestrator.maybeInstance;
+    _steadyOrch?.steadyStateInboxTick.addListener(_onSteadyInboxTick);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _steadyOrch?.steadyStateInboxTick.removeListener(_onSteadyInboxTick);
+    super.dispose();
+  }
+
+  void _onSteadyInboxTick() {
+    if (!mounted) return;
     _reload();
   }
 
   Future<void> _reload() async {
+    final gen = ++_reloadGeneration;
     final repo = VehiclesRepository(AppDatabase.processScope);
     final vehicle = await repo.getVehicle(widget.vehicleId);
     final links = await repo.listSharingLinksForVehicle(widget.vehicleId);
     final active = links
         .where((l) => l.status == VehicleSharingLinkStatus.active.wire)
         .toList();
+    final pending = links
+        .where((l) => l.status == VehicleSharingLinkStatus.pending.wire)
+        .toList();
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
     final labels = {for (final c in contacts) c.id: c.displayName};
 
-    if (!mounted) return;
+    if (!mounted || gen != _reloadGeneration) return;
     setState(() {
       _vehicle = vehicle;
       _activeLinks = active;
+      _pendingLinks = pending;
       _contactLabels = labels;
       _loading = false;
     });
@@ -69,9 +92,9 @@ class _VehicleSharingSharesScreenState
       );
       return;
     }
-    final excluded = {
-      for (final link in _activeLinks) link.borrowerContactId,
-    };
+    final excluded = await VehiclesRepository(AppDatabase.processScope)
+        .borrowerContactIdsBlockingNewOffer(widget.vehicleId);
+    if (!mounted) return;
     final selected = await showContactPickerSheet(
       context: context,
       db: AppDatabase.processScope,
@@ -90,6 +113,8 @@ class _VehicleSharingSharesScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final title = _vehicle?.displayLabel ?? l10n.vehicleSharingSharesDetailTitle;
+    final dateFmt = widget.prefs.dateFormat;
+    final hasAny = _activeLinks.isNotEmpty || _pendingLinks.isNotEmpty;
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: _loading
@@ -102,9 +127,26 @@ class _VehicleSharingSharesScreenState
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                if (_activeLinks.isEmpty)
+                if (!hasAny)
                   Text(l10n.vehicleSharingEmptyNone)
-                else
+                else ...[
+                  ..._pendingLinks.map((link) {
+                    final name = _contactLabels[link.borrowerContactId] ??
+                        link.borrowerContactId;
+                    final when = formatPreferenceDateTime(
+                      link.createdAt.toUtc(),
+                      dateFmt,
+                    );
+                    return qaVehicleSharingSemantics(
+                      identifier: kQaVehicleSharingOutboundPendingInvite,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          l10n.vehicleSharingInvitationSentToAt(name, when),
+                        ),
+                      ),
+                    );
+                  }),
                   ..._activeLinks.map(
                     (link) => ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -114,6 +156,7 @@ class _VehicleSharingSharesScreenState
                       ),
                     ),
                   ),
+                ],
                 const SizedBox(height: 16),
                 qaVehicleSharingSemantics(
                   identifier: kQaVehicleSharingAddShare,

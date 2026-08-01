@@ -37,6 +37,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
   HandshakeOrchestrator? _steadyOrch;
+  int _reloadGeneration = 0;
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   }
 
   Future<void> _reload() async {
+    final gen = ++_reloadGeneration;
     final repo = VehiclesRepository(AppDatabase.processScope);
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
     final labels = {for (final c in contacts) c.id: c.displayName};
@@ -80,7 +82,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       ));
     }
 
-    if (!mounted) return;
+    if (!mounted || gen != _reloadGeneration) return;
     setState(() {
       _shareable = shareable;
       _vehicleIdsWithActiveShare = sharedIds;
@@ -176,21 +178,28 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                           _reload();
                         }
 
+                        final hasActiveShare =
+                            _vehicleIdsWithActiveShare.contains(vehicle.id);
+                        // Maestro id on the row (button + excludeSemantics). A
+                        // nested leading Semantics is invisible to Maestro.
                         return qaVehicleSharingSemantics(
-                          identifier: qaVehicleSharingShareableRowSemanticsId(
-                            vehicle.displayLabel,
-                          ),
+                          identifier: hasActiveShare
+                              ? qaVehicleSharingShareableActiveSemanticsId(
+                                  vehicle.displayLabel,
+                                )
+                              : qaVehicleSharingShareableRowSemanticsId(
+                                  vehicle.displayLabel,
+                                ),
                           button: true,
                           onTap: openShares,
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading:
-                                _vehicleIdsWithActiveShare.contains(vehicle.id)
-                                    ? const Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                      )
-                                    : const SizedBox(width: 24),
+                            leading: hasActiveShare
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  )
+                                : const SizedBox(width: 24),
                             title: Text(vehicle.displayLabel),
                             onTap: openShares,
                           ),

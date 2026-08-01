@@ -28,6 +28,8 @@ class VehicleSharingOfferTransportService {
       'kind': offerKind,
       'linkId': link.id,
       'createdAt': link.createdAt.toUtc().toIso8601String(),
+      if (link.expiresAt != null)
+        'expiresAt': link.expiresAt!.toUtc().toIso8601String(),
       'ratePerKmMinor': link.ratePerKmMinor,
       'rateCurrency': link.rateCurrency,
       'availabilityWeekJson': link.availabilityWeekJson,
@@ -80,6 +82,10 @@ class VehicleSharingOfferTransportService {
     final createdAt = createdAtRaw == null
         ? DateTime.now().toUtc()
         : (DateTime.tryParse(createdAtRaw)?.toUtc() ?? DateTime.now().toUtc());
+    final expiresAtRaw = root['expiresAt'] as String?;
+    final expiresAt = expiresAtRaw == null
+        ? null
+        : DateTime.tryParse(expiresAtRaw)?.toUtc();
 
     await _vehicles.upsertExternalOwnedVehicle(
       vehicleId: vehicleId,
@@ -108,6 +114,7 @@ class VehicleSharingOfferTransportService {
       rateCurrency: (root['rateCurrency'] as String?) ?? '',
       availabilityWeekJson: (root['availabilityWeekJson'] as String?) ?? '',
       ownerRulesText: (root['ownerRulesText'] as String?) ?? '',
+      expiresAt: expiresAt,
     );
 
     return (linkId: linkId, vehicleLabel: displayLabel);

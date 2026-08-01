@@ -2,6 +2,10 @@
 # Coordinator: vehicle sharing offer happy path (Louys owner → Monica borrower).
 # Seeds already include a connected Louys↔Monica pair (no handshake phase).
 #
+# Path under test (notification taps — do NOT force-stop around shade taps):
+#   Louys sends offer → Monica shade tap → hub Accept → accessible card
+#   → Louys accept notification shade tap → hub green check
+#
 # Expects env from tool/run_multi_device_scenario.sh:
 #   COMPARTARENTA_ROLE_OWNER_SERIAL, COMPARTARENTA_ROLE_BORROWER_SERIAL, …
 #
@@ -21,8 +25,10 @@ SCENARIO_ID="${COMPARTARENTA_MULTI_SCENARIO_ID:-vehicle_sharing_offer_happy_path
 
 FLOWS_DIR="${ROOT}/qa/flows"
 OWNER_SEND_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_owner_send.yaml"
-BORROWER_NOTIF_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_borrower_assert_notification.yaml"
-BORROWER_ACCEPT_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_borrower_accept.yaml"
+BORROWER_TAP_NOTIF_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_borrower_tap_notification.yaml"
+BORROWER_ACCEPT_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_borrower_accept_from_hub.yaml"
+OWNER_TAP_ACCEPT_NOTIF_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_owner_tap_accept_notification.yaml"
+OWNER_ASSERT_HUB_FLOW="${FLOWS_DIR}/vehicle_sharing_offer_owner_assert_hub_active.yaml"
 
 _qa_avd_for_serial() {
   local serial="$1"
@@ -73,14 +79,13 @@ _warm_start_borrower() {
 echo "================================================================================"
 echo "Vehicle sharing offer happy path — Louys (owner) → Monica (borrower)"
 echo "  Louys-QA=${OWNER_SERIAL}  Monica-QA=${BORROWER_SERIAL}"
-echo "  Seed: from run_multi (no second pm clear); Monica stays alive while Louys sends"
+echo "  Seed: from run_multi (no second pm clear); notification TAP path (no force-stop around shade)"
 echo "================================================================================"
 
 ATTEMPT_DIR="${ARTIFACT_ROOT}/run-001"
 mkdir -p "${ATTEMPT_DIR}"
 
 _log_phase "Grant POST_NOTIFICATIONS (no re-seed)"
-# run_multi already pm-cleared + seeded; it may not have granted this permission.
 qa_grant_post_notifications_on_serial "${OWNER_SERIAL}"
 qa_grant_post_notifications_on_serial "${BORROWER_SERIAL}"
 # Louys only: stop so Maestro launchApp starts clean. Monica must stay startable
@@ -106,20 +111,50 @@ if ! qa_wait_for_logcat_on_serial "${BORROWER_SERIAL}" "vehicle_sharing_offer im
 fi
 echo "  Monica: offer imported (logcat)"
 
-_log_phase "Monica notification texts (shade)"
-echo "  KEYCODE_HOME on Monica (background only — does not kill the app)..."
+_log_phase "Monica taps offer notification (shade) → hub accept"
+# Do NOT force-stop: that cancels local notifications (housing_payment_reminder lesson).
+echo "  KEYCODE_HOME on Monica (background only — keeps notification)..."
 adb -s "${BORROWER_SERIAL}" shell input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
-sleep 1
+sleep 0.4
 echo "  Opening notification shade on Monica..."
 qa_open_notification_shade_on_serial "${BORROWER_SERIAL}"
-sleep 1
-_run_maestro "${ATTEMPT_DIR}/borrower-notification" "${BORROWER_SERIAL}" \
-  "${BORROWER_NOTIF_FLOW}" || exit 1
-qa_collapse_notification_shade_on_serial "${BORROWER_SERIAL}"
-
-_log_phase "Monica accepts pending offer"
+sleep 0.4
+_run_maestro "${ATTEMPT_DIR}/borrower-tap-notification" "${BORROWER_SERIAL}" \
+  "${BORROWER_TAP_NOTIF_FLOW}" || exit 1
+qa_clear_logcat_on_serial "${OWNER_SERIAL}"
 _run_maestro "${ATTEMPT_DIR}/borrower-accept" "${BORROWER_SERIAL}" \
   "${BORROWER_ACCEPT_FLOW}" || exit 1
+
+_log_phase "Wait for Louys to apply accept + show notification (logcat)"
+if ! qa_wait_for_logcat_on_serial "${OWNER_SERIAL}" \
+  "vehicle_sharing_offer_accept applied=true" 90; then
+  echo "  timed out waiting for vehicle_sharing_offer_accept applied=true on Louys" >&2
+  adb -s "${OWNER_SERIAL}" logcat -d 2>/dev/null \
+    | grep -E 'vehicle_sharing_offer_accept|steady inbox' | tail -40 >&2 || true
+  exit 1
+fi
+echo "  Louys: accept applied (logcat)"
+if ! qa_wait_for_logcat_on_serial "${OWNER_SERIAL}" \
+  "vehicle_sharing_offer_accept notification shown" 30; then
+  echo "  timed out waiting for accept notification shown on Louys" >&2
+  adb -s "${OWNER_SERIAL}" logcat -d 2>/dev/null \
+    | grep -E 'vehicle_sharing_offer_accept|notification' | tail -40 >&2 || true
+  exit 1
+fi
+echo "  Louys: accept notification shown (logcat)"
+
+_log_phase "Louys taps accept notification (shade) → hub active check"
+# Louys may still be on Partages from send — HOME keeps the accept notification.
+echo "  KEYCODE_HOME on Louys (background only — keeps notification)..."
+adb -s "${OWNER_SERIAL}" shell input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
+sleep 0.4
+echo "  Opening notification shade on Louys..."
+qa_open_notification_shade_on_serial "${OWNER_SERIAL}"
+sleep 0.4
+_run_maestro "${ATTEMPT_DIR}/owner-tap-accept-notification" "${OWNER_SERIAL}" \
+  "${OWNER_TAP_ACCEPT_NOTIF_FLOW}" || exit 1
+_run_maestro "${ATTEMPT_DIR}/owner-assert-hub" "${OWNER_SERIAL}" \
+  "${OWNER_ASSERT_HUB_FLOW}" || exit 1
 
 echo "Scenario PASSED | ${SCENARIO_ID}. Artifacts: ${ARTIFACT_ROOT}"
 exit 0

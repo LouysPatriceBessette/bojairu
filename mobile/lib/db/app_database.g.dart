@@ -20390,6 +20390,17 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -20406,6 +20417,7 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
     availabilityEnd,
     availabilityWeekJson,
     ownerRulesText,
+    expiresAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -20536,6 +20548,12 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
         ),
       );
     }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    }
     return context;
   }
 
@@ -20601,6 +20619,10 @@ class $VehicleSharingLinksTable extends VehicleSharingLinks
         DriftSqlType.string,
         data['${effectivePrefix}owner_rules_text'],
       )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      ),
     );
   }
 
@@ -20632,6 +20654,9 @@ class VehicleSharingLink extends DataClass
   /// Half-hour week grid JSON (same shape as housing quiet hours), or empty.
   final String availabilityWeekJson;
   final String ownerRulesText;
+
+  /// When the Emprunteur may no longer accept (UTC); null = no local deadline.
+  final DateTime? expiresAt;
   const VehicleSharingLink({
     required this.id,
     required this.vehicleId,
@@ -20647,6 +20672,7 @@ class VehicleSharingLink extends DataClass
     this.availabilityEnd,
     required this.availabilityWeekJson,
     required this.ownerRulesText,
+    this.expiresAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -20673,6 +20699,9 @@ class VehicleSharingLink extends DataClass
     }
     map['availability_week_json'] = Variable<String>(availabilityWeekJson);
     map['owner_rules_text'] = Variable<String>(ownerRulesText);
+    if (!nullToAbsent || expiresAt != null) {
+      map['expires_at'] = Variable<DateTime>(expiresAt);
+    }
     return map;
   }
 
@@ -20700,6 +20729,9 @@ class VehicleSharingLink extends DataClass
           : Value(availabilityEnd),
       availabilityWeekJson: Value(availabilityWeekJson),
       ownerRulesText: Value(ownerRulesText),
+      expiresAt: expiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expiresAt),
     );
   }
 
@@ -20727,6 +20759,7 @@ class VehicleSharingLink extends DataClass
         json['availabilityWeekJson'],
       ),
       ownerRulesText: serializer.fromJson<String>(json['ownerRulesText']),
+      expiresAt: serializer.fromJson<DateTime?>(json['expiresAt']),
     );
   }
   @override
@@ -20747,6 +20780,7 @@ class VehicleSharingLink extends DataClass
       'availabilityEnd': serializer.toJson<DateTime?>(availabilityEnd),
       'availabilityWeekJson': serializer.toJson<String>(availabilityWeekJson),
       'ownerRulesText': serializer.toJson<String>(ownerRulesText),
+      'expiresAt': serializer.toJson<DateTime?>(expiresAt),
     };
   }
 
@@ -20765,6 +20799,7 @@ class VehicleSharingLink extends DataClass
     Value<DateTime?> availabilityEnd = const Value.absent(),
     String? availabilityWeekJson,
     String? ownerRulesText,
+    Value<DateTime?> expiresAt = const Value.absent(),
   }) => VehicleSharingLink(
     id: id ?? this.id,
     vehicleId: vehicleId ?? this.vehicleId,
@@ -20784,6 +20819,7 @@ class VehicleSharingLink extends DataClass
         : this.availabilityEnd,
     availabilityWeekJson: availabilityWeekJson ?? this.availabilityWeekJson,
     ownerRulesText: ownerRulesText ?? this.ownerRulesText,
+    expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
   );
   VehicleSharingLink copyWithCompanion(VehicleSharingLinksCompanion data) {
     return VehicleSharingLink(
@@ -20819,6 +20855,7 @@ class VehicleSharingLink extends DataClass
       ownerRulesText: data.ownerRulesText.present
           ? data.ownerRulesText.value
           : this.ownerRulesText,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
     );
   }
 
@@ -20838,7 +20875,8 @@ class VehicleSharingLink extends DataClass
           ..write('availabilityStart: $availabilityStart, ')
           ..write('availabilityEnd: $availabilityEnd, ')
           ..write('availabilityWeekJson: $availabilityWeekJson, ')
-          ..write('ownerRulesText: $ownerRulesText')
+          ..write('ownerRulesText: $ownerRulesText, ')
+          ..write('expiresAt: $expiresAt')
           ..write(')'))
         .toString();
   }
@@ -20859,6 +20897,7 @@ class VehicleSharingLink extends DataClass
     availabilityEnd,
     availabilityWeekJson,
     ownerRulesText,
+    expiresAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -20877,7 +20916,8 @@ class VehicleSharingLink extends DataClass
           other.availabilityStart == this.availabilityStart &&
           other.availabilityEnd == this.availabilityEnd &&
           other.availabilityWeekJson == this.availabilityWeekJson &&
-          other.ownerRulesText == this.ownerRulesText);
+          other.ownerRulesText == this.ownerRulesText &&
+          other.expiresAt == this.expiresAt);
 }
 
 class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
@@ -20895,6 +20935,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
   final Value<DateTime?> availabilityEnd;
   final Value<String> availabilityWeekJson;
   final Value<String> ownerRulesText;
+  final Value<DateTime?> expiresAt;
   final Value<int> rowid;
   const VehicleSharingLinksCompanion({
     this.id = const Value.absent(),
@@ -20911,6 +20952,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     this.availabilityEnd = const Value.absent(),
     this.availabilityWeekJson = const Value.absent(),
     this.ownerRulesText = const Value.absent(),
+    this.expiresAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehicleSharingLinksCompanion.insert({
@@ -20928,6 +20970,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     this.availabilityEnd = const Value.absent(),
     this.availabilityWeekJson = const Value.absent(),
     this.ownerRulesText = const Value.absent(),
+    this.expiresAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        vehicleId = Value(vehicleId),
@@ -20950,6 +20993,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     Expression<DateTime>? availabilityEnd,
     Expression<String>? availabilityWeekJson,
     Expression<String>? ownerRulesText,
+    Expression<DateTime>? expiresAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -20968,6 +21012,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
       if (availabilityWeekJson != null)
         'availability_week_json': availabilityWeekJson,
       if (ownerRulesText != null) 'owner_rules_text': ownerRulesText,
+      if (expiresAt != null) 'expires_at': expiresAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -20987,6 +21032,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     Value<DateTime?>? availabilityEnd,
     Value<String>? availabilityWeekJson,
     Value<String>? ownerRulesText,
+    Value<DateTime?>? expiresAt,
     Value<int>? rowid,
   }) {
     return VehicleSharingLinksCompanion(
@@ -21004,6 +21050,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
       availabilityEnd: availabilityEnd ?? this.availabilityEnd,
       availabilityWeekJson: availabilityWeekJson ?? this.availabilityWeekJson,
       ownerRulesText: ownerRulesText ?? this.ownerRulesText,
+      expiresAt: expiresAt ?? this.expiresAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -21055,6 +21102,9 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
     if (ownerRulesText.present) {
       map['owner_rules_text'] = Variable<String>(ownerRulesText.value);
     }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -21078,6 +21128,7 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
           ..write('availabilityEnd: $availabilityEnd, ')
           ..write('availabilityWeekJson: $availabilityWeekJson, ')
           ..write('ownerRulesText: $ownerRulesText, ')
+          ..write('expiresAt: $expiresAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -31937,6 +31988,7 @@ typedef $$VehicleSharingLinksTableCreateCompanionBuilder =
       Value<DateTime?> availabilityEnd,
       Value<String> availabilityWeekJson,
       Value<String> ownerRulesText,
+      Value<DateTime?> expiresAt,
       Value<int> rowid,
     });
 typedef $$VehicleSharingLinksTableUpdateCompanionBuilder =
@@ -31955,6 +32007,7 @@ typedef $$VehicleSharingLinksTableUpdateCompanionBuilder =
       Value<DateTime?> availabilityEnd,
       Value<String> availabilityWeekJson,
       Value<String> ownerRulesText,
+      Value<DateTime?> expiresAt,
       Value<int> rowid,
     });
 
@@ -32034,6 +32087,11 @@ class $$VehicleSharingLinksTableFilterComposer
 
   ColumnFilters<String> get ownerRulesText => $composableBuilder(
     column: $table.ownerRulesText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -32116,6 +32174,11 @@ class $$VehicleSharingLinksTableOrderingComposer
     column: $table.ownerRulesText,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VehicleSharingLinksTableAnnotationComposer
@@ -32186,6 +32249,9 @@ class $$VehicleSharingLinksTableAnnotationComposer
     column: $table.ownerRulesText,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
 }
 
 class $$VehicleSharingLinksTableTableManager
@@ -32245,6 +32311,7 @@ class $$VehicleSharingLinksTableTableManager
                 Value<DateTime?> availabilityEnd = const Value.absent(),
                 Value<String> availabilityWeekJson = const Value.absent(),
                 Value<String> ownerRulesText = const Value.absent(),
+                Value<DateTime?> expiresAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleSharingLinksCompanion(
                 id: id,
@@ -32261,6 +32328,7 @@ class $$VehicleSharingLinksTableTableManager
                 availabilityEnd: availabilityEnd,
                 availabilityWeekJson: availabilityWeekJson,
                 ownerRulesText: ownerRulesText,
+                expiresAt: expiresAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -32279,6 +32347,7 @@ class $$VehicleSharingLinksTableTableManager
                 Value<DateTime?> availabilityEnd = const Value.absent(),
                 Value<String> availabilityWeekJson = const Value.absent(),
                 Value<String> ownerRulesText = const Value.absent(),
+                Value<DateTime?> expiresAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleSharingLinksCompanion.insert(
                 id: id,
@@ -32295,6 +32364,7 @@ class $$VehicleSharingLinksTableTableManager
                 availabilityEnd: availabilityEnd,
                 availabilityWeekJson: availabilityWeekJson,
                 ownerRulesText: ownerRulesText,
+                expiresAt: expiresAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

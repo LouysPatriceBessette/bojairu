@@ -27,6 +27,20 @@ Exactly **two parties** participate in each link. There is no multi-borrower gro
 - **THEN** the link becomes active
 - **THEN** the Emprunteur may log usage on **that vehicle only**
 
+### Requirement: Offer response deadline before send
+Before posting a vehicle-sharing offer, the Propriétaire SHALL choose a **response deadline** from the product standard validity presets (3h / 8h / 24h / 48h). The chosen instant SHALL be persisted on the sharing link as `expiresAt` (UTC) and included in the encrypted offer payload for peers.
+
+#### Scenario: Deadline dialog before dispatch
+- **WHEN** the Propriétaire taps send on the invite form
+- **THEN** the app asks for a response window using the standard duration presets
+- **THEN** cancel abandons send without creating a new pending link
+- **THEN** continue creates the pending link with `expiresAt = now + selected duration` and posts the offer
+
+#### Scenario: Local expiry of pending offers
+- **WHEN** wall-clock passes `expiresAt` while the link is still pending
+- **THEN** the local installation marks the link `expired` and MUST NOT treat it as accept-able
+- **THEN** relay-enforced TTL, cross-device expiry sync beyond the offer JSON field, and deadline reminder scheduling are **deferred** (no relay Go/binary change required for the client-local behavior above)
+
 ### Requirement: No reverse discovery path for Emprunteurs
 The system MUST NOT provide a flow where an Emprunteur browses or requests access to unspecified vehicles from a Propriétaire's fleet. The **only** entry path is: **Propriétaire offers this vehicle → Emprunteur accepts or declines**.
 

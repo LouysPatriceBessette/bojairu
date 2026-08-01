@@ -1,0 +1,21 @@
+appId: app.incoherences.bojairu.dev
+---
+# Monica: after tapping the offer notification, land on hub, accept, see accessible card.
+# No launchApp / stopApp — notification tap must bring the app to the hub.
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-pending-qa-civic"
+    timeout: 45000
+- tapOn:
+    id: "qa-vehicle-sharing-pending-accept"
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-accessible-qa-civic"
+    timeout: 45000
+- assertNotVisible:
+    id: "qa-vehicle-sharing-pending-qa-civic"
+- takeScreenshot: borrower_offer_accepted

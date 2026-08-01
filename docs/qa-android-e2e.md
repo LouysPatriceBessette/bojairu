@@ -245,10 +245,20 @@ Seeds install a **pre-connected** Louys↔Monica pair (fixed debug keys; no
 handshake phase) and QA Civic on Louys. The multi-scenario runner seeds once;
 the coordinator does **not** `pm clear` again. Monica is warm-started and kept
 polling during Louys’s send; the coordinator waits for logcat
-`vehicle_sharing_offer imported` before asserting the shade. `KEYCODE_HOME` only
-backgrounds Monica for the shade check (it does not kill the process). Flow:
-Louys offers QA Civic → Monica’s notification shade (French title/body) →
-Monica accepts.
+`vehicle_sharing_offer imported` before the shade. `KEYCODE_HOME` only
+backgrounds an app for shade taps (it does **not** kill the process — force-stop
+would clear local notifications). Flow:
+
+1. Louys offers QA Civic (response-deadline dialog → Continue) → outbound pending
+   on Partages.
+2. Monica: shade assert + **tap** offer notification → hub → **Accepter** →
+   accessible QA Civic card.
+3. Louys: wait `vehicle_sharing_offer_accept applied=true` and
+   `vehicle_sharing_offer_accept notification shown` → shade **tap** accept
+   notification → hub shows active-share check
+   (`qa-vehicle-sharing-shareable-active-qa-civic`). Accept-notification
+   navigation skips push only when already on the hub route itself, so a tap
+   from Partages (`/vehicle-sharing/:id/shares`) still opens the hub.
 
 ```bash
 ./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_offer_happy_path

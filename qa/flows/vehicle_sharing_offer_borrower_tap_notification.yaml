@@ -1,0 +1,11 @@
+appId: app.incoherences.bojairu.dev
+---
+# Monica: OS shade already open — assert offer texts then TAP the notification.
+# Product title from app_fr.arb (housing_payment_reminder shade-tap pattern).
+- extendedWaitUntil:
+    visible: "Offre de partage de véhicule"
+    timeout: 30000
+- assertVisible: ".*Louys QA vous propose de partager QA Civic.*"
+- takeScreenshot: borrower_offer_notification_shade
+- tapOn: "Offre de partage de véhicule"
+- takeScreenshot: borrower_after_offer_notification_tap

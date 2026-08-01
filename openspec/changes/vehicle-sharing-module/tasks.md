@@ -6,6 +6,8 @@
 
 - [x] 1.1 Define VehicleSharingLink (vehicle, owner, borrower, status)
 - [x] 1.2 Owner invite flow (requires `vehicle` + `vehicle-sharing`)
+- [x] 1.2a Response deadline dialog (3h/8h/24h/48h) + `expiresAt` on link + offer JSON; local pending→expired; shares-detail “invitation sent to … on …”
+- [ ] 1.2b **Deferred (relay):** enforce offer TTL / inbox expiry on relay, deadline reminder fires, and cross-device expiry beyond client JSON (no Go change in 1.2a)
 - [x] 1.3a Borrower accept flow (`acceptSharingLink`)
 - [ ] 1.3b Owner revoke UI (`revokeSharingLink` API exists; no hub control yet)
 - [x] 1.4 Multi-vehicle and multi-borrower list surfaces (basic hub lists)

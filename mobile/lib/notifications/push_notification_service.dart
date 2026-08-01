@@ -81,6 +81,8 @@ class PushNotificationService {
   static const String _housingPaymentReminderPrefix = 'housing_payment_reminder|';
   static const String _contactsPayload = 'contacts';
   static const String _vehicleSharingOfferTapPayload = 'vehicle_sharing_offer';
+  static const String _vehicleSharingOfferAcceptTapPayload =
+      'vehicle_sharing_offer_accept';
 
   static const List<String> _housingKinds = <String>[
     'housing_proposal',
@@ -182,7 +184,8 @@ class PushNotificationService {
   static void dispatchLocalNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
-    if (payload == _vehicleSharingOfferTapPayload) {
+    if (payload == _vehicleSharingOfferTapPayload ||
+        payload == _vehicleSharingOfferAcceptTapPayload) {
       _navigateToVehicleSharing();
       return;
     }
@@ -315,7 +318,21 @@ class PushNotificationService {
     HousingNavigationIntent.requestOpenAcceptedExpensesJournal(planId);
     _navigateToHousing();
   }
+  /// Foreground wake must poll the **installed** orchestrator (same DB + tick).
+  ///
+  /// [runWakeInboxPollOnce] opens a second [AppDatabase] and a non-installed
+  /// orchestrator — correct for the FCM background isolate when the main app
+  /// may be stopped, but in the foreground it can apply/ack envelopes the UI
+  /// never observes (stale Partages, missing activity-log rows, no tick).
   static Future<void> _handleWakeForegroundMessage() async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch != null) {
+      await orch.pollSteadyStateInboxes().catchError((Object e, StackTrace st) {
+        debugPrint('PushNotificationService foreground wake poll: $e\n$st');
+      });
+      await ClosedAppPushRegistrationService.maybeInstance?.sync(force: true);
+      return;
+    }
     await runWakeInboxPollOnce();
     await ClosedAppPushRegistrationService.maybeInstance?.sync(force: true);
   }
@@ -540,6 +557,51 @@ class PushNotificationService {
       ),
       payload: _vehicleSharingOfferTapPayload,
     );
+  }
+
+  /// Propriétaire: Emprunteur accepted a sharing offer.
+  static Future<void> showLocalVehicleSharingOfferAcceptNotification({
+    String? borrowerDisplayName,
+    String? vehicleLabel,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final title = l10n.pushNotificationVehicleSharingOfferAcceptTitle;
+    final name = (borrowerDisplayName ?? '').trim();
+    final vehicle = (vehicleLabel ?? '').trim();
+    final body = name.isNotEmpty && vehicle.isNotEmpty
+        ? l10n.pushNotificationVehicleSharingOfferAcceptBodyFrom(name, vehicle)
+        : l10n.pushNotificationVehicleSharingOfferAcceptBody;
+
+    if (kIsWeb) {
+      return;
+    }
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: _vehicleSharingOfferAcceptTapPayload,
+    );
+    debugPrint('vehicle_sharing_offer_accept notification shown');
   }
 
   static Future<void> showLocalHousingRealizedExpenseNotification({
@@ -1164,10 +1226,12 @@ class PushNotificationService {
   }
 
   static void _navigateToVehicleSharing() {
+    // Only skip when already on the hub itself. Child routes such as
+    // /vehicle-sharing/:id/shares must still push the hub (accept / offer taps).
     pushFromNotificationTapWhenReady(
       '/vehicle-sharing',
       skipPushWhenAlreadyAt: (location) =>
-          location.startsWith('/vehicle-sharing'),
+          location == '/vehicle-sharing' || location == '/vehicle-sharing/',
     );
   }
 

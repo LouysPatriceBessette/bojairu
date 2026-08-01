@@ -3185,6 +3185,30 @@ abstract class AppLocalizations {
   /// **'Ejection vote abandoned (agreement ended)'**
   String get activityLogKindHousingParticipationChangeAgreementExpired;
 
+  /// No description provided for @activityLogKindVehicleSharingOfferSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing offer sent'**
+  String get activityLogKindVehicleSharingOfferSent;
+
+  /// No description provided for @activityLogKindVehicleSharingOfferReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing offer received'**
+  String get activityLogKindVehicleSharingOfferReceived;
+
+  /// No description provided for @activityLogKindVehicleSharingOfferResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing offer response'**
+  String get activityLogKindVehicleSharingOfferResponse;
+
+  /// No description provided for @activityLogKindVehicleSharingOfferExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing offer expired'**
+  String get activityLogKindVehicleSharingOfferExpired;
+
   /// No description provided for @housingInvitePlanActivating.
   ///
   /// In en, this message translates to:
@@ -3598,6 +3622,27 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} offered to share {vehicle} with you.'**
   String pushNotificationVehicleSharingOfferBodyFrom(
+    String name,
+    String vehicle,
+  );
+
+  /// No description provided for @pushNotificationVehicleSharingOfferAcceptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle sharing accepted'**
+  String get pushNotificationVehicleSharingOfferAcceptTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingOfferAcceptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Vehicle sharing to see the active share.'**
+  String get pushNotificationVehicleSharingOfferAcceptBody;
+
+  /// No description provided for @pushNotificationVehicleSharingOfferAcceptBodyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted your offer to share {vehicle}.'**
+  String pushNotificationVehicleSharingOfferAcceptBodyFrom(
     String name,
     String vehicle,
   );
@@ -7397,6 +7442,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offer sent.'**
   String get vehicleSharingOfferSent;
+
+  /// No description provided for @vehicleSharingOfferDeadlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response deadline'**
+  String get vehicleSharingOfferDeadlineTitle;
+
+  /// No description provided for @vehicleSharingOfferDeadlineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The borrower has this long to accept the invitation.'**
+  String get vehicleSharingOfferDeadlineBody;
+
+  /// No description provided for @vehicleSharingInvitationSentToAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent to {name} on {when}'**
+  String vehicleSharingInvitationSentToAt(String name, String when);
 
   /// No description provided for @vehicleSharingOfferBlocked.
   ///

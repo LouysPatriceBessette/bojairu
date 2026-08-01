@@ -1841,6 +1841,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ejection vote abandoned (agreement ended)';
 
   @override
+  String get activityLogKindVehicleSharingOfferSent =>
+      'Vehicle sharing offer sent';
+
+  @override
+  String get activityLogKindVehicleSharingOfferReceived =>
+      'Vehicle sharing offer received';
+
+  @override
+  String get activityLogKindVehicleSharingOfferResponse =>
+      'Vehicle sharing offer response';
+
+  @override
+  String get activityLogKindVehicleSharingOfferExpired =>
+      'Vehicle sharing offer expired';
+
+  @override
   String get housingInvitePlanActivating =>
       'All participants have accepted. Activating the agreement…';
 
@@ -2087,6 +2103,22 @@ class AppLocalizationsEn extends AppLocalizations {
     String vehicle,
   ) {
     return '$name offered to share $vehicle with you.';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingOfferAcceptTitle =>
+      'Vehicle sharing accepted';
+
+  @override
+  String get pushNotificationVehicleSharingOfferAcceptBody =>
+      'Open Vehicle sharing to see the active share.';
+
+  @override
+  String pushNotificationVehicleSharingOfferAcceptBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name accepted your offer to share $vehicle.';
   }
 
   @override
@@ -4384,6 +4416,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vehicleSharingOfferSent => 'Offer sent.';
+
+  @override
+  String get vehicleSharingOfferDeadlineTitle => 'Response deadline';
+
+  @override
+  String get vehicleSharingOfferDeadlineBody =>
+      'The borrower has this long to accept the invitation.';
+
+  @override
+  String vehicleSharingInvitationSentToAt(String name, String when) {
+    return 'Invitation sent to $name on $when';
+  }
 
   @override
   String get vehicleSharingOfferBlocked =>

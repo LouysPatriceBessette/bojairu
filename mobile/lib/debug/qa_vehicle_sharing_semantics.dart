@@ -16,6 +16,18 @@ const kQaVehicleSharingInviteSend = 'qa-vehicle-sharing-invite-send';
 const kQaVehicleSharingInviteDisclaimerOk =
     'qa-vehicle-sharing-invite-disclaimer-ok';
 
+/// Response-deadline dialog before sending an offer.
+const kQaVehicleSharingOfferDeadlineDialog =
+    'qa-vehicle-sharing-offer-deadline-dialog';
+
+/// Continue on the response-deadline dialog.
+const kQaVehicleSharingOfferDeadlineContinue =
+    'qa-vehicle-sharing-offer-deadline-continue';
+
+/// Pending outbound invitation row on shares detail (owner).
+const kQaVehicleSharingOutboundPendingInvite =
+    'qa-vehicle-sharing-outbound-pending-invite';
+
 /// Pending offer Accept on hub.
 const kQaVehicleSharingPendingAccept = 'qa-vehicle-sharing-pending-accept';
 
@@ -26,6 +38,13 @@ String qaVehicleSharingShareableRowSemanticsId(String displayLabel) =>
 /// Known QA Civic shareable row.
 const kQaVehicleSharingShareableQaCivic =
     'qa-vehicle-sharing-shareable-qa-civic';
+
+/// Green check on a shareable row when the owner has an active outbound share.
+String qaVehicleSharingShareableActiveSemanticsId(String displayLabel) =>
+    'qa-vehicle-sharing-shareable-active-${qaVehicleCardSemanticsId(displayLabel).replaceFirst('qa-vehicle-card-', '')}';
+
+const kQaVehicleSharingShareableActiveQaCivic =
+    'qa-vehicle-sharing-shareable-active-qa-civic';
 
 /// Pending offer row title container (vehicle label).
 String qaVehicleSharingPendingRowSemanticsId(String displayLabel) =>

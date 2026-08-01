@@ -23,6 +23,7 @@ void main() {
   "kind": "vehicleSharingOffer",
   "linkId": "$linkId",
   "createdAt": "2026-07-31T12:00:00.000Z",
+  "expiresAt": "2027-08-01T12:00:00.000Z",
   "ratePerKmMinor": 25,
   "rateCurrency": "CAD",
   "availabilityWeekJson": "",
@@ -62,6 +63,7 @@ void main() {
     expect(link.ownerContactId, ownerContactId);
     expect(link.ratePerKmMinor, 25);
     expect(link.ownerRulesText, 'No pets');
+    expect(link.expiresAt!.toUtc(), DateTime.utc(2027, 8, 1, 12));
 
     final pending = await repo.listPendingBorrowerOffers();
     expect(pending.map((e) => e.id), contains(linkId));
@@ -164,6 +166,7 @@ void main() {
       ratePerKmMinor: 10,
       rateCurrency: 'CAD',
       ownerRulesText: 'Be careful',
+      expiresAt: DateTime.utc(2026, 8, 2, 12),
     );
 
     final offerJson =
@@ -192,5 +195,43 @@ void main() {
     final ownerLink = await ownerRepo.getSharingLink(link.id);
     expect(ownerLink!.status, VehicleSharingLinkStatus.active.wire);
     expect(ownerLink.acceptedAt, isNotNull);
+  });
+
+  test('apply accept returns false when owner link already expired', () async {
+    final ownerDb = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(ownerDb.close);
+    final ownerRepo = VehiclesRepository(ownerDb);
+    const vehicleId = 'vehicle:owner-car';
+    await ownerDb.into(ownerDb.vehicles).insert(
+          VehiclesCompanion.insert(
+            id: vehicleId,
+            ownerContactId: kVehicleOwnerSelfContactId,
+            vehicleKind: VehicleKind.car.wire,
+            displayLabel: 'Owner Car',
+            createdAt: DateTime.utc(2026, 1, 1),
+            updatedAt: DateTime.utc(2026, 1, 1),
+          ),
+        );
+    final link = await ownerRepo.createSharingOffer(
+      vehicleId: vehicleId,
+      borrowerContactId: 'contact:borrower',
+      expiresAt: DateTime.utc(2026, 7, 1, 12),
+    );
+    await ownerRepo.expirePendingOffersPastDeadline(
+      nowUtc: DateTime.utc(2026, 7, 2, 12),
+    );
+    expect(
+      (await ownerRepo.getSharingLink(link.id))!.status,
+      VehicleSharingLinkStatus.expired.wire,
+    );
+
+    final acceptJson = VehicleSharingOfferTransportService(ownerDb)
+        .exportAcceptJson(
+      linkId: link.id,
+      acceptedAt: DateTime.utc(2026, 7, 2, 13),
+    );
+    final applied = await VehicleSharingOfferTransportService(ownerDb)
+        .importReceivedAccept(acceptJson: acceptJson);
+    expect(applied, isFalse);
   });
 }

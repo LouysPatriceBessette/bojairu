@@ -192,6 +192,8 @@ class VehicleSharingLinks extends Table {
   TextColumn get availabilityWeekJson =>
       text().withDefault(const Constant(''))();
   TextColumn get ownerRulesText => text().withDefault(const Constant(''))();
+  /// When the Emprunteur may no longer accept (UTC); null = no local deadline.
+  DateTimeColumn get expiresAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

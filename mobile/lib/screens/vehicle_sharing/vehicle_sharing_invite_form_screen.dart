@@ -15,6 +15,7 @@ import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
 import '../../relay/relay_client.dart';
 import '../../util/format_money.dart';
+import '../../vehicle/sharing/vehicle_sharing_offer_deadline_dialog.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_text_field.dart';
@@ -324,6 +325,9 @@ class _VehicleSharingInviteFormScreenState
       );
       return;
     }
+    final responseWindow = await showVehicleSharingOfferDeadlineDialog(context);
+    if (responseWindow == null || !mounted) return;
+    final expiresAt = DateTime.now().toUtc().add(responseWindow);
     setState(() => _submitting = true);
     try {
       final currency = widget.prefs.currency.trim().isEmpty
@@ -337,6 +341,7 @@ class _VehicleSharingInviteFormScreenState
         rateCurrency: currency,
         availabilityWeekJson: _encodeAvailabilityWeekJson(),
         ownerRulesText: _rulesController.text.trim(),
+        expiresAt: expiresAt,
       );
       final orch = HandshakeOrchestrator.maybeInstance;
       if (orch != null) {

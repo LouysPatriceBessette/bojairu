@@ -1,8 +1,8 @@
 appId: app.incoherences.bojairu.dev
 ---
-# Monica: open hub and accept pending QA Civic offer.
-# stopApp:true — after shade/home, stopApp:false often fails with
-# "Unable to launch app" (run 20260801T000353Z). Coordinator also am-starts first.
+# Louys (owner): after Monica accepts, active share on hub + no outbound pending.
+# Coordinator waits logcat applied=true before this flow; stopApp so navigation
+# starts from home (Louys may still be deep on Partages from owner-send).
 - launchApp:
     stopApp: true
 - extendedWaitUntil:
@@ -21,14 +21,14 @@ appId: app.incoherences.bojairu.dev
     timeout: 45000
 - extendedWaitUntil:
     visible:
-      id: "qa-vehicle-sharing-pending-qa-civic"
+      id: "qa-vehicle-sharing-shareable-active-qa-civic"
     timeout: 90000
 - tapOn:
-    id: "qa-vehicle-sharing-pending-accept"
+    id: "qa-vehicle-sharing-shareable-active-qa-civic"
 - extendedWaitUntil:
     visible:
-      id: "qa-vehicle-sharing-accessible-qa-civic"
-    timeout: 90000
+      id: "qa-vehicle-sharing-add-share"
+    timeout: 45000
 - assertNotVisible:
-    id: "qa-vehicle-sharing-pending-qa-civic"
-- takeScreenshot: borrower_offer_accepted
+    id: "qa-vehicle-sharing-outbound-pending-invite"
+- takeScreenshot: owner_offer_accepted

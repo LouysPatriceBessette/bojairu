@@ -1867,6 +1867,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Voto sobre expulsión abandonado (acuerdo terminado)';
 
   @override
+  String get activityLogKindVehicleSharingOfferSent =>
+      'Oferta de compartición de vehículo enviada';
+
+  @override
+  String get activityLogKindVehicleSharingOfferReceived =>
+      'Oferta de compartición de vehículo recibida';
+
+  @override
+  String get activityLogKindVehicleSharingOfferResponse =>
+      'Respuesta a oferta de compartición de vehículo';
+
+  @override
+  String get activityLogKindVehicleSharingOfferExpired =>
+      'Oferta de compartición de vehículo caducada';
+
+  @override
   String get housingInvitePlanActivating =>
       'Todos los participantes han aceptado. Activando el acuerdo…';
 
@@ -2115,6 +2131,22 @@ class AppLocalizationsEs extends AppLocalizations {
     String vehicle,
   ) {
     return '$name le ofrece compartir $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingOfferAcceptTitle =>
+      'Uso compartido de vehículo aceptado';
+
+  @override
+  String get pushNotificationVehicleSharingOfferAcceptBody =>
+      'Abra Uso compartido de vehículo para ver el compartido activo.';
+
+  @override
+  String pushNotificationVehicleSharingOfferAcceptBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name aceptó compartir $vehicle.';
   }
 
   @override
@@ -4432,6 +4464,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vehicleSharingOfferSent => 'Oferta enviada.';
+
+  @override
+  String get vehicleSharingOfferDeadlineTitle => 'Plazo de respuesta';
+
+  @override
+  String get vehicleSharingOfferDeadlineBody =>
+      'El prestatario tiene este plazo para aceptar la invitación.';
+
+  @override
+  String vehicleSharingInvitationSentToAt(String name, String when) {
+    return 'Invitación enviada a $name el $when';
+  }
 
   @override
   String get vehicleSharingOfferBlocked =>

@@ -1,0 +1,15 @@
+appId: app.incoherences.bojairu.dev
+---
+# Louys: after tapping accept notification, hub shows active-share check.
+# Product must push /vehicle-sharing even when Louys was on Partages
+# (/vehicle-sharing/:id/shares) — see skipPushWhenAlreadyAt on hub only.
+# No launchApp / stopApp — notification tap opens the hub.
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-hub"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "qa-vehicle-sharing-shareable-active-qa-civic"
+    timeout: 45000
+- takeScreenshot: owner_hub_active_share

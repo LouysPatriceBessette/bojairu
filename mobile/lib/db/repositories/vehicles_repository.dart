@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:drift/drift.dart' as drift;
 
+import '../../activity/relay_activity_log_service.dart';
 import '../app_database.dart';
 import '../../vehicle/vehicle_gallery_storage.dart';
 import '../../vehicle/vehicle_meter_photo_picker.dart';
@@ -1250,6 +1251,7 @@ class VehiclesRepository {
     String rateCurrency = '',
     String availabilityWeekJson = '',
     String ownerRulesText = '',
+    DateTime? expiresAt,
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('vshare:');
@@ -1266,11 +1268,46 @@ class VehiclesRepository {
             rateCurrency: drift.Value(rateCurrency),
             availabilityWeekJson: drift.Value(availabilityWeekJson),
             ownerRulesText: drift.Value(ownerRulesText),
+            expiresAt: drift.Value(expiresAt?.toUtc()),
           ),
         );
     return (await (_db.select(_db.vehicleSharingLinks)
               ..where((t) => t.id.equals(id)))
             .getSingle());
+  }
+
+  /// Marks pending offers past [expiresAt] as expired (local wall-clock only).
+  /// Appends one activity-log row per newly expired link (both devices).
+  Future<void> expirePendingOffersPastDeadline({DateTime? nowUtc}) async {
+    final now = (nowUtc ?? DateTime.now()).toUtc();
+    final pending = await (_db.select(_db.vehicleSharingLinks)
+          ..where(
+            (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),
+          ))
+        .get();
+    final log = RelayActivityLogService(_db);
+    for (final link in pending) {
+      final expires = link.expiresAt;
+      if (expires == null) continue;
+      if (!expires.toUtc().isAfter(now)) {
+        await (_db.update(_db.vehicleSharingLinks)
+              ..where((t) => t.id.equals(link.id)))
+            .write(
+          VehicleSharingLinksCompanion(
+            status: drift.Value(VehicleSharingLinkStatus.expired.wire),
+          ),
+        );
+        await log.append(
+          kind: RelayActivityLogKinds.vehicleSharingOfferExpired,
+          initiatorKind: RelayActivityLogService.initiatorSystem,
+          details: {
+            'linkId': link.id,
+            'vehicleId': link.vehicleId,
+          },
+          occurredAt: now,
+        );
+      }
+    }
   }
 
   Future<void> acceptSharingLink(String linkId) async {
@@ -1368,6 +1405,7 @@ class VehiclesRepository {
     String rateCurrency = '',
     String availabilityWeekJson = '',
     String ownerRulesText = '',
+    DateTime? expiresAt,
   }) async {
     await _revokeOtherPendingOffersFromOwner(
       ownerContactId: ownerContactId,
@@ -1391,6 +1429,7 @@ class VehiclesRepository {
           rateCurrency: drift.Value(rateCurrency),
           availabilityWeekJson: drift.Value(availabilityWeekJson),
           ownerRulesText: drift.Value(ownerRulesText),
+          expiresAt: drift.Value(expiresAt?.toUtc()),
         ),
       );
       return (await getSharingLink(linkId))!;
@@ -1407,6 +1446,7 @@ class VehiclesRepository {
             rateCurrency: drift.Value(rateCurrency),
             availabilityWeekJson: drift.Value(availabilityWeekJson),
             ownerRulesText: drift.Value(ownerRulesText),
+            expiresAt: drift.Value(expiresAt?.toUtc()),
           ),
         );
     return (await getSharingLink(linkId))!;
@@ -1464,16 +1504,51 @@ class VehiclesRepository {
 
   Future<List<VehicleSharingLink>> listSharingLinksForVehicle(
     String vehicleId,
-  ) {
+  ) async {
+    await expirePendingOffersPastDeadline();
     return (_db.select(_db.vehicleSharingLinks)
           ..where((t) => t.vehicleId.equals(vehicleId))
           ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
         .get();
   }
 
+  /// Pending outbound offers on a vehicle owned on this device.
+  Future<List<VehicleSharingLink>> listPendingOwnerOffersForVehicle(
+    String vehicleId,
+  ) async {
+    await expirePendingOffersPastDeadline();
+    return (_db.select(_db.vehicleSharingLinks)
+          ..where(
+            (t) =>
+                t.vehicleId.equals(vehicleId) &
+                t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+                t.status.equals(VehicleSharingLinkStatus.pending.wire),
+          )
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  /// Contact ids with an active or pending outbound share on [vehicleId].
+  Future<Set<String>> borrowerContactIdsBlockingNewOffer(
+    String vehicleId,
+  ) async {
+    await expirePendingOffersPastDeadline();
+    final rows = await (_db.select(_db.vehicleSharingLinks)
+          ..where(
+            (t) =>
+                t.vehicleId.equals(vehicleId) &
+                t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+                (t.status.equals(VehicleSharingLinkStatus.active.wire) |
+                    t.status.equals(VehicleSharingLinkStatus.pending.wire)),
+          ))
+        .get();
+    return {for (final r in rows) r.borrowerContactId};
+  }
+
   Future<List<VehicleSharingLink>> listPendingOffersForBorrower(
     String borrowerContactId,
   ) async {
+    await expirePendingOffersPastDeadline();
     final rows = await (_db.select(_db.vehicleSharingLinks)
           ..where(
             (t) =>
@@ -1486,6 +1561,7 @@ class VehiclesRepository {
   }
 
   Future<List<VehicleSharingLink>> listPendingBorrowerOffers() async {
+    await expirePendingOffersPastDeadline();
     final rows = await (_db.select(_db.vehicleSharingLinks)
           ..where(
             (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),

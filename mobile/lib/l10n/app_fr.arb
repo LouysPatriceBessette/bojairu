@@ -703,6 +703,10 @@
   "activityLogKindHousingAgreementActivated": "Entente de logement activée",
   "activityLogKindHousingProposalAgreementExpired": "Vote sur modification de plan abandonné (Entente terminée)",
   "activityLogKindHousingParticipationChangeAgreementExpired": "Vote sur éjection abandonné (Entente terminée)",
+  "activityLogKindVehicleSharingOfferSent": "Offre de partage véhicule envoyée",
+  "activityLogKindVehicleSharingOfferReceived": "Offre de partage véhicule reçue",
+  "activityLogKindVehicleSharingOfferResponse": "Réponse à une offre de partage véhicule",
+  "activityLogKindVehicleSharingOfferExpired": "Offre de partage véhicule expirée",
   "housingInvitePlanActivating": "Tous les participants ont accepté. Activation de l'entente…",
   "housingInviteProposalAppBarTitle": "Proposition d'invitation",
   "housingInviteProposalIntroTitle": "Voici la proposition qui sera envoyée à chacun de vos participants.",
@@ -819,6 +823,15 @@
   "pushNotificationVehicleSharingOfferBody": "Ouvrez Partage de véhicule pour consulter l'offre.",
   "pushNotificationVehicleSharingOfferBodyFrom": "{name} vous propose de partager {vehicle}.",
   "@pushNotificationVehicleSharingOfferBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingOfferAcceptTitle": "Partage de véhicule accepté",
+  "pushNotificationVehicleSharingOfferAcceptBody": "Ouvrez Partage de véhicule pour voir le partage actif.",
+  "pushNotificationVehicleSharingOfferAcceptBodyFrom": "{name} a accepté de partager {vehicle}.",
+  "@pushNotificationVehicleSharingOfferAcceptBodyFrom": {
     "placeholders": {
       "name": { "type": "String" },
       "vehicle": { "type": "String" }
@@ -1827,6 +1840,15 @@
   "vehicleSharingOfferPickContact": "Choisir un contact connecté",
   "vehicleSharingNoContacts": "Ajoutez d'abord un contact connecté.",
   "vehicleSharingOfferSent": "Offre envoyée.",
+  "vehicleSharingOfferDeadlineTitle": "Délai de réponse",
+  "vehicleSharingOfferDeadlineBody": "L'emprunteur a jusqu'à cette durée pour accepter l'invitation.",
+  "vehicleSharingInvitationSentToAt": "Invitation envoyée à {name} le {when}",
+  "@vehicleSharingInvitationSentToAt": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferBlocked": "Le partage nécessite les abonnements Véhicule et Partage de véhicule.",
   "vehicleSharingForwarded": "Enregistré sur le véhicule du propriétaire.",
   "vehicleSharingBorrowerLabel": "Emprunteur : {name}",

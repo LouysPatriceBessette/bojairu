@@ -1715,6 +1715,16 @@ class HandshakeOrchestrator {
       'vehicle_sharing_offer imported from ${senderContact.id} '
       'link=${imported.linkId} vehicle=${imported.vehicleLabel}',
     );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferReceived,
+      initiatorKind: RelayActivityLogService.initiatorContact,
+      initiatorContactId: senderContact.id,
+      initiatorDisplayName: senderContact.displayName,
+      details: {
+        'linkId': imported.linkId,
+        'vehicleLabel': imported.vehicleLabel,
+      },
+    );
     await _relay.ackEnvelope(
       envelopeId: envelope.envelopeId,
       recipient: myListenAddr,
@@ -1769,14 +1779,49 @@ class HandshakeOrchestrator {
 
     final applied = await VehicleSharingOfferTransportService(_db)
         .importReceivedAccept(acceptJson: decrypted.acceptJson);
+    // Fixed-string logcat needles (qa_wait_for_logcat uses grep -F).
     debugPrint(
-      'vehicle_sharing_offer_accept from ${contact.id} applied=$applied',
+      applied
+          ? 'vehicle_sharing_offer_accept applied=true from ${contact.id}'
+          : 'vehicle_sharing_offer_accept applied=false from ${contact.id}',
     );
+    if (applied) {
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: contact.id,
+        initiatorDisplayName: contact.displayName,
+      );
+      // Tick only after a successful write so UI reload cannot flash stale
+      // pending state from an applied=false / no-op path.
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        String? vehicleLabel;
+        try {
+          final root =
+              jsonDecode(decrypted.acceptJson) as Map<String, dynamic>;
+          final linkId = (root['linkId'] as String?)?.trim() ?? '';
+          if (linkId.isNotEmpty) {
+            final link = await VehiclesRepository(_db).getSharingLink(linkId);
+            if (link != null) {
+              final vehicle =
+                  await VehiclesRepository(_db).getVehicle(link.vehicleId);
+              vehicleLabel = vehicle?.displayLabel;
+            }
+          }
+        } catch (_) {
+          // best-effort label for notification body
+        }
+        await PushNotificationService.showLocalVehicleSharingOfferAcceptNotification(
+          borrowerDisplayName: contact.displayName,
+          vehicleLabel: vehicleLabel,
+        );
+      }
+    }
     await _relay.ackEnvelope(
       envelopeId: envelope.envelopeId,
       recipient: myListenAddr,
     );
-    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
 
   Future<void> _handleInboundHousingRealizedExpensePropose({
@@ -4120,6 +4165,14 @@ class HandshakeOrchestrator {
       kind: EnvelopeKind.vehicleSharingOffer,
       ttl: _steadyTtl,
     );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'borrowerContactId': borrowerContactId,
+      },
+    );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
 
@@ -4174,6 +4227,11 @@ class HandshakeOrchestrator {
       ciphertext: frame,
       kind: EnvelopeKind.vehicleSharingOfferAccept,
       ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'linkId': linkId, 'status': 'accepted'},
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
