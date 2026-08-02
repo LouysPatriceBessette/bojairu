@@ -261,6 +261,7 @@ class _MeterFuelJournalList extends StatelessWidget {
     final purchases = await repo.listFuelPurchases(vehicleId);
     final rows = <_MeterFuelJournalRow>[];
     for (final reading in readings) {
+      if (!isMeterReadingShownInJournal(reading)) continue;
       final roleLabel = await meterReadingRoleLabel(
         l10n: l10n,
         prefs: prefs,

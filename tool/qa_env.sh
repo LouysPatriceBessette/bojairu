@@ -668,10 +668,12 @@ qa_seed_scenario_on_serial() {
 }
 
 qa_resolve_device_date() {
+  # "current" = host wall clock *now* in the scenario timezone (date + time),
+  # not "today at 09:00".
   local device_date="$1"
   local timezone="$2"
   if [[ "${device_date}" == "current" ]]; then
-    TZ="${timezone}" date '+%Y-%m-%dT09:00:00'
+    TZ="${timezone}" date '+%Y-%m-%dT%H:%M:%S'
   else
     printf '%s' "${device_date}"
   fi

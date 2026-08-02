@@ -67,6 +67,53 @@ void main() {
     });
   });
 
+  group('isMeterReadingShownInJournal', () {
+    test('hides replacement rows that supersede another reading', () {
+      final replacement = VehicleMeterReading(
+        id: 'm2',
+        vehicleId: 'v1',
+        value: 500500,
+        unit: 'km',
+        photoPath: 'p',
+        recordedAt: DateTime.utc(2027, 1, 1),
+        recordedByContactId: 'c1',
+        vehicleUseId: null,
+        readingRole: 'standalone',
+        isCorrection: true,
+        correctionNote: 'replace|correctPrevious',
+        negativeGapAcknowledged: false,
+        isFullTank: null,
+        tankFillFraction: null,
+        resolvedAt: null,
+        supersedesReadingId: 'm1',
+      );
+      expect(isMeterReadingReplacement(replacement), isTrue);
+      expect(isMeterReadingShownInJournal(replacement), isFalse);
+    });
+
+    test('keeps verification and applied correction rows', () {
+      final verification = VehicleMeterReading(
+        id: 'c1',
+        vehicleId: 'v1',
+        value: 500500,
+        unit: 'km',
+        photoPath: 'p',
+        recordedAt: DateTime.utc(2027, 1, 1),
+        recordedByContactId: 'c1',
+        vehicleUseId: null,
+        readingRole: 'correction',
+        isCorrection: true,
+        correctionNote: '1000|sessionStart',
+        negativeGapAcknowledged: false,
+        isFullTank: null,
+        tankFillFraction: null,
+        resolvedAt: null,
+        supersedesReadingId: null,
+      );
+      expect(isMeterReadingShownInJournal(verification), isTrue);
+    });
+  });
+
   group('compareMeterReadingsNewestFirst', () {
     test('correction below session start when recordedAt is one second earlier',
         () {

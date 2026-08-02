@@ -1915,7 +1915,9 @@ class HandshakeOrchestrator {
         },
       );
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
-      if (imported.conflictWithOpenSession && _ownsDeviceHousingNotifications) {
+      final notifyGap = imported.conflictWithOpenSession ||
+          imported.correctionReadingId != null;
+      if (notifyGap && _ownsDeviceHousingNotifications) {
         await PushNotificationService.showLocalVehicleSessionGapNotification(
           borrowerDisplayName: senderContact.displayName,
           vehicleLabel: imported.vehicleLabel,

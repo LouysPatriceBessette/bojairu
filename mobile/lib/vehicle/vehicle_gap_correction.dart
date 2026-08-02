@@ -109,6 +109,11 @@ bool isMeterReadingReplacement(VehicleMeterReading reading) =>
     reading.supersedesReadingId != null &&
     reading.supersedesReadingId!.isNotEmpty;
 
+/// User-facing meter / fuel journals omit replacement rows: the verification
+/// line, session start/end, and « Correction appliquée » already tell the story.
+bool isMeterReadingShownInJournal(VehicleMeterReading reading) =>
+    !isMeterReadingReplacement(reading);
+
 String encodeMeterReadingReplacementNote({required GapResolutionKind kind}) =>
     'replace|${kind.wire}';
 

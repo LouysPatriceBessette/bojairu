@@ -482,10 +482,12 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
             : MeterReadingRole.sessionEnd,
         vehicleUseId: openUse?.id,
         negativeGapAcknowledged: latest != null && parsed < latest,
-        isFullTank: openUse == null ? _fullTank : false,
-        tankFillFraction: openUse == null && _fullTank
-            ? null
-            : _tankFillLevel.percent,
+        isFullTank: openUse == null
+            ? _fullTank
+            : _tankFillLevel.percent >= 100,
+        tankFillFraction: openUse == null
+            ? (_fullTank ? null : _tankFillLevel.percent)
+            : (_tankFillLevel.percent >= 100 ? null : _tankFillLevel.percent),
         recordedAt: readingRecordedAt,
       );
 

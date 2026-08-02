@@ -17,6 +17,7 @@ class VehicleTankFillFields extends StatelessWidget {
     this.sectionTitle,
     this.fullTankSemanticsId,
     this.tankLevelSemanticsId,
+    this.levels,
   });
 
   final bool fullTank;
@@ -28,10 +29,39 @@ class VehicleTankFillFields extends StatelessWidget {
   final String? fullTankSemanticsId;
   final String? tankLevelSemanticsId;
 
+  /// When set, the approximate dropdown uses these levels instead of
+  /// [VehicleTankFillLevel.dropdownChoices]. Full (100%) entries are omitted
+  /// from the dropdown when [showFullTankSwitch] is true (switch covers that
+  /// case). When the switch is hidden, full is included so session end can
+  /// declare a full tank.
+  final List<VehicleTankFillLevel>? levels;
+
+  List<VehicleTankFillLevel> _dropdownLevels() {
+    if (levels != null) {
+      if (showFullTankSwitch) {
+        return levels!.where((l) => l.percent < 100).toList();
+      }
+      return levels!;
+    }
+    return VehicleTankFillLevel.dropdownChoices(
+      includeFull: !showFullTankSwitch,
+    );
+  }
+
+  String _levelLabel(AppLocalizations l10n, VehicleTankFillLevel level) {
+    if (level.percent >= 100) return l10n.vehicleFuelFullTank;
+    return level.label();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final showLevelSelector = !showFullTankSwitch || !fullTank;
+    final dropdownLevels = _dropdownLevels();
+    final showLevelSelector =
+        (!showFullTankSwitch || !fullTank) && dropdownLevels.isNotEmpty;
+    final dropdownValue = dropdownLevels.contains(tankFillLevel)
+        ? tankFillLevel
+        : (dropdownLevels.isNotEmpty ? dropdownLevels.first : tankFillLevel);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -76,17 +106,17 @@ class VehicleTankFillFields extends StatelessWidget {
               ),
               child: tankLevelSemanticsId == null
                   ? DropdownButtonFormField<VehicleTankFillLevel>(
-                      key: ValueKey(tankFillLevel.percent),
+                      key: ValueKey(dropdownValue.percent),
                       isExpanded: true,
-                      initialValue: tankFillLevel,
+                      initialValue: dropdownValue,
                       decoration: InputDecoration(
                         labelText: l10n.vehicleFuelApproximateLevel,
                       ),
                       items: [
-                        for (final level in VehicleTankFillLevel.choices)
+                        for (final level in dropdownLevels)
                           DropdownMenuItem(
                             value: level,
-                            child: Text(level.label()),
+                            child: Text(_levelLabel(l10n, level)),
                           ),
                       ],
                       onChanged: (value) {
@@ -96,17 +126,17 @@ class VehicleTankFillFields extends StatelessWidget {
                   : qaVehicleSemantics(
                       identifier: tankLevelSemanticsId!,
                       child: DropdownButtonFormField<VehicleTankFillLevel>(
-                        key: ValueKey(tankFillLevel.percent),
+                        key: ValueKey(dropdownValue.percent),
                         isExpanded: true,
-                        initialValue: tankFillLevel,
+                        initialValue: dropdownValue,
                         decoration: InputDecoration(
                           labelText: l10n.vehicleFuelApproximateLevel,
                         ),
                         items: [
-                          for (final level in VehicleTankFillLevel.choices)
+                          for (final level in dropdownLevels)
                             DropdownMenuItem(
                               value: level,
-                              child: Text(level.label()),
+                              child: Text(_levelLabel(l10n, level)),
                             ),
                         ],
                         onChanged: (value) {

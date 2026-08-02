@@ -3,8 +3,11 @@ description: >-
   Seed-only — Louys + Monica already at the END state of
   vehicle_sharing_offer_happy_path (connected pair, active QA Civic share).
   No offer/accept UI. Leaves both apps ready for manual exploration.
+# Force the same wall clock on both AVDs at seed (host "now" in America/Toronto).
+# skip_restore keeps those clocks for manual follow-up (avoid one-AVD restore skew).
 device_date: current
 timezone: America/Toronto
+skip_restore: true
 coordinator: vehicle_sharing_active_seed
 mode: seed_only
 role_owner:

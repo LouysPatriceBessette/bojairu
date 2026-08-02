@@ -97,6 +97,11 @@ DEVICE_DATE="$(qa_resolve_device_date "${DEVICE_DATE_RAW}" "${TIMEZONE}")"
 if [[ "${DEVICE_DATE_RAW}" == "current" ]]; then
   echo "device_date=current resolved to ${DEVICE_DATE} (${TIMEZONE})"
 fi
+MANIFEST_SKIP_RESTORE="$(python3 "${ROOT}/tool/qa_multi_scenario_manifest.py" "${MANIFEST}" skip_restore 2>/dev/null || true)"
+if [[ "${MANIFEST_SKIP_RESTORE}" == "true" || "${MANIFEST_SKIP_RESTORE}" == "1" ]]; then
+  SKIP_RESTORE=1
+  echo "skip_restore=true from manifest (keeping emulator clocks after run)"
+fi
 MANIFEST_ATTEMPTS="$(python3 "${ROOT}/tool/qa_multi_scenario_manifest.py" "${MANIFEST}" attempts 2>/dev/null || true)"
 ROLES="$(python3 "${ROOT}/tool/qa_multi_scenario_manifest.py" "${MANIFEST}" roles)"
 

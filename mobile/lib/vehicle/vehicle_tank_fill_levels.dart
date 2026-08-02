@@ -15,6 +15,15 @@ class VehicleTankFillLevel {
   String label() =>
       displayLabel ?? '$fractionNumerator/$fractionDenominator - $percent%';
 
+  /// Full tank (100%). Not in [choices] (those feed the switch + approximate
+  /// dropdown). Included via [dropdownChoices] when the full-tank switch is
+  /// hidden (e.g. session end), and by gap-correction ranges.
+  static const full = VehicleTankFillLevel(
+    fractionNumerator: 1,
+    fractionDenominator: 1,
+    percent: 100,
+  );
+
   static const List<VehicleTankFillLevel> choices = [
     VehicleTankFillLevel(fractionNumerator: 7, fractionDenominator: 8, percent: 87),
     VehicleTankFillLevel(fractionNumerator: 3, fractionDenominator: 4, percent: 75),
@@ -31,6 +40,15 @@ class VehicleTankFillLevel {
     ),
   ];
 
+  /// Approximate dropdown levels. When [includeFull] is true (no full-tank
+  /// switch), [full] is listed first.
+  static List<VehicleTankFillLevel> dropdownChoices({
+    bool includeFull = false,
+  }) {
+    if (!includeFull) return choices;
+    return [full, ...choices];
+  }
+
   static final VehicleTankFillLevel defaultChoice = choices.first;
 
   static int get highestPercent =>
@@ -38,6 +56,7 @@ class VehicleTankFillLevel {
 
   static VehicleTankFillLevel? fromPercent(int? percent) {
     if (percent == null) return null;
+    if (percent >= 100) return full;
     for (final c in choices) {
       if (c.percent == percent) return c;
     }

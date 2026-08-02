@@ -19,7 +19,8 @@ bool sessionEndTankLevelNeedsConfirmation({
   required bool usesHorometer,
 }) {
   if (usesHorometer) return false;
-  if (declaredTankPercent != VehicleTankFillLevel.highestPercent) {
+  // Highest approximate choice (7/8) or full tank after a long drive.
+  if (declaredTankPercent < VehicleTankFillLevel.highestPercent) {
     return false;
   }
   final tenths = distanceTenthsSinceLastFuelPurchase;

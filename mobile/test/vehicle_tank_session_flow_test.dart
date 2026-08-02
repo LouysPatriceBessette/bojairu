@@ -25,6 +25,15 @@ void main() {
       );
       expect(
         sessionEndTankLevelNeedsConfirmation(
+          declaredTankPercent: 100,
+          distanceTenthsSinceLastFuelPurchase:
+              kSessionEndHighTankConfirmMinKm * 10,
+          usesHorometer: false,
+        ),
+        isTrue,
+      );
+      expect(
+        sessionEndTankLevelNeedsConfirmation(
           declaredTankPercent: 75,
           distanceTenthsSinceLastFuelPurchase:
               kSessionEndHighTankConfirmMinKm * 10,

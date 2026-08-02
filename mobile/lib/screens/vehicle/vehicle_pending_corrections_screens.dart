@@ -477,9 +477,7 @@ class _VehiclePendingCorrectionDetailScreenState
         ? levels.first
         : VehicleTankFillLevel.fromPercent(
             reading.tankFillFraction ??
-                (reading.isFullTank == true
-                    ? VehicleTankFillLevel.highestPercent
-                    : null),
+                (reading.isFullTank == true ? 100 : null),
           );
     if (target == _TankTarget.previous) {
       _correctPreviousTank = level ?? levels.firstOrNull;
@@ -517,12 +515,28 @@ class _VehiclePendingCorrectionDetailScreenState
               const SizedBox(height: 12),
               VehicleTankFillFields(
                 fullTank: tankLevel?.percent == 100,
-                onFullTankChanged: (_) {},
-                tankFillLevel: tankLevel ?? VehicleTankFillLevel.defaultChoice,
+                onFullTankChanged: (full) {
+                  if (full) {
+                    onTankChanged(VehicleTankFillLevel.full);
+                    return;
+                  }
+                  final approx = tankLevels
+                      .where((l) => l.percent < 100)
+                      .firstOrNull;
+                  onTankChanged(approx ?? VehicleTankFillLevel.defaultChoice);
+                },
+                tankFillLevel: tankLevel?.percent == 100
+                    ? (tankLevels
+                            .where((l) => l.percent < 100)
+                            .firstOrNull ??
+                        VehicleTankFillLevel.defaultChoice)
+                    : (tankLevel ?? VehicleTankFillLevel.defaultChoice),
                 onTankFillLevelChanged: tankLevels.length == 1
                     ? (_) {}
                     : (v) => onTankChanged(v),
-                showFullTankSwitch: false,
+                showFullTankSwitch:
+                    tankLevels.any((l) => l.percent >= 100),
+                levels: tankLevels,
                 sectionTitle: l10n.vehicleFuelTankState,
               ),
             ],

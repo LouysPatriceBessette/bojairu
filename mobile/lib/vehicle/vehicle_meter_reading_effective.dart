@@ -1,7 +1,8 @@
 import '../db/app_database.dart';
 import 'vehicle_gap_correction.dart';
 
-/// Reading ids replaced by a newer correction row (journal keeps originals).
+/// Reading ids replaced by a newer correction row (kept in DB for metrics;
+/// replacement rows are hidden from user-facing journals).
 Set<String> supersededMeterReadingIds(Iterable<VehicleMeterReading> readings) {
   return readings
       .map((r) => r.supersedesReadingId)

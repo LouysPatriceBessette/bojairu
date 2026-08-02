@@ -14,6 +14,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/device_binding_test_support.dart';
 
@@ -93,6 +94,10 @@ Future<({String inviterContactId, String inviteeContactId})> _completeHandshake(
   required _Side invitee,
   required String inviteeDisplayName,
 }) async {
+  inviter.orchestrator.ackProfileForAutoAccept = () async => (
+        displayName: 'Monica',
+        avatarId: 'mdi:monica',
+      );
   final invite = await inviter.orchestrator.generateInvitation(
     validFor: const Duration(hours: 1),
     stubDisplayName: 'pending',
@@ -104,10 +109,6 @@ Future<({String inviterContactId, String inviteeContactId})> _completeHandshake(
     code: code,
     selfDisplayName: inviteeDisplayName,
     selfAvatarId: 'mdi:peer',
-  );
-  inviter.orchestrator.ackProfileForAutoAccept = () async => (
-    displayName: 'Monica',
-    avatarId: 'mdi:monica',
   );
   await inviter.orchestrator.processAllPendingHandshakes();
   await invitee.orchestrator.processAllPendingHandshakes();
@@ -193,6 +194,7 @@ Future<int> _proposalPackageCount(AppDatabase db) async {
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   });
 
@@ -203,6 +205,10 @@ void main() {
   test(
     'inviter handshake contact ids deliver proposal to redeemed invitees',
     () async {
+      SharedPreferences.setMockInitialValues({
+        'profile.displayName': 'Monica',
+        'profile.avatarId': 'mdi:monica',
+      });
       final relay = FakeRelayClient();
       final monica = await _spawnSide(
         relay: relay,

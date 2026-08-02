@@ -92,6 +92,48 @@ void main() {
     expect(start.photoPath, kVehicleMeterPhotoKnownUnchangedSentinel);
   });
 
+  test(
+      'import start with no open session and higher meter creates pending gap',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    await seedOwnedVehicle(db);
+    final transport = VehicleUseSessionTransportService(db);
+    final repo = VehiclesRepository(db);
+
+    await repo.saveMeterReading(
+      vehicleId: vehicleId,
+      value: 500000,
+      unit: 'odometer_km',
+      photoPath: kVehicleMeterPhotoKnownUnchangedSentinel,
+      recordedByContactId: kVehicleOwnerSelfContactId,
+      role: MeterReadingRole.standalone,
+      recordedAt: DateTime.utc(2026, 8, 2, 9),
+    );
+
+    final result = await transport.importReceivedSessionStart(
+      sessionJson: startPayload(
+        meterTenths: 500500,
+        remoteUseId: 'use:remote-gap',
+        startedAt: '2026-08-02T09:05:00.000Z',
+      ),
+      borrowerContactId: borrowerContactId,
+    );
+
+    expect(result.conflictWithOpenSession, isFalse);
+    expect(result.localUseId, isNotNull);
+    expect(result.correctionReadingId, isNotNull);
+
+    final pending = await repo.listPendingGapVerifications(vehicleId);
+    expect(pending, hasLength(1));
+    expect(pending.single.id, result.correctionReadingId);
+
+    final gap =
+        await repo.getOdometerGapByCorrectionReadingId(pending.single.id);
+    expect(gap, isNotNull);
+    expect(gap!.gapAmount, 500);
+  });
+
   test('import start with open session creates pending gap and keeps one open use',
       () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

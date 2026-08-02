@@ -9,12 +9,16 @@ List<VehicleTankFillLevel> tankFillLevelsBetween({
   final high = _effectivePercent(triggerPercent);
   final minP = low < high ? low : high;
   final maxP = low < high ? high : low;
-  return VehicleTankFillLevel.choices
+  final levels = VehicleTankFillLevel.choices
       .where((level) => level.percent >= minP && level.percent <= maxP)
       .toList();
+  if (maxP >= 100) {
+    levels.insert(0, VehicleTankFillLevel.full);
+  }
+  return levels;
 }
 
 int _effectivePercent(int? percent) {
-  if (percent == null) return VehicleTankFillLevel.highestPercent;
+  if (percent == null) return 100;
   return percent;
 }

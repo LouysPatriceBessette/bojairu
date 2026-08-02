@@ -146,7 +146,25 @@ class VehicleUseSessionTransportService {
         : vehicle.displayLabel.trim();
 
     final openUse = await _vehicles.openUseForVehicle(vehicleId);
+    final previous = await _vehicles.latestNonCorrectionMeterReading(vehicleId);
+
     if (openUse == null) {
+      VehicleOdometerGap? pendingGap;
+      if (previous != null && meterTenths > previous.value) {
+        final persisted = await persistConfirmedMeterDivergence(
+          repo: _vehicles,
+          vehicle: vehicle,
+          previousReading: previous,
+          parsedMeter: meterTenths,
+          divergenceTenths: meterTenths - previous.value,
+          photoPath: photoPath,
+          actingContactId: borrowerContactId,
+          correctionContext: GapCorrectionContext.sessionStart,
+          correctionRecordedAt: startedAt,
+        );
+        pendingGap = persisted.gap;
+      }
+
       final reading = await _vehicles.saveMeterReading(
         vehicleId: vehicleId,
         value: meterTenths,
@@ -158,6 +176,15 @@ class VehicleUseSessionTransportService {
         tankFillFraction: tankFillFraction,
         recordedAt: startedAt,
       );
+      if (pendingGap != null && previous != null) {
+        await linkGapTriggerReading(
+          repo: _vehicles,
+          gapId: pendingGap.id,
+          correctionReadingId: pendingGap.correctionReadingId!,
+          previousReadingId: previous.id,
+          triggerReadingId: reading.id,
+        );
+      }
       final use = await _vehicles.openUseSession(
         vehicleId: vehicleId,
         attributedContactId: borrowerContactId,
@@ -168,10 +195,10 @@ class VehicleUseSessionTransportService {
         vehicleLabel: label,
         conflictWithOpenSession: false,
         localUseId: use.id,
+        correctionReadingId: pendingGap?.correctionReadingId,
       );
     }
 
-    final previous = await _vehicles.latestNonCorrectionMeterReading(vehicleId);
     if (previous == null) {
       throw StateError('open session without prior meter reading: $vehicleId');
     }

@@ -272,6 +272,11 @@ share — no offer/accept/notification path). Asserts Louys hub green check and
 Monica accessible card (session + other-actions chips), then leaves both apps
 on home for manual exploration.
 
+At seed, both emulators get the same wall clock: `device_date: current` means
+**host now** (date and time) in `America/Toronto`, not a fixed 09:00. The
+manifest sets `skip_restore: true` so those clocks stay aligned for manual
+follow-up (a single-AVD restore would leave Monica skewed).
+
 ```bash
 ./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_active_seed
 ```
@@ -297,7 +302,7 @@ Regression guard and duplicate-handshake outcomes after device-binding merge (co
 ./tool/melosw run qa:run-multi-scenario -- housing_proposal_bug_122
 ```
 
-Manifests live under `qa/multi_scenarios/`. Each declares `role_*` blocks (AVD, seed, flow) and a `coordinator` script in `tool/coordinators/`. The inviter exports the invitation short code to `app_flutter/compartarenta_qa_handshake_code.txt` for the orchestrator to pass to the invitee Maestro flow (`INVITE_CODE`).
+Manifests live under `qa/multi_scenarios/`. Each declares `role_*` blocks (AVD, seed, flow) and a `coordinator` script in `tool/coordinators/`. Optional `skip_restore: true` keeps the seeded emulator clocks (same as CLI `--skip-restore`). The inviter exports the invitation short code to `app_flutter/compartarenta_qa_handshake_code.txt` for the orchestrator to pass to the invitee Maestro flow (`INVITE_CODE`).
 
 **Relay / TLS note:** scenarios that hit the production relay
 (`https://sync.incoherences.org`) must keep `device_date` **inside the relay
@@ -419,7 +424,7 @@ screenshot_prefix: settlement_open
 | Field | Purpose |
 | --- | --- |
 | `id` | Scenario name; **must match** the filename stem (`settlement_open.yaml`) |
-| `device_date` | Passed to `set_android_date.sh` (emulator only) |
+| `device_date` | Passed to `set_android_date.sh` (emulator only). Use `current` for host wall clock **now** in `timezone` (date + time), or a pinned ISO local datetime |
 | `timezone` | IANA timezone for the clock push |
 | `seed` | Id consumed by `kQaScenarioIds` in `qa_scenario_seed.dart` |
 | `flow` | Maestro YAML path relative to repo root |

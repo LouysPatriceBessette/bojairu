@@ -22,10 +22,15 @@ Future<String> resolveVehicleContactDisplayName(
   String contactId, {
   required AppPreferences prefs,
   required AppLocalizations l10n,
+  String? vehicleDisplayLabel,
 }) async {
   if (vehicleContactIsOwnerSelf(contactId)) {
     final name = prefs.displayName.trim();
     return name.isNotEmpty ? name : l10n.vehicleGapAttributionSelf;
+  }
+  if (vehicleContactIsBorrowerSelf(contactId)) {
+    final label = (vehicleDisplayLabel ?? '').trim();
+    return label.isNotEmpty ? label : l10n.vehicleGapAttributionSelf;
   }
   final contact = await ContactsRepository(AppDatabase.processScope).get(contactId);
   final name = contact?.displayName.trim() ?? '';
@@ -46,10 +51,12 @@ Future<String> meterReadingRoleLabel({
       userContactId = use.attributedContactId;
     }
   }
+  final vehicle = await repo.getVehicle(reading.vehicleId);
   final userName = await resolveVehicleContactDisplayName(
     userContactId,
     prefs: prefs,
     l10n: l10n,
+    vehicleDisplayLabel: vehicle?.displayLabel,
   );
 
   if (role == MeterReadingRole.correction || reading.isCorrection) {

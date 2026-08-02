@@ -79,7 +79,9 @@ class VehicleMeterLogScreen extends StatelessWidget {
   Future<(Vehicle?, List<VehicleMeterReading>)> _load() async {
     final repo = VehiclesRepository(AppDatabase.processScope);
     final vehicle = await repo.getVehicle(vehicleId);
-    final rows = await repo.listMeterReadings(vehicleId);
+    final rows = (await repo.listMeterReadings(vehicleId))
+        .where(isMeterReadingShownInJournal)
+        .toList();
     return (vehicle, rows);
   }
 }

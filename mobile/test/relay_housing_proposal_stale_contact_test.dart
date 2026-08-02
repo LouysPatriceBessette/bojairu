@@ -16,6 +16,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/device_binding_test_support.dart';
 
@@ -110,6 +111,10 @@ Future<({String inviterContactId, String inviteeContactId})> _completeHandshake(
   required _Side invitee,
   required String inviteeDisplayName,
 }) async {
+  inviter.orchestrator.ackProfileForAutoAccept = () async => (
+        displayName: 'Android User',
+        avatarId: 'mdi:android',
+      );
   final invite = await inviter.orchestrator.generateInvitation(
     validFor: const Duration(hours: 1),
     stubDisplayName: 'pending',
@@ -121,10 +126,6 @@ Future<({String inviterContactId, String inviteeContactId})> _completeHandshake(
     code: code,
     selfDisplayName: inviteeDisplayName,
     selfAvatarId: 'mdi:web',
-  );
-  inviter.orchestrator.ackProfileForAutoAccept = () async => (
-    displayName: 'Android User',
-    avatarId: 'mdi:android',
   );
   await inviter.orchestrator.processAllPendingHandshakes();
   await invitee.orchestrator.processAllPendingHandshakes();
@@ -212,6 +213,7 @@ Uint8List _corruptHousingProposalFrame() {
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   });
 
@@ -225,6 +227,10 @@ void main() {
   late _Side webNew;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({
+      'profile.displayName': 'Android User',
+      'profile.avatarId': 'mdi:android',
+    });
     relay = FakeRelayClient();
     android = await _spawnSide(
       relay: relay,

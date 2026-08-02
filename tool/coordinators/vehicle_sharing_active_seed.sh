@@ -3,6 +3,9 @@
 # Louys owns QA Civic with active share; Monica has accessible QA Civic.
 # No offer/accept/notification path — asserts hubs then leaves apps for manual use.
 #
+# Manifest forces device_date=current + America/Toronto on both AVDs at seed and
+# skip_restore=true so clocks stay aligned for manual follow-up.
+#
 # Expects env from tool/run_multi_device_scenario.sh:
 #   COMPARTARENTA_ROLE_OWNER_SERIAL, COMPARTARENTA_ROLE_BORROWER_SERIAL, …
 #
