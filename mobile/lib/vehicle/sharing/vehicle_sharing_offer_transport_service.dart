@@ -51,8 +51,9 @@ class VehicleSharingOfferTransportService {
     });
   }
 
-  /// Imports an offer on the Emprunteur device. Returns display label for notifs.
-  Future<({String linkId, String vehicleLabel})> importReceivedOffer({
+  /// Imports an offer on the Emprunteur device.
+  Future<({String linkId, String vehicleId, String vehicleLabel})>
+      importReceivedOffer({
     required String offerJson,
     required String senderContactId,
   }) async {
@@ -117,7 +118,11 @@ class VehicleSharingOfferTransportService {
       expiresAt: expiresAt,
     );
 
-    return (linkId: linkId, vehicleLabel: displayLabel);
+    return (
+      linkId: linkId,
+      vehicleId: vehicleId,
+      vehicleLabel: displayLabel,
+    );
   }
 
   String exportAcceptJson({
@@ -131,8 +136,9 @@ class VehicleSharingOfferTransportService {
     });
   }
 
-  /// Applies accept on the Propriétaire device. Returns whether a link was updated.
-  Future<bool> importReceivedAccept({required String acceptJson}) async {
+  /// Applies accept on the Propriétaire device.
+  Future<({bool applied, String? vehicleId, String? linkId})>
+      importReceivedAccept({required String acceptJson}) async {
     final root = jsonDecode(acceptJson) as Map<String, dynamic>;
     if ((root['kind'] as String?) != acceptKind) {
       throw FormatException('unexpected accept kind: ${root['kind']}');
@@ -145,9 +151,18 @@ class VehicleSharingOfferTransportService {
     final acceptedAt = acceptedAtRaw == null
         ? null
         : DateTime.tryParse(acceptedAtRaw)?.toUtc();
-    return _vehicles.applyRemoteSharingOfferAccept(
+    final applied = await _vehicles.applyRemoteSharingOfferAccept(
       linkId: linkId,
       acceptedAt: acceptedAt,
+    );
+    if (!applied) {
+      return (applied: false, vehicleId: null, linkId: linkId);
+    }
+    final link = await _vehicles.getSharingLink(linkId);
+    return (
+      applied: true,
+      vehicleId: link?.vehicleId,
+      linkId: linkId,
     );
   }
 }

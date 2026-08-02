@@ -50,6 +50,7 @@ void main() {
     );
     expect(imported.linkId, linkId);
     expect(imported.vehicleLabel, 'Civic QA');
+    expect(imported.vehicleId, isNotEmpty);
 
     final vehicle = await repo.getVehicle(vehicleId);
     expect(vehicle, isNotNull);
@@ -190,7 +191,8 @@ void main() {
 
     final applied = await VehicleSharingOfferTransportService(ownerDb)
         .importReceivedAccept(acceptJson: acceptJson);
-    expect(applied, isTrue);
+    expect(applied.applied, isTrue);
+    expect(applied.vehicleId, isNotEmpty);
 
     final ownerLink = await ownerRepo.getSharingLink(link.id);
     expect(ownerLink!.status, VehicleSharingLinkStatus.active.wire);
@@ -232,6 +234,6 @@ void main() {
     );
     final applied = await VehicleSharingOfferTransportService(ownerDb)
         .importReceivedAccept(acceptJson: acceptJson);
-    expect(applied, isFalse);
+    expect(applied.applied, isFalse);
   });
 }

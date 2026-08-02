@@ -1748,6 +1748,7 @@ class HandshakeOrchestrator {
       initiatorDisplayName: senderContact.displayName,
       details: {
         'linkId': imported.linkId,
+        'vehicleId': imported.vehicleId,
         'vehicleLabel': imported.vehicleLabel,
       },
     );
@@ -1803,8 +1804,9 @@ class HandshakeOrchestrator {
       }
     }
 
-    final applied = await VehicleSharingOfferTransportService(_db)
+    final acceptResult = await VehicleSharingOfferTransportService(_db)
         .importReceivedAccept(acceptJson: decrypted.acceptJson);
+    final applied = acceptResult.applied;
     // Fixed-string logcat needles (qa_wait_for_logcat uses grep -F).
     debugPrint(
       applied
@@ -1817,6 +1819,11 @@ class HandshakeOrchestrator {
         initiatorKind: RelayActivityLogService.initiatorContact,
         initiatorContactId: contact.id,
         initiatorDisplayName: contact.displayName,
+        details: {
+          if (acceptResult.linkId != null) 'linkId': acceptResult.linkId,
+          if (acceptResult.vehicleId != null)
+            'vehicleId': acceptResult.vehicleId,
+        },
       );
       // Tick only after a successful write so UI reload cannot flash stale
       // pending state from an applied=false / no-op path.
@@ -1824,16 +1831,11 @@ class HandshakeOrchestrator {
       if (_ownsDeviceHousingNotifications) {
         String? vehicleLabel;
         try {
-          final root =
-              jsonDecode(decrypted.acceptJson) as Map<String, dynamic>;
-          final linkId = (root['linkId'] as String?)?.trim() ?? '';
-          if (linkId.isNotEmpty) {
-            final link = await VehiclesRepository(_db).getSharingLink(linkId);
-            if (link != null) {
-              final vehicle =
-                  await VehiclesRepository(_db).getVehicle(link.vehicleId);
-              vehicleLabel = vehicle?.displayLabel;
-            }
+          final vehicleId = acceptResult.vehicleId;
+          if (vehicleId != null && vehicleId.isNotEmpty) {
+            final vehicle =
+                await VehiclesRepository(_db).getVehicle(vehicleId);
+            vehicleLabel = vehicle?.displayLabel;
           }
         } catch (_) {
           // best-effort label for notification body
@@ -1982,11 +1984,17 @@ class HandshakeOrchestrator {
         'closed=$closed',
       );
       if (closed) {
+        final root =
+            jsonDecode(decrypted.sessionJson) as Map<String, dynamic>;
+        final vehicleId = (root['vehicleId'] as String?)?.trim() ?? '';
         await RelayActivityLogService(_db).append(
           kind: RelayActivityLogKinds.vehicleUseSessionEndReceived,
           initiatorKind: RelayActivityLogService.initiatorContact,
           initiatorContactId: senderContact.id,
           initiatorDisplayName: senderContact.displayName,
+          details: {
+            if (vehicleId.isNotEmpty) 'vehicleId': vehicleId,
+          },
         );
         steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       }
@@ -4384,6 +4392,7 @@ class HandshakeOrchestrator {
 
     final offerJson =
         await VehicleSharingOfferTransportService(_db).exportOfferJson(linkId);
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
     final selfPriv = await _identity.loadOrCreatePrivateKey();
     final selfPub = await _identity.publicKey();
     final peerPub = RelayRouting.unb64(peerPubB64);
@@ -4421,6 +4430,7 @@ class HandshakeOrchestrator {
       details: {
         'linkId': linkId,
         'borrowerContactId': borrowerContactId,
+        if (link != null) 'vehicleId': link.vehicleId,
       },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
@@ -4481,7 +4491,11 @@ class HandshakeOrchestrator {
     await RelayActivityLogService(_db).append(
       kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
       initiatorKind: RelayActivityLogService.initiatorSelf,
-      details: {'linkId': linkId, 'status': 'accepted'},
+      details: {
+        'linkId': linkId,
+        'vehicleId': link.vehicleId,
+        'status': 'accepted',
+      },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }

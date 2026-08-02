@@ -73,6 +73,10 @@ const kQaVehicleSharingOtherActionsScreen =
 const kQaVehicleSharingOtherActionsFuel =
     'qa-vehicle-sharing-other-actions-fuel';
 
+/// Journals action on the other-actions screen.
+const kQaVehicleSharingOtherActionsJournals =
+    'qa-vehicle-sharing-other-actions-journals';
+
 Widget qaVehicleSharingSemantics({
   required String identifier,
   required Widget child,

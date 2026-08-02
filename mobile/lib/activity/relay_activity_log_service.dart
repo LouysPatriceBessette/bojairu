@@ -53,7 +53,7 @@ class RelayActivityLogService {
   static String emitterFilterDisplayName(String displayName) =>
       'emitter:name:${displayName.toLowerCase()}';
 
-  /// Distinct emitters present in the log (system, self, contacts by name).
+  /// Distinct emitters present in the Settings log (excludes vehicle/sharing).
   Future<List<ActivityLogEmitterFilterOption>> emitterFilterOptions({
     required String selfDisplayName,
     required String allLabel,
@@ -71,6 +71,7 @@ class RelayActivityLogService {
     final namesWithoutId = <String>{};
 
     for (final row in rows) {
+      if (RelayActivityLogKinds.isVehicleRelated(row.kind)) continue;
       switch (row.initiatorKind) {
         case initiatorSystem:
           hasSystem = true;
@@ -168,11 +169,57 @@ class RelayActivityLogService {
       ..limit(limit);
     final rows = await q.get();
     return rows.where((row) {
+      if (RelayActivityLogKinds.isVehicleRelated(row.kind)) return false;
       if (fromUtc != null && row.occurredAt.isBefore(fromUtc)) return false;
       if (toUtc != null && row.occurredAt.isAfter(toUtc)) return false;
       if (!matchesEmitterFilter(row, emitterFilterKey)) return false;
       return true;
     }).toList(growable: false);
+  }
+
+  /// Offer + session events for a vehicle's « Sessions de partage » journal.
+  ///
+  /// Fuel purchase kinds are excluded (they appear under meter/fuel).
+  Future<List<RelayActivityLogEntry>> listVehicleSharingSessionEvents(
+    String vehicleId, {
+    int limit = 500,
+  }) async {
+    final q = _db.select(_db.relayActivityLogEntries)
+      ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)])
+      ..limit(limit * 4);
+    final rows = await q.get();
+    final matched = <RelayActivityLogEntry>[];
+    for (final row in rows) {
+      if (!RelayActivityLogKinds.isSharingSessionJournalKind(row.kind)) {
+        continue;
+      }
+      final resolved = await _resolveVehicleId(row);
+      if (resolved != vehicleId) continue;
+      matched.add(row);
+      if (matched.length >= limit) break;
+    }
+    return matched;
+  }
+
+  Future<String?> _resolveVehicleId(RelayActivityLogEntry row) async {
+    Map<String, dynamic> details;
+    try {
+      final decoded = jsonDecode(row.detailsJson);
+      details = decoded is Map<String, dynamic>
+          ? decoded
+          : Map<String, dynamic>.from(decoded as Map);
+    } catch (_) {
+      return null;
+    }
+    final direct = (details['vehicleId'] as String?)?.trim() ?? '';
+    if (direct.isNotEmpty) return direct;
+
+    final linkId = (details['linkId'] as String?)?.trim() ?? '';
+    if (linkId.isEmpty) return null;
+    final link = await (_db.select(_db.vehicleSharingLinks)
+          ..where((t) => t.id.equals(linkId)))
+        .getSingleOrNull();
+    return link?.vehicleId;
   }
 }
 
@@ -215,4 +262,35 @@ abstract final class RelayActivityLogKinds {
   static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
   static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
   static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
+
+  /// All vehicle/sharing kinds (hidden from Settings event journal).
+  static const Set<String> vehicleRelated = {
+    vehicleSharingOfferSent,
+    vehicleSharingOfferReceived,
+    vehicleSharingOfferResponse,
+    vehicleSharingOfferExpired,
+    vehicleUseSessionStartSent,
+    vehicleUseSessionStartReceived,
+    vehicleUseSessionEndSent,
+    vehicleUseSessionEndReceived,
+    vehicleFuelPurchaseSent,
+    vehicleFuelPurchaseReceived,
+  };
+
+  /// Offer + session kinds shown under vehicle « Sessions de partage ».
+  static const Set<String> sharingSessionJournalKinds = {
+    vehicleSharingOfferSent,
+    vehicleSharingOfferReceived,
+    vehicleSharingOfferResponse,
+    vehicleSharingOfferExpired,
+    vehicleUseSessionStartSent,
+    vehicleUseSessionStartReceived,
+    vehicleUseSessionEndSent,
+    vehicleUseSessionEndReceived,
+  };
+
+  static bool isVehicleRelated(String kind) => vehicleRelated.contains(kind);
+
+  static bool isSharingSessionJournalKind(String kind) =>
+      sharingSessionJournalKinds.contains(kind);
 }

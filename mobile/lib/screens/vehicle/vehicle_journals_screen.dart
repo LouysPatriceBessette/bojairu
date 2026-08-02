@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../activity/relay_activity_log_service.dart';
 import '../../db/app_database.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -10,13 +11,19 @@ import '../../util/display_date.dart';
 import '../../util/display_units.dart';
 import '../../util/format_money.dart';
 import '../../util/vehicle_meter_display.dart';
+import '../../vehicle/sharing/vehicle_sharing_activity_labels.dart';
 import '../../vehicle/vehicle_gap_correction.dart';
 import '../../vehicle/vehicle_kind.dart';
 import '../../vehicle/vehicle_meter_journal_sort.dart';
 import '../../vehicle/vehicle_meter_reading_labels.dart';
 import '../../widgets/screen_body_padding.dart';
 
-enum _VehicleJournalKind { meterAndFuel, maintenance, violation }
+enum _VehicleJournalKind {
+  meterAndFuel,
+  sharingSessions,
+  maintenance,
+  violation,
+}
 
 class VehicleJournalsScreen extends StatefulWidget {
   const VehicleJournalsScreen({
@@ -58,6 +65,10 @@ class _VehicleJournalsScreenState extends State<VehicleJournalsScreen> {
                   child: Text(l10n.vehicleLogMeterFuelTitle),
                 ),
                 DropdownMenuItem(
+                  value: _VehicleJournalKind.sharingSessions,
+                  child: Text(l10n.vehicleLogSharingSessionsTitle),
+                ),
+                DropdownMenuItem(
                   value: _VehicleJournalKind.maintenance,
                   child: Text(l10n.vehicleLogMaintenanceTitle),
                 ),
@@ -76,6 +87,10 @@ class _VehicleJournalsScreenState extends State<VehicleJournalsScreen> {
           Expanded(
             child: switch (_kind) {
               _VehicleJournalKind.meterAndFuel => _MeterFuelJournalList(
+                  vehicleId: widget.vehicleId,
+                  prefs: widget.prefs,
+                ),
+              _VehicleJournalKind.sharingSessions => _SharingSessionsJournalList(
                   vehicleId: widget.vehicleId,
                   prefs: widget.prefs,
                 ),
@@ -296,6 +311,79 @@ class _MeterFuelJournalData {
 
   final bool usesHorometer;
   final List<_MeterFuelJournalRow> rows;
+}
+
+class _SharingSessionsJournalList extends StatelessWidget {
+  const _SharingSessionsJournalList({
+    required this.vehicleId,
+    required this.prefs,
+  });
+
+  final String vehicleId;
+  final AppPreferences prefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return FutureBuilder<List<RelayActivityLogEntry>>(
+      future: RelayActivityLogService(AppDatabase.processScope)
+          .listVehicleSharingSessionEvents(vehicleId),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final rows = snap.data!;
+        if (rows.isEmpty) {
+          return Center(child: Text(l10n.vehicleJournalEmpty));
+        }
+        final dateFmt = effectiveDateFormat(prefs);
+        final bodySmall = Theme.of(context).textTheme.bodySmall;
+        return ListView.separated(
+          padding: screenBodyScrollPadding(context),
+          itemCount: rows.length,
+          separatorBuilder: (context, index) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final row = rows[index];
+            return ListTile(
+              title: Text(vehicleSharingActivityKindLabel(l10n, row.kind)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_emitterLabel(l10n, row)),
+                  Text(
+                    formatPreferenceDateTime(row.occurredAt, dateFmt),
+                    style: bodySmall,
+                  ),
+                ],
+              ),
+              isThreeLine: true,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _emitterLabel(AppLocalizations l10n, RelayActivityLogEntry row) {
+    return switch (row.initiatorKind) {
+      RelayActivityLogService.initiatorSelf =>
+        row.initiatorDisplayName.trim().isNotEmpty
+            ? row.initiatorDisplayName.trim()
+            : (prefs.displayName.trim().isNotEmpty
+                ? prefs.displayName.trim()
+                : l10n.activityLogFilterInitiatorSelf),
+      RelayActivityLogService.initiatorSystem =>
+        l10n.activityLogFilterEmitterSystem,
+      RelayActivityLogService.initiatorContact =>
+        row.initiatorDisplayName.trim().isNotEmpty
+            ? row.initiatorDisplayName.trim()
+            : (row.initiatorContactId ??
+                l10n.activityLogFilterInitiatorContact),
+      _ => row.initiatorDisplayName.trim().isNotEmpty
+          ? row.initiatorDisplayName.trim()
+          : row.initiatorKind,
+    };
+  }
 }
 
 class _MaintenanceJournalList extends StatelessWidget {

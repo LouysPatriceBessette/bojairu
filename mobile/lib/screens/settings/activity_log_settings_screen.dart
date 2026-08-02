@@ -113,14 +113,6 @@ class _ActivityLogSettingsScreenState extends State<ActivityLogSettingsScreen> {
           l10n.activityLogKindHousingProposalAgreementExpired,
         RelayActivityLogKinds.housingParticipationChangeAgreementExpired =>
           l10n.activityLogKindHousingParticipationChangeAgreementExpired,
-        RelayActivityLogKinds.vehicleSharingOfferSent =>
-          l10n.activityLogKindVehicleSharingOfferSent,
-        RelayActivityLogKinds.vehicleSharingOfferReceived =>
-          l10n.activityLogKindVehicleSharingOfferReceived,
-        RelayActivityLogKinds.vehicleSharingOfferResponse =>
-          l10n.activityLogKindVehicleSharingOfferResponse,
-        RelayActivityLogKinds.vehicleSharingOfferExpired =>
-          l10n.activityLogKindVehicleSharingOfferExpired,
         _ => kind,
       };
 

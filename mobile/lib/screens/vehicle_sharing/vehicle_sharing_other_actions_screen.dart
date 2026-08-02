@@ -48,6 +48,21 @@ class VehicleSharingOtherActionsScreen extends StatelessWidget {
               '/vehicle-sharing/$vehicleId/fuel?borrower=$borrower',
             ),
           ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: qaVehicleSharingSemantics(
+              identifier: kQaVehicleSharingOtherActionsJournals,
+              button: true,
+              onTap: () => context.push(
+                '/vehicle-sharing/$vehicleId/journals',
+              ),
+              child: Text(l10n.vehicleJournalsTitle),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(
+              '/vehicle-sharing/$vehicleId/journals',
+            ),
+          ),
         ],
       ),
     );

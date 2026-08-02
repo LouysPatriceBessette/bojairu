@@ -3209,6 +3209,30 @@ abstract class AppLocalizations {
   /// **'Vehicle sharing offer expired'**
   String get activityLogKindVehicleSharingOfferExpired;
 
+  /// No description provided for @activityLogKindVehicleUseSessionStartSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing session start sent'**
+  String get activityLogKindVehicleUseSessionStartSent;
+
+  /// No description provided for @activityLogKindVehicleUseSessionStartReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing session start received'**
+  String get activityLogKindVehicleUseSessionStartReceived;
+
+  /// No description provided for @activityLogKindVehicleUseSessionEndSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing session end sent'**
+  String get activityLogKindVehicleUseSessionEndSent;
+
+  /// No description provided for @activityLogKindVehicleUseSessionEndReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing session end received'**
+  String get activityLogKindVehicleUseSessionEndReceived;
+
   /// No description provided for @housingInvitePlanActivating.
   ///
   /// In en, this message translates to:
@@ -6588,6 +6612,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Odometer and fuel'**
   String get vehicleLogMeterFuelTitle;
+
+  /// No description provided for @vehicleLogSharingSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing sessions'**
+  String get vehicleLogSharingSessionsTitle;
 
   /// No description provided for @vehicleLogMeterDetailTitle.
   ///

@@ -1883,6 +1883,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oferta de compartición de vehículo caducada';
 
   @override
+  String get activityLogKindVehicleUseSessionStartSent =>
+      'Inicio de sesión de compartición enviado';
+
+  @override
+  String get activityLogKindVehicleUseSessionStartReceived =>
+      'Inicio de sesión de compartición recibido';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndSent =>
+      'Fin de sesión de compartición enviada';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndReceived =>
+      'Fin de sesión de compartición recibida';
+
+  @override
   String get housingInvitePlanActivating =>
       'Todos los participantes han aceptado. Activando el acuerdo…';
 
@@ -3979,6 +3995,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vehicleLogMeterFuelTitle => 'Odómetro y combustible';
+
+  @override
+  String get vehicleLogSharingSessionsTitle => 'Sesiones de compartición';
 
   @override
   String get vehicleLogMeterDetailTitle => 'Detalle de la lectura';

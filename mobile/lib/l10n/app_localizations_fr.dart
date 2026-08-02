@@ -1881,6 +1881,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Offre de partage véhicule expirée';
 
   @override
+  String get activityLogKindVehicleUseSessionStartSent =>
+      'Début de session de partage envoyé';
+
+  @override
+  String get activityLogKindVehicleUseSessionStartReceived =>
+      'Début de session de partage reçu';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndSent =>
+      'Fin de session de partage envoyée';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndReceived =>
+      'Fin de session de partage reçue';
+
+  @override
   String get housingInvitePlanActivating =>
       'Tous les participants ont accepté. Activation de l\'entente…';
 
@@ -3976,6 +3992,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vehicleLogMeterFuelTitle => 'Odomètre et carburant';
+
+  @override
+  String get vehicleLogSharingSessionsTitle => 'Sessions de partage';
 
   @override
   String get vehicleLogMeterDetailTitle => 'Détail du relevé';

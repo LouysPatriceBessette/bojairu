@@ -689,6 +689,13 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
             },
           ),
           GoRoute(
+            path: ':vehicleId/journals',
+            builder: (context, state) => VehicleJournalsScreen(
+              vehicleId: state.pathParameters['vehicleId']!,
+              prefs: prefs,
+            ),
+          ),
+          GoRoute(
             path: ':vehicleId/use',
             builder: (context, state) {
               final borrower = state.uri.queryParameters['borrower'] ?? '';

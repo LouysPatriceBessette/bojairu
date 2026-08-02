@@ -1,5 +1,6 @@
 import 'package:compartarenta/activity/relay_activity_log_service.dart';
 import 'package:compartarenta/db/app_database.dart';
+import 'package:compartarenta/vehicle/vehicle_owner_contact.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -118,5 +119,101 @@ void main() {
     expect(rows.single.kind, RelayActivityLogKinds.contactDeleted);
     expect(rows.single.initiatorKind, RelayActivityLogService.initiatorSelf);
     expect(rows.single.initiatorDisplayName, 'Monica');
+  });
+
+  test('listFiltered excludes vehicle-related kinds', () async {
+    final service = RelayActivityLogService(db);
+    await service.append(
+      kind: RelayActivityLogKinds.contactDeleted,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+    );
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'vehicleId': 'vehicle:1'},
+    );
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleFuelPurchaseReceived,
+      initiatorKind: RelayActivityLogService.initiatorContact,
+      initiatorContactId: 'c1',
+      details: {'vehicleId': 'vehicle:1'},
+    );
+
+    final rows = await service.listFiltered();
+    expect(rows, hasLength(1));
+    expect(rows.single.kind, RelayActivityLogKinds.contactDeleted);
+  });
+
+  test('listVehicleSharingSessionEvents filters by vehicleId', () async {
+    final service = RelayActivityLogService(db);
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'vehicleId': 'vehicle:a', 'linkId': 'link:a'},
+    );
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleUseSessionStartReceived,
+      initiatorKind: RelayActivityLogService.initiatorContact,
+      initiatorContactId: 'c1',
+      details: {'vehicleId': 'vehicle:b'},
+    );
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleFuelPurchaseSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'vehicleId': 'vehicle:a'},
+    );
+    await service.append(
+      kind: RelayActivityLogKinds.contactDeleted,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+    );
+
+    final forA = await service.listVehicleSharingSessionEvents('vehicle:a');
+    expect(forA, hasLength(1));
+    expect(forA.single.kind, RelayActivityLogKinds.vehicleSharingOfferSent);
+
+    final forB = await service.listVehicleSharingSessionEvents('vehicle:b');
+    expect(forB, hasLength(1));
+    expect(
+      forB.single.kind,
+      RelayActivityLogKinds.vehicleUseSessionStartReceived,
+    );
+  });
+
+  test('listVehicleSharingSessionEvents resolves vehicleId via linkId',
+      () async {
+    final now = DateTime.utc(2026, 8, 1);
+    await db.into(db.vehicles).insert(
+          VehiclesCompanion.insert(
+            id: 'vehicle:via-link',
+            ownerContactId: kVehicleOwnerSelfContactId,
+            vehicleKind: 'car',
+            displayLabel: 'Via Link',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    await db.into(db.vehicleSharingLinks).insert(
+          VehicleSharingLinksCompanion.insert(
+            id: 'link:resolve',
+            vehicleId: 'vehicle:via-link',
+            borrowerContactId: 'contact:b',
+            ownerContactId: kVehicleOwnerSelfContactId,
+            status: 'pending',
+            createdAt: now,
+          ),
+        );
+
+    final service = RelayActivityLogService(db);
+    await service.append(
+      kind: RelayActivityLogKinds.vehicleSharingOfferReceived,
+      initiatorKind: RelayActivityLogService.initiatorContact,
+      initiatorContactId: 'contact:owner',
+      details: {'linkId': 'link:resolve'},
+    );
+
+    final rows =
+        await service.listVehicleSharingSessionEvents('vehicle:via-link');
+    expect(rows, hasLength(1));
+    expect(rows.single.kind, RelayActivityLogKinds.vehicleSharingOfferReceived);
   });
 }
