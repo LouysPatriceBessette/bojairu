@@ -49,6 +49,8 @@ void main() {
     required int meterTenths,
     required String remoteUseId,
     String endedAt = '2026-08-01T20:00:00.000Z',
+    bool isFullTank = false,
+    int? tankFillFraction,
   }) =>
       jsonEncode({
         'kind': VehicleUseSessionTransportService.endKind,
@@ -58,6 +60,8 @@ void main() {
         'endedAt': endedAt,
         'meterTenths': meterTenths,
         'unit': 'odometer_km',
+        'isFullTank': isFullTank,
+        'tankFillFraction': ?tankFillFraction,
         'photoBase64': null,
         'photoIsSentinel': true,
       });
@@ -141,11 +145,66 @@ void main() {
     expect(await repo.openUseForVehicle(vehicleId), isNotNull);
 
     final closed = await transport.importReceivedSessionEnd(
-      sessionJson: endPayload(meterTenths: 120400, remoteUseId: 'use:remote-3'),
+      sessionJson: endPayload(
+        meterTenths: 120400,
+        remoteUseId: 'use:remote-3',
+        tankFillFraction: 87,
+      ),
       borrowerContactId: borrowerContactId,
     );
     expect(closed, isTrue);
     expect(await repo.openUseForVehicle(vehicleId), isNull);
+
+    final endReadings = await db.select(db.vehicleMeterReadings).get();
+    final end = endReadings.where((r) => r.readingRole == 'sessionEnd').single;
+    expect(end.isFullTank, isFalse);
+    expect(end.tankFillFraction, 87);
+  });
+
+  test('export end json includes tank fill state', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    await seedOwnedVehicle(db);
+    final transport = VehicleUseSessionTransportService(db);
+    final repo = VehiclesRepository(db);
+
+    final start = await repo.saveMeterReading(
+      vehicleId: vehicleId,
+      value: 120000,
+      unit: 'odometer_km',
+      photoPath: kVehicleMeterPhotoKnownUnchangedSentinel,
+      recordedByContactId: borrowerContactId,
+      role: MeterReadingRole.sessionStart,
+      isFullTank: true,
+      recordedAt: DateTime.utc(2026, 8, 1, 10),
+    );
+    final use = await repo.openUseSession(
+      vehicleId: vehicleId,
+      attributedContactId: borrowerContactId,
+      startReadingId: start.id,
+    );
+    final end = await repo.saveMeterReading(
+      vehicleId: vehicleId,
+      value: 120400,
+      unit: 'odometer_km',
+      photoPath: kVehicleMeterPhotoKnownUnchangedSentinel,
+      recordedByContactId: borrowerContactId,
+      role: MeterReadingRole.sessionEnd,
+      vehicleUseId: use.id,
+      isFullTank: false,
+      tankFillFraction: 87,
+      recordedAt: DateTime.utc(2026, 8, 1, 12),
+    );
+
+    final json = await transport.exportSessionEndJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteUseId: use.id,
+      endReadingId: end.id,
+    );
+    final root = jsonDecode(json) as Map<String, dynamic>;
+    expect(root['isFullTank'], isFalse);
+    expect(root['tankFillFraction'], 87);
   });
 
   test('import end returns false when open session belongs to another actor',

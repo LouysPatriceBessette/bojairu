@@ -213,4 +213,6 @@ abstract final class RelayActivityLogKinds {
       'vehicle_use_session_start_received';
   static const vehicleUseSessionEndSent = 'vehicle_use_session_end_sent';
   static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
+  static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
+  static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
 }

@@ -2061,6 +2061,7 @@
   "vehicleSharingOtherActions": "Other actions",
   "vehicleSharingOtherActionsTitle": "Other actions",
   "vehicleSharingSessionRelayFailed": "Session saved here, but sending to the owner failed. Try again later.",
+  "vehicleSharingFuelRelayFailed": "Purchase saved here, but sending to the owner failed. Try again later.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "This vehicle is yours. Use the Vehicle module to record owner usage — not Vehicle sharing.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "This vehicle is not in your owned list. Use Vehicle sharing for a vehicle shared with you.",

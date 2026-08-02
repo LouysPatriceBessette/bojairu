@@ -182,7 +182,7 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
 
   Future<void> _load() async {
     final repo = VehiclesRepository(AppDatabase.processScope);
-    final vehicles = await loadOwnedVehiclesForForms();
+    final vehicles = await loadVehiclesForUsageForms(widget.usageContext);
     final globalOpen = await repo.findAnyOpenUse();
     final selectedId = widget.initialVehicleId?.isNotEmpty == true
         ? widget.initialVehicleId
@@ -204,6 +204,14 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     VehicleUse? open;
     if (denial == null && v != null) {
       open = await repo.openUseForVehicle(v.id);
+      // Propriétaire (or any actor) may only end a session attributed to them.
+      // A peer/borrower open use must leave this form in "start" mode.
+      if (!canEndUseSessionAsActor(
+        openUse: open,
+        context: widget.usageContext,
+      )) {
+        open = null;
+      }
     }
     final endingSession = open != null;
     int? baselineMeter;
@@ -290,7 +298,14 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     setState(() => _saving = true);
     final repo = VehiclesRepository(AppDatabase.processScope);
     try {
-      final openUse = await repo.openUseForVehicle(v.id);
+      final existingOpen = await repo.openUseForVehicle(v.id);
+      final ending = canEndUseSessionAsActor(
+        openUse: existingOpen,
+        context: widget.usageContext,
+      );
+      // Only the attributed actor may end; otherwise this submit is a start.
+      final openUse = ending ? existingOpen : null;
+      final blockingOpenUse = !ending ? existingOpen : null;
       if (!mounted) return;
       // Starting a session (or ending one with other writes) confirms import.
       final ok = await confirmSaleImportCommitmentIfNeeded(
@@ -328,6 +343,8 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       }
 
       if (!mounted) return;
+      // Peer open use absorbs the meter advance when we close it in good faith;
+      // do not create a separate "unknown" positive gap for that span.
       final gapResult = await confirmMeterGapsBeforeSave(
         context: context,
         l10n: l10n,
@@ -338,20 +355,21 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         isOwnerContext: widget.usageContext.isOwner,
         usesHorometer: usesHorometer,
         distanceUnit: distanceUnit,
-        attributePositiveGap: openUse == null,
+        attributePositiveGap: openUse == null && blockingOpenUse == null,
       );
       if (!gapResult.proceed) {
         return;
       }
 
-      if (openUse != null) {
+      if (openUse != null || blockingOpenUse != null) {
+        final sessionToClose = openUse ?? blockingOpenUse!;
         final startReading =
-            await repo.getMeterReading(openUse.startReadingId);
+            await repo.getMeterReading(sessionToClose.startReadingId);
         if (startReading == null) {
           return;
         }
         final fuelDuringSession =
-            await repo.fuelLitersPurchasedDuringOpenUse(openUse);
+            await repo.fuelLitersPurchasedDuringOpenUse(sessionToClose);
         if (!mounted) return;
         final distanceOk = await confirmSuspiciousSessionEndDistanceBeforeSave(
           context: context,
@@ -385,6 +403,46 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         }
       }
 
+      // Good faith: owner's trusted start reading closes a peer/borrower session
+      // that was left open, then opens the owner's own session.
+      if (blockingOpenUse != null) {
+        final endReading = await repo.saveMeterReading(
+          vehicleId: v.id,
+          value: parsed,
+          unit: unit,
+          photoPath: photoPath,
+          recordedByContactId: actingId,
+          role: MeterReadingRole.sessionEnd,
+          vehicleUseId: blockingOpenUse.id,
+          negativeGapAcknowledged: latest != null && parsed < latest,
+        );
+        await repo.closeUseSession(
+          useId: blockingOpenUse.id,
+          endReadingId: endReading.id,
+        );
+        final startReading = await repo.saveMeterReading(
+          vehicleId: v.id,
+          value: parsed,
+          unit: unit,
+          photoPath: photoPath,
+          recordedByContactId: actingId,
+          role: MeterReadingRole.sessionStart,
+          isFullTank: _fullTank,
+          tankFillFraction: _fullTank ? null : _tankFillLevel.percent,
+        );
+        await repo.openUseSession(
+          vehicleId: v.id,
+          attributedContactId: actingId,
+          startReadingId: startReading.id,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleUseSessionStarted)),
+        );
+        context.pop();
+        return;
+      }
+
       DateTime? readingRecordedAt;
       VehicleOdometerGap? pendingGap;
       VehicleMeterReading? previousReading;
@@ -405,6 +463,7 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
             correctionContext: openUse == null
                 ? GapCorrectionContext.sessionStart
                 : GapCorrectionContext.sessionEnd,
+            vehicleUseId: openUse?.id,
             correctionRecordedAt: gapRecordedAt,
           );
           pendingGap = persisted.gap;
@@ -423,8 +482,8 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
             : MeterReadingRole.sessionEnd,
         vehicleUseId: openUse?.id,
         negativeGapAcknowledged: latest != null && parsed < latest,
-        isFullTank: _openUse == null ? _fullTank : false,
-        tankFillFraction: _openUse == null && _fullTank
+        isFullTank: openUse == null ? _fullTank : false,
+        tankFillFraction: openUse == null && _fullTank
             ? null
             : _tankFillLevel.percent,
         recordedAt: readingRecordedAt,
@@ -631,22 +690,15 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
                   : ListView(
                       padding: screenBodyScrollPadding(context),
                       children: [
-                        if (_openUse == null)
-                          VehicleFormVehicleSelector(
-                            vehicles: _vehicles,
-                            selectedId: _selectedVehicleId,
-                            onSelected: _onVehicleSelected,
-                          )
-                        else
-                          InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: l10n.vehicleFormVehicleLabel,
-                            ),
-                            child: Text(
-                              v.displayLabel,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
+                        VehicleFormVehicleSelector(
+                          vehicles: _vehicles,
+                          selectedId: _selectedVehicleId,
+                          onSelected: _onVehicleSelected,
+                          fixedDisplayLabel:
+                              _openUse != null || widget.usageContext.isBorrower
+                                  ? v.displayLabel
+                                  : null,
+                        ),
                         const SizedBox(height: 16),
                         VehicleTankFillFields(
                           fullTank: _fullTank,

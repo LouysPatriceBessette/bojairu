@@ -7533,6 +7533,12 @@ abstract class AppLocalizations {
   /// **'Session saved here, but sending to the owner failed. Try again later.'**
   String get vehicleSharingSessionRelayFailed;
 
+  /// No description provided for @vehicleSharingFuelRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase saved here, but sending to the owner failed. Try again later.'**
+  String get vehicleSharingFuelRelayFailed;
+
   /// No description provided for @vehicleUsageBlockedOwnOnBorrowerPath.
   ///
   /// In en, this message translates to:

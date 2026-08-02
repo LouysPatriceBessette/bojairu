@@ -30,6 +30,7 @@ class EnvelopeKind {
   static const int vehicleSharingOfferAccept = 17;
   static const int vehicleUseSessionStart = 18;
   static const int vehicleUseSessionEnd = 19;
+  static const int vehicleFuelPurchase = 20;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -305,6 +306,17 @@ class VehicleUseSessionEndEnvelope {
   final String sessionJson;
 }
 
+/// Steady-state borrower fuel purchase (Emprunteur → Propriétaire).
+class VehicleFuelPurchaseEnvelope {
+  VehicleFuelPurchaseEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.purchaseJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String purchaseJson;
+}
+
 // ---------- HKDF info strings ----------
 
 const String _helloAeadInfo = 'compartarenta/handshake-v1/hello-aead';
@@ -340,6 +352,8 @@ const String _vehicleUseSessionStartAeadInfo =
     'compartarenta/steady-v1/vehicle-use-session-start-aead';
 const String _vehicleUseSessionEndAeadInfo =
     'compartarenta/steady-v1/vehicle-use-session-end-aead';
+const String _vehicleFuelPurchaseAeadInfo =
+    'compartarenta/steady-v1/vehicle-fuel-purchase-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -1640,6 +1654,72 @@ class EnvelopeCodec {
     return VehicleUseSessionEndEnvelope(
       senderLongTermPublicKey: senderPub,
       sessionJson: (json['session_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle fuel purchase envelope.
+  static Future<Uint8List> encryptVehicleFuelPurchase({
+    required VehicleFuelPurchaseEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleFuelPurchaseAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleFuelPurchase,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'purchase_json': envelope.purchaseJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle fuel purchase envelope.
+  static Future<VehicleFuelPurchaseEnvelope> decryptVehicleFuelPurchase({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleFuelPurchase);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleFuelPurchaseAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleFuelPurchaseEnvelope(
+      senderLongTermPublicKey: senderPub,
+      purchaseJson: (json['purchase_json'] as String?) ?? '{}',
     );
   }
 }

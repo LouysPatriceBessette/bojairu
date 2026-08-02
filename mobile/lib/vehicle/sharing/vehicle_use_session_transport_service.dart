@@ -92,6 +92,8 @@ class VehicleUseSessionTransportService {
       'endedAt': reading.recordedAt.toUtc().toIso8601String(),
       'meterTenths': reading.value,
       'unit': reading.unit,
+      'isFullTank': reading.isFullTank,
+      'tankFillFraction': reading.tankFillFraction,
       'photoBase64': photoB64,
       'photoIsSentinel': isKnownUnchangedMeterPhotoPath(reading.photoPath),
       'drivingRoutePercent': ?drivingRoutePercent,
@@ -264,6 +266,8 @@ class VehicleUseSessionTransportService {
     final unit = (root['unit'] as String?)?.trim().isNotEmpty == true
         ? (root['unit'] as String).trim()
         : _vehicles.meterUnitForVehicle(vehicle);
+    final isFullTank = root['isFullTank'] as bool?;
+    final tankFillFraction = root['tankFillFraction'] as int?;
 
     final endReading = await _vehicles.saveMeterReading(
       vehicleId: vehicleId,
@@ -273,6 +277,8 @@ class VehicleUseSessionTransportService {
       recordedByContactId: borrowerContactId,
       role: MeterReadingRole.sessionEnd,
       vehicleUseId: openUse.id,
+      isFullTank: isFullTank,
+      tankFillFraction: tankFillFraction,
       recordedAt: endedAt,
     );
     await _vehicles.closeUseSession(

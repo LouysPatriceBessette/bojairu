@@ -41,6 +41,7 @@ import '../notifications/push_notification_service.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
 import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
+import '../vehicle/sharing/vehicle_fuel_purchase_transport_service.dart';
 import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
 import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
@@ -1290,6 +1291,14 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleFuelPurchase) {
+            await _handleInboundVehicleFuelPurchase(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else {
             await _relay.ackEnvelope(
               envelopeId: env.envelopeId,
@@ -1984,6 +1993,79 @@ class HandshakeOrchestrator {
     } catch (e, st) {
       debugPrint(
         'vehicle_use_session_end import failed for ${senderContact.id}: $e\n$st',
+      );
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _handleInboundVehicleFuelPurchase({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleFuelPurchaseEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleFuelPurchase(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_fuel_purchase decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final imported =
+          await VehicleFuelPurchaseTransportService(_db).importReceivedPurchase(
+        purchaseJson: decrypted.purchaseJson,
+        borrowerContactId: senderContact.id,
+      );
+      debugPrint(
+        'vehicle_fuel_purchase imported from ${senderContact.id} '
+        'vehicle=${imported.vehicleId} purchase=${imported.id}',
+      );
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleFuelPurchaseReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: senderContact.id,
+        initiatorDisplayName: senderContact.displayName,
+        details: {
+          'vehicleId': imported.vehicleId,
+          'purchaseId': imported.id,
+          if (imported.meterReadingValue != null)
+            'meterTenths': imported.meterReadingValue,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_fuel_purchase import failed for ${senderContact.id}: $e\n$st',
       );
     }
     await _relay.ackEnvelope(
@@ -4470,6 +4552,75 @@ class HandshakeOrchestrator {
         'linkId': linkId,
         'vehicleId': vehicleId,
         'remoteUseId': remoteUseId,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts encrypted borrower fuel purchase facts to the Propriétaire.
+  Future<void> sendVehicleFuelPurchase({
+    required String linkId,
+    required String vehicleId,
+    required String remotePurchaseId,
+  }) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final purchaseJson =
+        await VehicleFuelPurchaseTransportService(_db).exportPurchaseJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remotePurchaseId: remotePurchaseId,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleFuelPurchase(
+      envelope: VehicleFuelPurchaseEnvelope(
+        senderLongTermPublicKey: selfPub,
+        purchaseJson: purchaseJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleFuelPurchase,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleFuelPurchaseSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remotePurchaseId': remotePurchaseId,
       },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;

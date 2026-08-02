@@ -4528,6 +4528,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sesión guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.';
 
   @override
+  String get vehicleSharingFuelRelayFailed =>
+      'Compra guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.';
+
+  @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>
       'Este vehículo es suyo. Use el módulo Vehículo para registrar su uso — no Uso compartido.';
 

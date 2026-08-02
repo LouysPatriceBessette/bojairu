@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +9,8 @@ import '../../db/app_database.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
+import '../../relay/relay_client.dart';
 import '../../util/display_units.dart';
 import '../../util/format_money.dart';
 import '../../util/vehicle_meter_display.dart';
@@ -79,7 +83,7 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
   void _refresh() => setState(() {});
 
   Future<void> _load() async {
-    final vehicles = await loadOwnedVehiclesForForms();
+    final vehicles = await loadVehiclesForUsageForms(widget.usageContext);
     final selectedId = widget.initialVehicleId?.isNotEmpty == true
         ? widget.initialVehicleId
         : vehicles.firstOrNull?.id;
@@ -184,7 +188,7 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
       final photoPath = qaE2eEffectiveMeterPhotoPath(_photoPath);
       if (photoPath == null) return;
 
-      await repo.saveFuelPurchase(
+      final purchase = await repo.saveFuelPurchase(
         vehicleId: vehicleId,
         purchasedAt: DateTime.now().toUtc(),
         costMinor: (costMajor * 100).round(),
@@ -202,13 +206,61 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
 
       if (!mounted) return;
       if (widget.usageContext.forwardsToOwner) {
+        final relayOk = await _forwardFuelPurchaseToOwner(
+          vehicleId: vehicleId,
+          remotePurchaseId: purchase.id,
+        );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.vehicleSharingForwarded)),
+          SnackBar(
+            content: Text(
+              relayOk
+                  ? l10n.vehicleSharingForwarded
+                  : l10n.vehicleSharingFuelRelayFailed,
+            ),
+          ),
         );
       }
       context.pop();
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<String?> _activeBorrowerLinkId(String vehicleId) async {
+    final links = await VehiclesRepository(AppDatabase.processScope)
+        .listSharingLinksForVehicle(vehicleId);
+    for (final link in links) {
+      if (link.status == VehicleSharingLinkStatus.active.wire) {
+        return link.id;
+      }
+    }
+    return null;
+  }
+
+  Future<bool> _forwardFuelPurchaseToOwner({
+    required String vehicleId,
+    required String remotePurchaseId,
+  }) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return false;
+    final linkId = await _activeBorrowerLinkId(vehicleId);
+    if (linkId == null) return false;
+    try {
+      await orch.sendVehicleFuelPurchase(
+        linkId: linkId,
+        vehicleId: vehicleId,
+        remotePurchaseId: remotePurchaseId,
+      );
+      return true;
+    } on HandshakeOrchestratorError {
+      return false;
+    } on RelayClientError {
+      return false;
+    } on RelayUnreachableException {
+      return false;
+    } on TimeoutException {
+      return false;
     }
   }
 
@@ -239,6 +291,9 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
                       vehicles: _vehicles,
                       selectedId: _selectedVehicleId,
                       onSelected: _onVehicleSelected,
+                      fixedDisplayLabel: widget.usageContext.isBorrower
+                          ? _selectedVehicle?.displayLabel
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     qaVehicleSemantics(

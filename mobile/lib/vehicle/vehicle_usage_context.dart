@@ -45,6 +45,18 @@ class VehicleUsageContext {
 bool vehicleIsOwnedBySelf(Vehicle vehicle) =>
     vehicle.ownerContactId == kVehicleOwnerSelfContactId;
 
+/// Whether [openUse] may be ended by the actor in [context].
+///
+/// A Propriétaire must not end an Emprunteur's open session (and vice versa):
+/// only the attributed actor may close that use.
+bool canEndUseSessionAsActor({
+  required VehicleUse? openUse,
+  required VehicleUsageContext context,
+}) {
+  if (openUse == null) return false;
+  return openUse.attributedContactId == context.actingContactId;
+}
+
 VehicleUsageAccessDenial? denyVehicleUsageAccess({
   required Vehicle? vehicle,
   required VehicleUsageContext context,

@@ -24,6 +24,7 @@ import '../../vehicle/vehicle_maintenance_alerts.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../vehicle/vehicle_module_exit.dart';
 import '../../vehicle/vehicle_owned_active_cap.dart';
+import '../../vehicle/vehicle_usage_context.dart';
 import '../../widgets/screen_body_padding.dart';
 
 class VehicleModuleHubScreen extends StatefulWidget {
@@ -53,11 +54,19 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
 
   Future<void> _reload() async {
     final vehicles = await _repo.listOwnedVehicles();
-    final openUse = await _repo.findAnyOpenUse();
+    final anyOpen = await _repo.findAnyOpenUse();
+    // Propriétaire hub: only an open use attributed to self is "mine to end".
+    // An Emprunteur session must not switch the chip to Terminer.
+    final ownOpen = canEndUseSessionAsActor(
+      openUse: anyOpen,
+      context: const VehicleUsageContext.owner(),
+    )
+        ? anyOpen
+        : null;
     if (!mounted) return;
     setState(() {
       _vehicles = vehicles;
-      _openUse = openUse;
+      _openUse = ownOpen;
       _loading = false;
       _cardReloadToken++;
     });

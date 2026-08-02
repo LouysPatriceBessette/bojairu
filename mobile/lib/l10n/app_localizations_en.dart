@@ -4478,6 +4478,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Session saved here, but sending to the owner failed. Try again later.';
 
   @override
+  String get vehicleSharingFuelRelayFailed =>
+      'Purchase saved here, but sending to the owner failed. Try again later.';
+
+  @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>
       'This vehicle is yours. Use the Vehicle module to record owner usage — not Vehicle sharing.';
 

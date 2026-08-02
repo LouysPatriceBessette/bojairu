@@ -1867,6 +1867,7 @@
   "vehicleSharingOtherActions": "Autres actions",
   "vehicleSharingOtherActionsTitle": "Autres actions",
   "vehicleSharingSessionRelayFailed": "Session enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
+  "vehicleSharingFuelRelayFailed": "Achat enregistré ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "Ce véhicule est le vôtre. Utilisez le module Véhicule pour enregistrer votre usage — pas Partage de véhicule.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "Ce véhicule n'est pas dans vos véhicules possédés. Utilisez Partage de véhicule pour un véhicule partagé avec vous.",

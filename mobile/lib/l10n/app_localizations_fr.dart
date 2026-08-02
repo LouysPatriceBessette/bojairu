@@ -4527,6 +4527,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Session enregistrée ici, mais l\'envoi au propriétaire a échoué. Réessayez plus tard.';
 
   @override
+  String get vehicleSharingFuelRelayFailed =>
+      'Achat enregistré ici, mais l\'envoi au propriétaire a échoué. Réessayez plus tard.';
+
+  @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>
       'Ce véhicule est le vôtre. Utilisez le module Véhicule pour enregistrer votre usage — pas Partage de véhicule.';
 
