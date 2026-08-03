@@ -84,6 +84,10 @@ class PushNotificationService {
   static const String _vehicleSharingOfferAcceptTapPayload =
       'vehicle_sharing_offer_accept';
   static const String _vehicleSessionGapTapPrefix = 'vehicle_session_gap|';
+  static const String _vehicleDetailTapPrefix = 'vehicle_detail|';
+  static const String _vehicleMaintenanceTapPrefix = 'vehicle_maintenance|';
+  static const String _vehicleTrafficViolationTapPrefix =
+      'vehicle_traffic_violation|';
 
   static const List<String> _housingKinds = <String>[
     'housing_proposal',
@@ -202,6 +206,50 @@ class PushNotificationService {
         );
       } else if (vehicleId.isNotEmpty) {
         _navigateToVehiclePendingCorrections(vehicleId);
+      } else {
+        _navigateToVehicleSharing();
+      }
+      return;
+    }
+    if (payload.startsWith(_vehicleMaintenanceTapPrefix)) {
+      final rest = payload.substring(_vehicleMaintenanceTapPrefix.length);
+      final parts = rest.split('|');
+      final vehicleId = parts.isNotEmpty ? parts[0].trim() : '';
+      final eventId = parts.length >= 2 ? parts[1].trim() : '';
+      if (vehicleId.isNotEmpty && eventId.isNotEmpty) {
+        _navigateToVehicleMaintenanceDetail(
+          vehicleId: vehicleId,
+          eventId: eventId,
+        );
+      } else if (vehicleId.isNotEmpty) {
+        _navigateToVehicleDetail(vehicleId);
+      } else {
+        _navigateToVehicleSharing();
+      }
+      return;
+    }
+    if (payload.startsWith(_vehicleTrafficViolationTapPrefix)) {
+      final rest =
+          payload.substring(_vehicleTrafficViolationTapPrefix.length);
+      final parts = rest.split('|');
+      final vehicleId = parts.isNotEmpty ? parts[0].trim() : '';
+      final violationId = parts.length >= 2 ? parts[1].trim() : '';
+      if (vehicleId.isNotEmpty && violationId.isNotEmpty) {
+        _navigateToVehicleViolationDetail(
+          vehicleId: vehicleId,
+          violationId: violationId,
+        );
+      } else if (vehicleId.isNotEmpty) {
+        _navigateToVehicleDetail(vehicleId);
+      } else {
+        _navigateToVehicleSharing();
+      }
+      return;
+    }
+    if (payload.startsWith(_vehicleDetailTapPrefix)) {
+      final vehicleId = payload.substring(_vehicleDetailTapPrefix.length).trim();
+      if (vehicleId.isNotEmpty) {
+        _navigateToVehicleDetail(vehicleId);
       } else {
         _navigateToVehicleSharing();
       }
@@ -1268,6 +1316,64 @@ class PushNotificationService {
     );
   }
 
+  static void _navigateToVehicleDetail(String vehicleId) {
+    pushFromNotificationTapWhenReady('/vehicle/$vehicleId');
+  }
+
+  /// Payload / route for owner tap on borrower maintenance notification.
+  @visibleForTesting
+  static String vehicleMaintenanceTapPayload({
+    required String vehicleId,
+    required String eventId,
+  }) =>
+      '$_vehicleMaintenanceTapPrefix$vehicleId|$eventId';
+
+  @visibleForTesting
+  static String vehicleMaintenanceJournalLocation({
+    required String vehicleId,
+    required String eventId,
+  }) =>
+      '/vehicle/$vehicleId/maintenance-log/$eventId';
+
+  /// Payload / route for owner tap on borrower traffic-violation notification.
+  @visibleForTesting
+  static String vehicleTrafficViolationTapPayload({
+    required String vehicleId,
+    required String violationId,
+  }) =>
+      '$_vehicleTrafficViolationTapPrefix$vehicleId|$violationId';
+
+  @visibleForTesting
+  static String vehicleTrafficViolationJournalLocation({
+    required String vehicleId,
+    required String violationId,
+  }) =>
+      '/vehicle/$vehicleId/violation-log/$violationId';
+
+  static void _navigateToVehicleMaintenanceDetail({
+    required String vehicleId,
+    required String eventId,
+  }) {
+    pushFromNotificationTapWhenReady(
+      vehicleMaintenanceJournalLocation(
+        vehicleId: vehicleId,
+        eventId: eventId,
+      ),
+    );
+  }
+
+  static void _navigateToVehicleViolationDetail({
+    required String vehicleId,
+    required String violationId,
+  }) {
+    pushFromNotificationTapWhenReady(
+      vehicleTrafficViolationJournalLocation(
+        vehicleId: vehicleId,
+        violationId: violationId,
+      ),
+    );
+  }
+
   /// Propriétaire: borrower started while a session was already open.
   static Future<void> showLocalVehicleSessionGapNotification({
     String? borrowerDisplayName,
@@ -1317,6 +1423,106 @@ class PushNotificationService {
       payload: payload,
     );
     debugPrint('vehicle_use_session_start gap notification shown');
+  }
+
+  /// Propriétaire: borrower recorded maintenance on a shared vehicle.
+  static Future<void> showLocalVehicleMaintenanceNotification({
+    String? borrowerDisplayName,
+    String? vehicleLabel,
+    required String vehicleId,
+    required String eventId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final title = l10n.pushNotificationVehicleMaintenanceTitle;
+    final name = (borrowerDisplayName ?? '').trim();
+    final vehicle = (vehicleLabel ?? '').trim();
+    final body = name.isNotEmpty && vehicle.isNotEmpty
+        ? l10n.pushNotificationVehicleMaintenanceBodyFrom(name, vehicle)
+        : l10n.pushNotificationVehicleMaintenanceBody;
+
+    if (kIsWeb) {
+      return;
+    }
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: vehicleMaintenanceTapPayload(
+        vehicleId: vehicleId,
+        eventId: eventId,
+      ),
+    );
+    debugPrint('vehicle_maintenance notification shown');
+  }
+
+  /// Propriétaire: borrower recorded damage / traffic violation.
+  static Future<void> showLocalVehicleTrafficViolationNotification({
+    String? borrowerDisplayName,
+    String? vehicleLabel,
+    required String vehicleId,
+    required String violationId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final title = l10n.pushNotificationVehicleTrafficViolationTitle;
+    final name = (borrowerDisplayName ?? '').trim();
+    final vehicle = (vehicleLabel ?? '').trim();
+    final body = name.isNotEmpty && vehicle.isNotEmpty
+        ? l10n.pushNotificationVehicleTrafficViolationBodyFrom(name, vehicle)
+        : l10n.pushNotificationVehicleTrafficViolationBody;
+
+    if (kIsWeb) {
+      return;
+    }
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: vehicleTrafficViolationTapPayload(
+        vehicleId: vehicleId,
+        violationId: violationId,
+      ),
+    );
+    debugPrint('vehicle_traffic_violation notification shown');
   }
 
   /// Notification tap: open housing module, then proposal screen above it.

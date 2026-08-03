@@ -144,6 +144,221 @@ qa_apk_contains_libflutter_for_abi() {
     | grep -Fxq "lib/${lib_abi}/libflutter.so"
 }
 
+# Fail if APK embeds a host-Linux libsqlite3.so (needs libc.so.6), or if the
+# library is missing. Founder incident 2026-08-02: Dart hooks shipped Linux
+# SQLite or omitted it → seed_applied never written / Setup screen.
+qa_apk_libsqlite3_is_android_for_abi() {
+  local apk="$1"
+  local lib_abi="$2"
+  local tmp needed
+  tmp="$(mktemp)"
+  if ! unzip -p "${apk}" "lib/${lib_abi}/libsqlite3.so" >"${tmp}" 2>/dev/null; then
+    rm -f "${tmp}"
+    return 1
+  fi
+  if [[ ! -s "${tmp}" ]]; then
+    rm -f "${tmp}"
+    return 1
+  fi
+  needed="$(readelf -d "${tmp}" 2>/dev/null | grep NEEDED || true)"
+  rm -f "${tmp}"
+  if echo "${needed}" | grep -Fq 'libc.so.6'; then
+    return 1
+  fi
+  echo "${needed}" | grep -Fq '[libc.so]'
+}
+
+qa_apk_assert_android_libsqlite3() {
+  local apk="$1"
+  local abi
+  for abi in x86_64 arm64-v8a; do
+    if ! unzip -Z1 "${apk}" "lib/${abi}/libsqlite3.so" 2>/dev/null \
+      | grep -Fxq "lib/${abi}/libsqlite3.so"; then
+      echo "ERROR: ${apk} is missing lib/${abi}/libsqlite3.so after build." >&2
+      echo "Rebuild with: ./tool/melosw run qa:build-apk" >&2
+      return 1
+    fi
+    if ! qa_apk_libsqlite3_is_android_for_abi "${apk}" "${abi}"; then
+      echo "ERROR: ${apk} lib/${abi}/libsqlite3.so is not an Android binary" >&2
+      echo "(libc.so.6 = Linux host, or unreadable). Rebuild with:" >&2
+      echo "  ./tool/melosw run qa:build-apk" >&2
+      return 1
+    fi
+  done
+  return 0
+}
+
+# Keep Flutter's single SQLite install path healthy for QA APKs.
+#
+# Binding (2026-08-02 terminal.log 18:43): do NOT also copy libsqlite3.so into
+# mobile/android/app/src/main/jniLibs. Dart install_code_assets already installs
+# into build/native_assets/android/jniLibs — a second copy makes
+# mergeDevDebugJniLibFolders fail with "Duplicate resources". packaging
+# pickFirst does NOT fix that merge task (demonstrated same day).
+#
+# This helper: (1) downloads pinned Android .so into qa/.local, (2) seeds any
+# missing hooks_runner download-* files those stale output.json still point at,
+# (3) deletes leftover src/main/jniLibs copies so only native_assets remains.
+# Pin must match package:sqlite3 in pubspec.lock. Post-build assert still
+# rejects libc.so.6 in the APK.
+qa_ensure_android_jni_sqlite3() {
+  local mobile_dir="${1:-${COMPARTARENTA_ROOT}/mobile}"
+  local tag="${2:-}"
+  local lock="${COMPARTARENTA_ROOT}/pubspec.lock"
+  local jni="${mobile_dir}/android/app/src/main/jniLibs"
+  local cache="${COMPARTARENTA_ROOT}/qa/.local/sqlite3-android-jni"
+  local url_base tmp abi remote local_path expected
+  local cache_arm64 cache_x64
+
+  if [[ -z "${tag}" ]]; then
+    tag="$(
+      python3 - "${lock}" <<'PY'
+import pathlib, re, sys
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+m = re.search(
+    r"\nsqlite3:\n(?: {4}.+\n)*? {4}version: \"([^\"]+)\"",
+    text,
+)
+print(m.group(1) if m else "3.3.1")
+PY
+    )"
+  fi
+
+  mkdir -p "${cache}"
+  url_base="https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-${tag}"
+  echo "Ensuring Android sqlite3 hook assets (sqlite3-${tag}; single source)..."
+
+  # abi|remote_name|sha256 (from package:sqlite3 asset_hashes for 3.3.1;
+  # when bumping sqlite3, update these three fields together).
+  local rows=(
+    "x86_64|libsqlite3.x64.android.so|2f235dff75b348ee62e5ae01177ea77ce1b1c9ebae7cb1a499319e7c82ec1358"
+    "arm64-v8a|libsqlite3.arm64.android.so|cf2378ec6fa20479184d6c44b03c332343d2e0f5c648591f5302dca27ed41a94"
+  )
+
+  local row abi remote expected local_path
+  for row in "${rows[@]}"; do
+    IFS='|' read -r abi remote expected <<<"${row}"
+    local_path="${cache}/${remote}"
+    if [[ -f "${local_path}" ]]; then
+      if ! echo "${expected}  ${local_path}" | sha256sum -c --status 2>/dev/null; then
+        rm -f "${local_path}"
+      fi
+    fi
+    if [[ ! -f "${local_path}" ]]; then
+      echo "  download ${remote}"
+      tmp="$(mktemp)"
+      if ! curl -fsSL -o "${tmp}" "${url_base}/${remote}"; then
+        rm -f "${tmp}"
+        echo "ERROR: failed to download ${url_base}/${remote}" >&2
+        return 1
+      fi
+      if ! echo "${expected}  ${tmp}" | sha256sum -c --status; then
+        rm -f "${tmp}"
+        echo "ERROR: hash mismatch for ${remote} (expected ${expected})" >&2
+        return 1
+      fi
+      mv "${tmp}" "${local_path}"
+    fi
+    if ! readelf -d "${local_path}" | grep -Fq '[libc.so]'; then
+      echo "ERROR: ${local_path} is not an Android binary" >&2
+      return 1
+    fi
+    if readelf -d "${local_path}" | grep -Fq 'libc.so.6'; then
+      echo "ERROR: ${local_path} looks like a Linux host binary" >&2
+      return 1
+    fi
+  done
+
+  cache_x64="${cache}/libsqlite3.x64.android.so"
+  cache_arm64="${cache}/libsqlite3.arm64.android.so"
+
+  # Remove dual-source copies that break mergeDevDebugJniLibFolders.
+  local leftover
+  for leftover in \
+    "${jni}/arm64-v8a/libsqlite3.so" \
+    "${jni}/x86_64/libsqlite3.so" \
+    "${jni}/armeabi-v7a/libsqlite3.so"; do
+    if [[ -f "${leftover}" ]]; then
+      echo "  removing dual-source ${leftover}"
+      rm -f "${leftover}"
+    fi
+  done
+
+  qa_repair_stale_sqlite3_hook_downloads "${cache_arm64}" "${cache_x64}"
+  echo "Android sqlite3 hook cache ready under ${cache}"
+}
+
+# Fill missing Dart hooks_runner sqlite3 download-* files referenced by stale
+# output.json (typical after wiping .dart_tool/hooks_runner/shared/sqlite3/build).
+# Sources are the pinned Android cache files (not src/main/jniLibs).
+qa_repair_stale_sqlite3_hook_downloads() {
+  local cache_arm64="$1"
+  local cache_x64="$2"
+  local hooks="${COMPARTARENTA_ROOT}/.dart_tool/hooks_runner/sqlite3"
+  local repaired
+
+  [[ -d "${hooks}" ]] || return 0
+  [[ -f "${cache_arm64}" && -f "${cache_x64}" ]] || return 0
+
+  repaired="$(
+    python3 - "${hooks}" "${cache_arm64}" "${cache_x64}" <<'PY'
+import json
+import shutil
+import sys
+from pathlib import Path
+
+hooks = Path(sys.argv[1])
+abi_for = {
+    ("android", "arm64"): Path(sys.argv[2]),
+    ("android", "x64"): Path(sys.argv[3]),
+}
+count = 0
+for out in sorted(hooks.glob("*/output.json")):
+    try:
+        data = json.loads(out.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        continue
+    assets = data.get("assets") or []
+    missing = []
+    for asset in assets:
+        file_path = (asset.get("encoding") or {}).get("file")
+        if file_path and not Path(file_path).is_file():
+            missing.append(Path(file_path))
+    if not missing:
+        continue
+    inp = out.parent / "input.json"
+    if not inp.is_file():
+        continue
+    try:
+        config = json.loads(inp.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        continue
+    code = (
+        config.get("config", {})
+        .get("extensions", {})
+        .get("code_assets", {})
+    )
+    key = (code.get("target_os"), code.get("target_architecture"))
+    src = abi_for.get(key)
+    if src is None or not src.is_file():
+        continue
+    for dest in missing:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        count += 1
+        print(
+            f"  seeded hook download for {key[0]}/{key[1]}",
+            file=sys.stderr,
+        )
+print(count)
+PY
+  )"
+
+  if [[ -n "${repaired}" && "${repaired}" != "0" ]]; then
+    echo "Repaired stale sqlite3 hook downloads: ${repaired} file(s)"
+  fi
+}
+
 # Grant Android 13+ POST_NOTIFICATIONS after pm clear (until revoked in system settings).
 qa_grant_post_notifications_on_serial() {
   local serial="$1"

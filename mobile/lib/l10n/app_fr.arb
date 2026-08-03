@@ -850,6 +850,24 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationVehicleMaintenanceTitle": "Entretien enregistré",
+  "pushNotificationVehicleMaintenanceBody": "Un emprunteur a enregistré un entretien sur un véhicule partagé.",
+  "pushNotificationVehicleMaintenanceBodyFrom": "{name} a enregistré un entretien sur {vehicle}.",
+  "@pushNotificationVehicleMaintenanceBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleTrafficViolationTitle": "Dommage ou infraction",
+  "pushNotificationVehicleTrafficViolationBody": "Un emprunteur a enregistré un dommage ou une infraction sur un véhicule partagé.",
+  "pushNotificationVehicleTrafficViolationBodyFrom": "{name} a enregistré un dommage ou une infraction sur {vehicle}.",
+  "@pushNotificationVehicleTrafficViolationBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Offre enregistrée ici, mais l'envoi au contact a échoué. Réessayez plus tard.",
   "vehicleSharingAcceptRelayFailed": "Acceptation enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
   "pushNotificationHousingAgreementActivatedTitle": "Entente unanime",
@@ -1873,6 +1891,7 @@
   "vehicleSharingOtherActionsTitle": "Autres actions",
   "vehicleSharingSessionRelayFailed": "Session enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
   "vehicleSharingFuelRelayFailed": "Achat enregistré ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
+  "vehicleSharingForwardRelayFailed": "Enregistré ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "Ce véhicule est le vôtre. Utilisez le module Véhicule pour enregistrer votre usage — pas Partage de véhicule.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "Ce véhicule n'est pas dans vos véhicules possédés. Utilisez Partage de véhicule pour un véhicule partagé avec vous.",

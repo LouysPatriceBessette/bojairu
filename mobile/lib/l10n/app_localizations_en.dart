@@ -2153,6 +2153,37 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationVehicleMaintenanceTitle => 'Maintenance recorded';
+
+  @override
+  String get pushNotificationVehicleMaintenanceBody =>
+      'A borrower recorded maintenance on a shared vehicle.';
+
+  @override
+  String pushNotificationVehicleMaintenanceBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name recorded maintenance on $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleTrafficViolationTitle =>
+      'Damage or traffic violation';
+
+  @override
+  String get pushNotificationVehicleTrafficViolationBody =>
+      'A borrower recorded damage or a traffic violation on a shared vehicle.';
+
+  @override
+  String pushNotificationVehicleTrafficViolationBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name recorded damage or a traffic violation on $vehicle.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Offer saved here, but sending to the contact failed. Try again later.';
 
@@ -4499,6 +4530,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get vehicleSharingFuelRelayFailed =>
       'Purchase saved here, but sending to the owner failed. Try again later.';
+
+  @override
+  String get vehicleSharingForwardRelayFailed =>
+      'Saved here, but sending to the owner failed. Try again later.';
 
   @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>

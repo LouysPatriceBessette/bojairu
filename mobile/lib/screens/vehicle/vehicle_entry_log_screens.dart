@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../db/app_database.dart';
 import '../../db/repositories/vehicles_repository.dart';
@@ -13,8 +12,9 @@ import '../../vehicle/vehicle_gap_correction.dart';
 import '../../vehicle/vehicle_kind.dart';
 import '../../util/format_money.dart';
 import '../../vehicle/vehicle_fuel_log_display.dart';
-import '../../vehicle/vehicle_meter_reading_labels.dart';
+import '../../vehicle/vehicle_maintenance_categories.dart';
 import '../../vehicle/vehicle_meter_photo_path.dart';
+import '../../vehicle/vehicle_meter_reading_labels.dart';
 import '../../vehicle/vehicle_stored_image.dart';
 import '../../widgets/screen_body_padding.dart';
 
@@ -633,13 +633,19 @@ class _FuelPurchaseDetailData {
 }
 
 class VehicleMaintenanceLogScreen extends StatelessWidget {
-  const VehicleMaintenanceLogScreen({super.key, required this.vehicleId});
+  const VehicleMaintenanceLogScreen({
+    super.key,
+    required this.vehicleId,
+    required this.prefs,
+  });
 
   final String vehicleId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.vehicleLogMaintenanceTitle)),
       body: FutureBuilder<List<MaintenanceEvent>>(
@@ -659,11 +665,11 @@ class VehicleMaintenanceLogScreen extends StatelessWidget {
             separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final row = rows[index];
-              final date = DateFormat.yMMMd().add_Hm().format(
-                    row.servicedAt.toLocal(),
-                  );
+              final date = formatPreferenceDateTime(row.servicedAt, dateFmt);
               return ListTile(
-                title: Text(row.category),
+                title: Text(
+                  vehicleMaintenanceCategoryLabel(l10n, row.category),
+                ),
                 subtitle: Text(date),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(
@@ -683,14 +689,17 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
     super.key,
     required this.vehicleId,
     required this.eventId,
+    required this.prefs,
   });
 
   final String vehicleId;
   final String eventId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return FutureBuilder<MaintenanceEvent?>(
       future: VehiclesRepository(AppDatabase.processScope)
           .getMaintenanceEvent(eventId),
@@ -708,7 +717,7 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
             body: Center(child: Text(l10n.vehicleUsageBlockedVehicleNotFound)),
           );
         }
-        final date = DateFormat.yMMMd().add_Hm().format(row.servicedAt.toLocal());
+        final date = formatPreferenceDateTime(row.servicedAt, dateFmt);
         return Scaffold(
           appBar: AppBar(title: Text(l10n.vehicleLogMaintenanceDetailTitle)),
           body: ListView(
@@ -716,11 +725,15 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
             children: [
               ListTile(
                 title: Text(l10n.vehicleMaintenanceCategory),
-                subtitle: Text(row.category),
+                subtitle: Text(
+                  vehicleMaintenanceCategoryLabel(l10n, row.category),
+                ),
               ),
               ListTile(
                 title: Text(l10n.vehicleMaintenanceCost),
-                subtitle: Text('${row.costMinor / 100} ${row.currency}'),
+                subtitle: Text(
+                  formatMinorAsMoney(context, row.costMinor, row.currency),
+                ),
               ),
               ListTile(
                 title: Text(l10n.vehicleLogRecordedAt),
@@ -731,6 +744,20 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
                   title: Text(l10n.vehicleFuelMeter),
                   subtitle: Text('${row.meterAtService}'),
                 ),
+              if (row.attachmentPath != null &&
+                  meterReadingHasDisplayablePhoto(row.attachmentPath!)) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    l10n.vehicleOdometerPhotoLabel,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: VehicleStoredImage(path: row.attachmentPath!),
+                ),
+              ],
               if (row.notes.isNotEmpty)
                 ListTile(
                   title: Text(l10n.vehicleMaintenanceNotes),
@@ -745,13 +772,19 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
 }
 
 class VehicleViolationLogScreen extends StatelessWidget {
-  const VehicleViolationLogScreen({super.key, required this.vehicleId});
+  const VehicleViolationLogScreen({
+    super.key,
+    required this.vehicleId,
+    required this.prefs,
+  });
 
   final String vehicleId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.vehicleLogViolationTitle)),
       body: FutureBuilder<List<TrafficViolation>>(
@@ -771,9 +804,7 @@ class VehicleViolationLogScreen extends StatelessWidget {
             separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final row = rows[index];
-              final date = DateFormat.yMMMd().add_Hm().format(
-                    row.violatedAt.toLocal(),
-                  );
+              final date = formatPreferenceDateTime(row.violatedAt, dateFmt);
               return ListTile(
                 title: Text(row.violationType),
                 subtitle: Text(date),
@@ -795,14 +826,17 @@ class VehicleViolationDetailScreen extends StatelessWidget {
     super.key,
     required this.vehicleId,
     required this.violationId,
+    required this.prefs,
   });
 
   final String vehicleId;
   final String violationId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return FutureBuilder<TrafficViolation?>(
       future: VehiclesRepository(AppDatabase.processScope)
           .getTrafficViolation(violationId),
@@ -820,7 +854,7 @@ class VehicleViolationDetailScreen extends StatelessWidget {
             body: Center(child: Text(l10n.vehicleUsageBlockedVehicleNotFound)),
           );
         }
-        final date = DateFormat.yMMMd().add_Hm().format(row.violatedAt.toLocal());
+        final date = formatPreferenceDateTime(row.violatedAt, dateFmt);
         return Scaffold(
           appBar: AppBar(title: Text(l10n.vehicleLogViolationDetailTitle)),
           body: ListView(
@@ -832,7 +866,9 @@ class VehicleViolationDetailScreen extends StatelessWidget {
               ),
               ListTile(
                 title: Text(l10n.vehicleViolationAmount),
-                subtitle: Text('${row.amountMinor / 100} ${row.currency}'),
+                subtitle: Text(
+                  formatMinorAsMoney(context, row.amountMinor, row.currency),
+                ),
               ),
               ListTile(
                 title: Text(l10n.vehicleLogRecordedAt),

@@ -73,6 +73,14 @@ const kQaVehicleSharingOtherActionsScreen =
 const kQaVehicleSharingOtherActionsFuel =
     'qa-vehicle-sharing-other-actions-fuel';
 
+/// Maintenance action on the other-actions screen.
+const kQaVehicleSharingOtherActionsMaintenance =
+    'qa-vehicle-sharing-other-actions-maintenance';
+
+/// Damage / traffic violation action on the other-actions screen.
+const kQaVehicleSharingOtherActionsViolation =
+    'qa-vehicle-sharing-other-actions-violation';
+
 /// Journals action on the other-actions screen.
 const kQaVehicleSharingOtherActionsJournals =
     'qa-vehicle-sharing-other-actions-journals';

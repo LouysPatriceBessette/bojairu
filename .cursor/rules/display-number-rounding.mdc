@@ -12,6 +12,13 @@ Apply these rules when showing **amounts** or **percentages** to the user in UI 
 - Show **exactly two** fraction digits (e.g. cents), locale-aware.
 - Prefer existing helpers: `formatMinorAsMoney`, `formatMajorDoubleAsMoney` in `mobile/lib/util/format_money.dart` (or equivalent for the surface).
 
+## Money **input** (editable fields)
+
+User-editable major-unit money fields must pad to two decimals **on blur**
+(`40` → `40.00`). Default widgets: `AppDecimalTextField(fractionDigits: 2)` or
+`VehicleNarrowUnitField(..., fractionDigits: 2)`. Full checklist:
+`.cursor/skills/monetary-amount-input/SKILL.md`.
+
 ## Percentages
 
 - **Terminating** rational (e.g. `(share×100)/total` simplifies to a denominator whose prime factors are only 2 and 5): show **exactly one** fraction digit, half-up, locale-aware (`formatShareOfTotalPercentNoSuffix`, `formatPercentFromTenthsRounded`, or `formatRatioAsPercentNoSuffix` for simple integer ratios).

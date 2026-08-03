@@ -833,6 +833,24 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationVehicleMaintenanceTitle": "Mantenimiento registrado",
+  "pushNotificationVehicleMaintenanceBody": "Un prestatario registró un mantenimiento en un vehículo compartido.",
+  "pushNotificationVehicleMaintenanceBodyFrom": "{name} registró un mantenimiento en {vehicle}.",
+  "@pushNotificationVehicleMaintenanceBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleTrafficViolationTitle": "Daño o infracción",
+  "pushNotificationVehicleTrafficViolationBody": "Un prestatario registró un daño o una infracción en un vehículo compartido.",
+  "pushNotificationVehicleTrafficViolationBodyFrom": "{name} registró un daño o una infracción en {vehicle}.",
+  "@pushNotificationVehicleTrafficViolationBodyFrom": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.",
   "vehicleSharingAcceptRelayFailed": "Aceptación guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
   "pushNotificationHousingAgreementActivatedTitle": "Acuerdo unánime",
@@ -1856,6 +1874,7 @@
   "vehicleSharingOtherActionsTitle": "Otras acciones",
   "vehicleSharingSessionRelayFailed": "Sesión guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
   "vehicleSharingFuelRelayFailed": "Compra guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
+  "vehicleSharingForwardRelayFailed": "Guardado aquí, pero el envío al propietario falló. Inténtelo más tarde.",
 
   "vehicleUsageBlockedOwnOnBorrowerPath": "Este vehículo es suyo. Use el módulo Vehículo para registrar su uso — no Uso compartido.",
   "vehicleUsageBlockedNotOwnedOnOwnerPath": "Este vehículo no está en su lista de vehículos propios. Use Uso compartido para un vehículo compartido con usted.",

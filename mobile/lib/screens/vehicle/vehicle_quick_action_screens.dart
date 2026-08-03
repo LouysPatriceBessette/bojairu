@@ -23,6 +23,7 @@ import '../../vehicle/vehicle_meter_photo_picker.dart';
 import '../../vehicle/vehicle_tank_fill_levels.dart';
 import '../../vehicle/vehicle_usage_context.dart';
 import '../../vehicle/vehicle_usage_denial_ui.dart';
+import '../../widgets/app_decimal_text_field.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/screen_body_padding.dart';
 import '../../widgets/vehicle_meter_photo_button.dart';
@@ -303,6 +304,7 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
                         label: l10n.vehicleFuelCost,
                         unitSuffix: currencySymbol,
                         decimal: true,
+                        fractionDigits: 2,
                         onChanged: (_) => _refresh(),
                       ),
                     ),
@@ -637,23 +639,33 @@ class _VehicleMaintenanceFormScreenState
   final _cost = TextEditingController();
   final _notes = TextEditingController();
   final _meter = TextEditingController();
+  String? _photoPath;
   Vehicle? _vehicle;
   VehicleUsageAccessDenial? _denial;
   bool _loading = true;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    for (final c in [_cost, _meter]) {
+      c.addListener(_refresh);
+    }
     _load();
   }
 
   @override
   void dispose() {
+    for (final c in [_cost, _meter]) {
+      c.removeListener(_refresh);
+    }
     _cost.dispose();
     _notes.dispose();
     _meter.dispose();
     super.dispose();
   }
+
+  void _refresh() => setState(() {});
 
   Future<void> _load() async {
     final v = await VehiclesRepository(AppDatabase.processScope)
@@ -669,43 +681,119 @@ class _VehicleMaintenanceFormScreenState
     });
   }
 
-  Future<void> _save() async {
-    if (_denial != null) return;
-    final costMajor = double.tryParse(_cost.text.replaceAll(',', '.'));
-    if (costMajor == null) return;
+  int? _parsedMeter() {
+    if (!_category.requiresOdometer) return null;
     final kind = VehicleKind.fromWire(_vehicle?.vehicleKind);
-    final meterAtService = _category.requiresOdometer
-        ? parseMeterInputToStoredTenths(
-            _meter.text,
-            usesHorometer: kind?.usesHorometer ?? false,
-            distanceUnit: resolveDistanceUnit(widget.prefs),
-          )
-        : null;
-    final ok = await confirmSaleImportCommitmentIfNeeded(
-      context,
-      vehicleId: widget.vehicleId,
+    return parseMeterInputToStoredTenths(
+      _meter.text,
+      usesHorometer: kind?.usesHorometer ?? false,
+      distanceUnit: resolveDistanceUnit(widget.prefs),
     );
-    if (!ok || !mounted) return;
-    final repo = VehiclesRepository(AppDatabase.processScope);
-    await repo.saveMaintenanceEvent(
-      vehicleId: widget.vehicleId,
-      servicedAt: DateTime.now().toUtc(),
-      category: _category.wire,
-      costMinor: (costMajor * 100).round(),
-      currency: widget.prefs.currency,
-      recordedByContactId: widget.usageContext.actingContactId,
-      notes: _notes.text.trim(),
-      meterAtService: meterAtService,
-    );
-    if (!mounted) return;
-    if (widget.usageContext.forwardsToOwner) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).vehicleSharingForwarded),
-        ),
-      );
+  }
+
+  bool get _canSave {
+    if (_denial != null || _saving) return false;
+    if (double.tryParse(_cost.text.replaceAll(',', '.')) == null) {
+      return false;
     }
-    context.pop();
+    if (_category.requiresOdometer) {
+      if (_parsedMeter() == null) return false;
+      if (qaE2eMeterPhotoRequired(otherwiseRequired: true)) {
+        if (_photoPath == null || _photoPath!.isEmpty) return false;
+      }
+    }
+    return true;
+  }
+
+  Future<void> _save() async {
+    if (!_canSave) return;
+    final costMajor = double.parse(_cost.text.replaceAll(',', '.'));
+    final meterAtService = _category.requiresOdometer ? _parsedMeter() : null;
+    final String? attachmentPath;
+    if (_category.requiresOdometer) {
+      attachmentPath = qaE2eEffectiveMeterPhotoPath(_photoPath);
+      if (attachmentPath == null) return;
+    } else {
+      attachmentPath = null;
+    }
+    setState(() => _saving = true);
+    try {
+      final ok = await confirmSaleImportCommitmentIfNeeded(
+        context,
+        vehicleId: widget.vehicleId,
+      );
+      if (!ok || !mounted) return;
+      final repo = VehiclesRepository(AppDatabase.processScope);
+      final event = await repo.saveMaintenanceEvent(
+        vehicleId: widget.vehicleId,
+        servicedAt: DateTime.now().toUtc(),
+        category: _category.wire,
+        costMinor: (costMajor * 100).round(),
+        currency: widget.prefs.currency,
+        recordedByContactId: widget.usageContext.actingContactId,
+        notes: _notes.text.trim(),
+        meterAtService: meterAtService,
+        attachmentPath: attachmentPath,
+      );
+      if (!mounted) return;
+      if (widget.usageContext.forwardsToOwner) {
+        final l10n = AppLocalizations.of(context);
+        final relayOk = await _forwardMaintenanceToOwner(
+          vehicleId: widget.vehicleId,
+          remoteEventId: event.id,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              relayOk
+                  ? l10n.vehicleSharingForwarded
+                  : l10n.vehicleSharingForwardRelayFailed,
+            ),
+          ),
+        );
+      }
+      context.pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<String?> _activeBorrowerLinkId(String vehicleId) async {
+    final links = await VehiclesRepository(AppDatabase.processScope)
+        .listSharingLinksForVehicle(vehicleId);
+    for (final link in links) {
+      if (link.status == VehicleSharingLinkStatus.active.wire) {
+        return link.id;
+      }
+    }
+    return null;
+  }
+
+  Future<bool> _forwardMaintenanceToOwner({
+    required String vehicleId,
+    required String remoteEventId,
+  }) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return false;
+    final linkId = await _activeBorrowerLinkId(vehicleId);
+    if (linkId == null) return false;
+    try {
+      await orch.sendVehicleMaintenance(
+        linkId: linkId,
+        vehicleId: vehicleId,
+        remoteEventId: remoteEventId,
+      );
+      return true;
+    } on HandshakeOrchestratorError {
+      return false;
+    } on RelayClientError {
+      return false;
+    } on RelayUnreachableException {
+      return false;
+    } on TimeoutException {
+      return false;
+    }
   }
 
   @override
@@ -745,17 +833,18 @@ class _VehicleMaintenanceFormScreenState
                           _category = value;
                           if (!value.requiresOdometer) {
                             _meter.clear();
+                            _photoPath = null;
                           }
                         });
                       },
                     ),
                     const SizedBox(height: 12),
-                    AppTextField(
+                    AppDecimalTextField(
                       controller: _cost,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      fractionDigits: 2,
                       decoration:
                           InputDecoration(labelText: l10n.vehicleMaintenanceCost),
+                      onChanged: (_) => _refresh(),
                     ),
                     if (_category.requiresOdometer) ...[
                       const SizedBox(height: 12),
@@ -766,6 +855,23 @@ class _VehicleMaintenanceFormScreenState
                             : l10n.vehicleFuelMeter,
                         unitSuffix: meterUnitSuffix,
                         decimal: true,
+                        onChanged: (_) => _refresh(),
+                      ),
+                      const SizedBox(height: 12),
+                      VehicleMeterPhotoButton(
+                        attached: _photoPath != null && _photoPath!.isNotEmpty,
+                        onPressed: () async {
+                          final path = await pickAndStoreVehicleMeterPhoto(
+                            context,
+                            vehicleId: widget.vehicleId,
+                          );
+                          if (path != null && mounted) {
+                            setState(() => _photoPath = path);
+                          }
+                        },
+                        label: _photoPath == null
+                            ? l10n.vehicleOdometerPhotoLabel
+                            : l10n.vehicleMeterPhotoAttached,
                       ),
                     ],
                     const SizedBox(height: 12),
@@ -777,7 +883,7 @@ class _VehicleMaintenanceFormScreenState
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: _save,
+                      onPressed: _canSave ? _save : null,
                       child: Text(l10n.commonSave),
                     ),
                   ],
@@ -809,20 +915,29 @@ class _VehicleViolationFormScreenState extends State<VehicleViolationFormScreen>
   final _notes = TextEditingController();
   VehicleUsageAccessDenial? _denial;
   bool _loading = true;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
+    for (final c in [_type, _amount]) {
+      c.addListener(_refresh);
+    }
     _load();
   }
 
   @override
   void dispose() {
+    for (final c in [_type, _amount]) {
+      c.removeListener(_refresh);
+    }
     _type.dispose();
     _amount.dispose();
     _notes.dispose();
     super.dispose();
   }
+
+  void _refresh() => setState(() {});
 
   Future<void> _load() async {
     final v = await VehiclesRepository(AppDatabase.processScope)
@@ -837,34 +952,94 @@ class _VehicleViolationFormScreenState extends State<VehicleViolationFormScreen>
     });
   }
 
-  Future<void> _save() async {
-    if (_denial != null) return;
-    final amountMajor = double.tryParse(_amount.text.replaceAll(',', '.'));
-    if (amountMajor == null || _type.text.trim().isEmpty) return;
-    final ok = await confirmSaleImportCommitmentIfNeeded(
-      context,
-      vehicleId: widget.vehicleId,
-    );
-    if (!ok || !mounted) return;
-    final repo = VehiclesRepository(AppDatabase.processScope);
-    await repo.saveTrafficViolation(
-      vehicleId: widget.vehicleId,
-      violatedAt: DateTime.now().toUtc(),
-      violationType: _type.text.trim(),
-      amountMinor: (amountMajor * 100).round(),
-      currency: widget.prefs.currency,
-      recordedByContactId: widget.usageContext.actingContactId,
-      notes: _notes.text.trim(),
-    );
-    if (!mounted) return;
-    if (widget.usageContext.forwardsToOwner) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).vehicleSharingForwarded),
-        ),
-      );
+  bool get _canSave {
+    if (_denial != null || _saving) return false;
+    if (_type.text.trim().isEmpty) return false;
+    if (double.tryParse(_amount.text.replaceAll(',', '.')) == null) {
+      return false;
     }
-    context.pop();
+    return true;
+  }
+
+  Future<void> _save() async {
+    if (!_canSave) return;
+    final amountMajor = double.parse(_amount.text.replaceAll(',', '.'));
+    setState(() => _saving = true);
+    try {
+      final ok = await confirmSaleImportCommitmentIfNeeded(
+        context,
+        vehicleId: widget.vehicleId,
+      );
+      if (!ok || !mounted) return;
+      final repo = VehiclesRepository(AppDatabase.processScope);
+      final violation = await repo.saveTrafficViolation(
+        vehicleId: widget.vehicleId,
+        violatedAt: DateTime.now().toUtc(),
+        violationType: _type.text.trim(),
+        amountMinor: (amountMajor * 100).round(),
+        currency: widget.prefs.currency,
+        recordedByContactId: widget.usageContext.actingContactId,
+        notes: _notes.text.trim(),
+      );
+      if (!mounted) return;
+      if (widget.usageContext.forwardsToOwner) {
+        final l10n = AppLocalizations.of(context);
+        final relayOk = await _forwardViolationToOwner(
+          vehicleId: widget.vehicleId,
+          remoteViolationId: violation.id,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              relayOk
+                  ? l10n.vehicleSharingForwarded
+                  : l10n.vehicleSharingForwardRelayFailed,
+            ),
+          ),
+        );
+      }
+      context.pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<String?> _activeBorrowerLinkId(String vehicleId) async {
+    final links = await VehiclesRepository(AppDatabase.processScope)
+        .listSharingLinksForVehicle(vehicleId);
+    for (final link in links) {
+      if (link.status == VehicleSharingLinkStatus.active.wire) {
+        return link.id;
+      }
+    }
+    return null;
+  }
+
+  Future<bool> _forwardViolationToOwner({
+    required String vehicleId,
+    required String remoteViolationId,
+  }) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return false;
+    final linkId = await _activeBorrowerLinkId(vehicleId);
+    if (linkId == null) return false;
+    try {
+      await orch.sendVehicleTrafficViolation(
+        linkId: linkId,
+        vehicleId: vehicleId,
+        remoteViolationId: remoteViolationId,
+      );
+      return true;
+    } on HandshakeOrchestratorError {
+      return false;
+    } on RelayClientError {
+      return false;
+    } on RelayUnreachableException {
+      return false;
+    } on TimeoutException {
+      return false;
+    }
   }
 
   @override
@@ -882,14 +1057,15 @@ class _VehicleViolationFormScreenState extends State<VehicleViolationFormScreen>
                     AppTextField(
                       controller: _type,
                       decoration: InputDecoration(labelText: l10n.vehicleViolationType),
+                      onChanged: (_) => _refresh(),
                     ),
                     const SizedBox(height: 12),
-                    AppTextField(
+                    AppDecimalTextField(
                       controller: _amount,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      fractionDigits: 2,
                       decoration:
                           InputDecoration(labelText: l10n.vehicleViolationAmount),
+                      onChanged: (_) => _refresh(),
                     ),
                     const SizedBox(height: 12),
                     AppTextField(
@@ -900,7 +1076,7 @@ class _VehicleViolationFormScreenState extends State<VehicleViolationFormScreen>
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: _save,
+                      onPressed: _canSave ? _save : null,
                       child: Text(l10n.commonSave),
                     ),
                   ],

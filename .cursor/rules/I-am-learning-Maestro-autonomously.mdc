@@ -24,6 +24,14 @@ You are **explicitly permitted** to edit:
 Add a short **error case not to repeat** with its solution **only after
 demonstration**. Prefer a dedicated subsection so entries stay scannable.
 
+### Also record QA APK / seed blockers (not only YAML)
+
+When a multi-device seed or `qa:build-apk` failure is **demonstrated** (e.g.
+`mergeDevDebugJniLibFolders` Duplicate resources, APK ships Linux `libsqlite3`,
+`seed_applied` empty with Drift/`libc.so.6` in logcat), append the lesson to
+the skill the same way. These failures block **every** Maestro scenario that
+rebuilds the APK — they are in scope for this rule, not “ops only”.
+
 ## When a solution may be labeled established
 
 **Wait** for at least one of:

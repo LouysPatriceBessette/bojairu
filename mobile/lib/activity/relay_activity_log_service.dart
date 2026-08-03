@@ -262,6 +262,11 @@ abstract final class RelayActivityLogKinds {
   static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
   static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
   static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
+  static const vehicleMaintenanceSent = 'vehicle_maintenance_sent';
+  static const vehicleMaintenanceReceived = 'vehicle_maintenance_received';
+  static const vehicleTrafficViolationSent = 'vehicle_traffic_violation_sent';
+  static const vehicleTrafficViolationReceived =
+      'vehicle_traffic_violation_received';
 
   /// All vehicle/sharing kinds (hidden from Settings event journal).
   static const Set<String> vehicleRelated = {
@@ -275,6 +280,10 @@ abstract final class RelayActivityLogKinds {
     vehicleUseSessionEndReceived,
     vehicleFuelPurchaseSent,
     vehicleFuelPurchaseReceived,
+    vehicleMaintenanceSent,
+    vehicleMaintenanceReceived,
+    vehicleTrafficViolationSent,
+    vehicleTrafficViolationReceived,
   };
 
   /// Offer + session kinds shown under vehicle « Sessions de partage ».

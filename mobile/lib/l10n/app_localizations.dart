@@ -3689,6 +3689,48 @@ abstract class AppLocalizations {
   /// **'{name} started a session on {vehicle}. A previous session may still be open.'**
   String pushNotificationVehicleSessionGapBodyFrom(String name, String vehicle);
 
+  /// No description provided for @pushNotificationVehicleMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance recorded'**
+  String get pushNotificationVehicleMaintenanceTitle;
+
+  /// No description provided for @pushNotificationVehicleMaintenanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A borrower recorded maintenance on a shared vehicle.'**
+  String get pushNotificationVehicleMaintenanceBody;
+
+  /// No description provided for @pushNotificationVehicleMaintenanceBodyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} recorded maintenance on {vehicle}.'**
+  String pushNotificationVehicleMaintenanceBodyFrom(
+    String name,
+    String vehicle,
+  );
+
+  /// No description provided for @pushNotificationVehicleTrafficViolationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Damage or traffic violation'**
+  String get pushNotificationVehicleTrafficViolationTitle;
+
+  /// No description provided for @pushNotificationVehicleTrafficViolationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A borrower recorded damage or a traffic violation on a shared vehicle.'**
+  String get pushNotificationVehicleTrafficViolationBody;
+
+  /// No description provided for @pushNotificationVehicleTrafficViolationBodyFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} recorded damage or a traffic violation on {vehicle}.'**
+  String pushNotificationVehicleTrafficViolationBodyFrom(
+    String name,
+    String vehicle,
+  );
+
   /// No description provided for @vehicleSharingOfferRelayFailed.
   ///
   /// In en, this message translates to:
@@ -7568,6 +7610,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Purchase saved here, but sending to the owner failed. Try again later.'**
   String get vehicleSharingFuelRelayFailed;
+
+  /// No description provided for @vehicleSharingForwardRelayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved here, but sending to the owner failed. Try again later.'**
+  String get vehicleSharingForwardRelayFailed;
 
   /// No description provided for @vehicleUsageBlockedOwnOnBorrowerPath.
   ///

@@ -70,6 +70,11 @@ new evidence arrives in a later message.
 - Fixing adjacent code “while we’re in the file” without proven link to the bug
 - Retest steps invented from habit without reading gates in code first
 - Presenting unverified theory as diagnosis, then shipping a fix in the same turn
+- **Build / native-asset side effects without a proven need** — `flutter clean`,
+  host `flutter test`, or any step that rebuilds `mobile/build/native_assets/**`
+  must not be treated as a harmless “try”. Polluted or host (Linux) SQLite
+  binaries can land in the Android QA APK and break every Maestro seed. See
+  **Founder incident — Android APK ships Linux `libsqlite3.so`** below.
 
 ## Allowed without user approval
 
@@ -109,3 +114,38 @@ still points at identifier design.
 Ask: “Would I bet the user's time on this diff without citing a log line, test
 failure, or code path read **this turn**?” If no → **do not edit**; submit
 hypotheses instead.
+
+## Founder incident — Android APK ships Linux `libsqlite3.so` (2 Aug 2026)
+
+**User framing (binding):** this class of failure is a **regression from
+improvisation** — not an acceptable “environment flake” to shrug off after an
+agent touched the build tree.
+
+| | Fact |
+| --- | --- |
+| **Symptom** | Multi-device QA seed never writes `seed_applied` (`poll … applied=<empty>`); app stuck on Setup / Language |
+| **Log proof** | `AppDatabase warmUpStorage failed` + `dlopen` / `Couldn't resolve … sqlite3_initialize` with **`library "libc.so.6" not found`** needed by APK `lib/*/libsqlite3.so` |
+| **Root shape** | The APK’s `libsqlite3.so` is a **host Linux** binary (needs `libc.so.6`), not an Android one (needs `libc.so`). Same BuildID can appear under `mobile/build/native_assets/linux/` and wrongly under `…/android/jniLibs/…/x86_64/` (and even mislabeled `arm64-v8a`) |
+| **What it is not** | A product bug in the feature just shipped (e.g. Emprunteur Entretien / Dommage) when logcat shows this sqlite load failure |
+
+### Discipline after this incident
+
+1. **Do not** run `flutter clean`, wipe `mobile/build/native_assets`, or force a
+   host-native rebuild **as an improvised recovery** for an unrelated symptom.
+2. If you **do** rebuild the QA APK (`./tool/build_qa_apk.sh` /
+   `./tool/melosw run qa:build-apk`), **before** telling the user to re-run a
+   scenario, prove the APK’s `lib/x86_64/libsqlite3.so` (and arm64) need
+   **`libc.so`**, not **`libc.so.6`** (`readelf -d` / `file` on the extracted
+   `.so`).
+3. When seed fails with Setup visible: **check logcat for this sqlite line
+   first** — do not spend a long turn blaming Maestro flows or the latest UI
+   diff until that line is ruled out.
+4. Long open-ended digression after the cause is already in logcat is itself a
+   discipline failure: state the cause, the verify command, and stop.
+5. **Do not** copy `libsqlite3.so` into `mobile/android/app/src/main/jniLibs`
+   while Dart `install_code_assets` still installs into
+   `build/native_assets/android/jniLibs`. That dual source fails
+   `mergeDevDebugJniLibFolders` with **Duplicate resources** (demonstrated
+   `mobile/terminal.log` 2026-08-02 18:43). `packaging.jniLibs.pickFirsts`
+   does **not** fix that merge task. One install path only; seed missing
+   hooks downloads from a cache if needed; keep the APK assert.

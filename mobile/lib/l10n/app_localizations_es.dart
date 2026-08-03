@@ -2182,6 +2182,38 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationVehicleMaintenanceTitle =>
+      'Mantenimiento registrado';
+
+  @override
+  String get pushNotificationVehicleMaintenanceBody =>
+      'Un prestatario registró un mantenimiento en un vehículo compartido.';
+
+  @override
+  String pushNotificationVehicleMaintenanceBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name registró un mantenimiento en $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleTrafficViolationTitle =>
+      'Daño o infracción';
+
+  @override
+  String get pushNotificationVehicleTrafficViolationBody =>
+      'Un prestatario registró un daño o una infracción en un vehículo compartido.';
+
+  @override
+  String pushNotificationVehicleTrafficViolationBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name registró un daño o una infracción en $vehicle.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.';
 
@@ -4549,6 +4581,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get vehicleSharingFuelRelayFailed =>
       'Compra guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.';
+
+  @override
+  String get vehicleSharingForwardRelayFailed =>
+      'Guardado aquí, pero el envío al propietario falló. Inténtelo más tarde.';
 
   @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>

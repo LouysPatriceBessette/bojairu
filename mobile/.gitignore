@@ -47,6 +47,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Downloaded at QA APK build time (tool/qa_env.sh qa_ensure_android_jni_sqlite3)
+/android/app/src/main/jniLibs/**/libsqlite3.so
+
 # Signing keys / keystore properties (never commit)
 android/key.properties
 android/keystore/**

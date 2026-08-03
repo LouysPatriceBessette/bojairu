@@ -31,6 +31,8 @@ class EnvelopeKind {
   static const int vehicleUseSessionStart = 18;
   static const int vehicleUseSessionEnd = 19;
   static const int vehicleFuelPurchase = 20;
+  static const int vehicleMaintenance = 21;
+  static const int vehicleTrafficViolation = 22;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -317,6 +319,28 @@ class VehicleFuelPurchaseEnvelope {
   final String purchaseJson;
 }
 
+/// Steady-state borrower maintenance (Emprunteur → Propriétaire).
+class VehicleMaintenanceEnvelope {
+  VehicleMaintenanceEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.eventJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String eventJson;
+}
+
+/// Steady-state borrower traffic violation (Emprunteur → Propriétaire).
+class VehicleTrafficViolationEnvelope {
+  VehicleTrafficViolationEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.violationJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String violationJson;
+}
+
 // ---------- HKDF info strings ----------
 
 const String _helloAeadInfo = 'compartarenta/handshake-v1/hello-aead';
@@ -354,6 +378,10 @@ const String _vehicleUseSessionEndAeadInfo =
     'compartarenta/steady-v1/vehicle-use-session-end-aead';
 const String _vehicleFuelPurchaseAeadInfo =
     'compartarenta/steady-v1/vehicle-fuel-purchase-aead';
+const String _vehicleMaintenanceAeadInfo =
+    'compartarenta/steady-v1/vehicle-maintenance-aead';
+const String _vehicleTrafficViolationAeadInfo =
+    'compartarenta/steady-v1/vehicle-traffic-violation-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -1720,6 +1748,139 @@ class EnvelopeCodec {
     return VehicleFuelPurchaseEnvelope(
       senderLongTermPublicKey: senderPub,
       purchaseJson: (json['purchase_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle maintenance envelope.
+  static Future<Uint8List> encryptVehicleMaintenance({
+    required VehicleMaintenanceEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleMaintenanceAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleMaintenance,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'event_json': envelope.eventJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle maintenance envelope.
+  static Future<VehicleMaintenanceEnvelope> decryptVehicleMaintenance({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleMaintenance);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleMaintenanceAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleMaintenanceEnvelope(
+      senderLongTermPublicKey: senderPub,
+      eventJson: (json['event_json'] as String?) ?? '{}',
+    );
+  }
+
+  /// Encrypts a steady-state vehicle traffic violation envelope.
+  static Future<Uint8List> encryptVehicleTrafficViolation({
+    required VehicleTrafficViolationEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleTrafficViolationAeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: EnvelopeKind.vehicleTrafficViolation,
+      senderPub: envelope.senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(
+      jsonEncode({'violation_json': envelope.violationJson}),
+    );
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  /// Decrypts a steady-state vehicle traffic violation envelope.
+  static Future<VehicleTrafficViolationEnvelope>
+      decryptVehicleTrafficViolation({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    _expectKind(frame, EnvelopeKind.vehicleTrafficViolation);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: _vehicleTrafficViolationAeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return VehicleTrafficViolationEnvelope(
+      senderLongTermPublicKey: senderPub,
+      violationJson: (json['violation_json'] as String?) ?? '{}',
     );
   }
 }

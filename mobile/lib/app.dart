@@ -591,6 +591,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                 path: 'maintenance-log',
                 builder: (context, state) => VehicleMaintenanceLogScreen(
                   vehicleId: state.pathParameters['vehicleId']!,
+                  prefs: prefs,
                 ),
                 routes: [
                   GoRoute(
@@ -598,6 +599,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                     builder: (context, state) => VehicleMaintenanceDetailScreen(
                       vehicleId: state.pathParameters['vehicleId']!,
                       eventId: state.pathParameters['eventId']!,
+                      prefs: prefs,
                     ),
                   ),
                 ],
@@ -606,6 +608,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                 path: 'violation-log',
                 builder: (context, state) => VehicleViolationLogScreen(
                   vehicleId: state.pathParameters['vehicleId']!,
+                  prefs: prefs,
                 ),
                 routes: [
                   GoRoute(
@@ -613,6 +616,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                     builder: (context, state) => VehicleViolationDetailScreen(
                       vehicleId: state.pathParameters['vehicleId']!,
                       violationId: state.pathParameters['violationId']!,
+                      prefs: prefs,
                     ),
                   ),
                 ],
@@ -714,6 +718,32 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
               final borrower = state.uri.queryParameters['borrower'] ?? '';
               return VehicleFuelPurchaseScreen(
                 initialVehicleId: state.pathParameters['vehicleId']!,
+                prefs: prefs,
+                usageContext: VehicleUsageContext.borrower(
+                  actingContactId: borrower,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: ':vehicleId/maintenance',
+            builder: (context, state) {
+              final borrower = state.uri.queryParameters['borrower'] ?? '';
+              return VehicleMaintenanceFormScreen(
+                vehicleId: state.pathParameters['vehicleId']!,
+                prefs: prefs,
+                usageContext: VehicleUsageContext.borrower(
+                  actingContactId: borrower,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: ':vehicleId/violation',
+            builder: (context, state) {
+              final borrower = state.uri.queryParameters['borrower'] ?? '';
+              return VehicleViolationFormScreen(
+                vehicleId: state.pathParameters['vehicleId']!,
                 prefs: prefs,
                 usageContext: VehicleUsageContext.borrower(
                   actingContactId: borrower,

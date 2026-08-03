@@ -45,3 +45,21 @@ This skip does **not** apply to Maestro / `qa:run-*` (separate policy in Maestro
 ## Delivery bar
 
 Only report completion when `flutter analyze --fatal-infos` succeeds with no remaining issues, and either `flutter test` succeeded or the **skip rule** above clearly applied (state that briefly when skipping).
+
+## QA APK native SQLite (after clean / APK rebuild)
+
+`analyze` / `test` do **not** prove the Android QA APK can open Drift. After
+`flutter clean` or any rebuild that refreshes `mobile/build/native_assets/**`
+or `app-dev-debug.apk`, if the user will run Maestro / `qa:run-*`:
+
+1. Extract `lib/x86_64/libsqlite3.so` from the APK (and preferably `arm64-v8a`).
+2. Confirm `readelf -d` shows **`NEEDED … libc.so`** (Android).  
+   **`libc.so.6`** means a Linux host binary was packaged — seeds will hang on
+   Setup with `seed_applied` empty (see
+   `no-probability-coding.mdc` founder incident, 2 Aug 2026).
+3. Do **not** hand off “re-run the scenario” until that check passes (or say
+   explicitly that the APK was not rebuilt / not verified).
+4. Do **not** also place `libsqlite3.so` under
+   `mobile/android/app/src/main/jniLibs` while Flutter installs the same name
+   via `native_assets` — that fails `mergeDevDebugJniLibFolders` with Duplicate
+   resources (`mobile/terminal.log` 2026-08-02 18:43). One path only.

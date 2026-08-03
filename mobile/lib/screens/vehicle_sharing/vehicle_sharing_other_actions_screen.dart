@@ -86,6 +86,36 @@ class VehicleSharingOtherActionsScreen extends StatelessWidget {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: qaVehicleSharingSemantics(
+                      identifier: kQaVehicleSharingOtherActionsMaintenance,
+                      button: true,
+                      onTap: () => context.push(
+                        '/vehicle-sharing/$vehicleId/maintenance?borrower=$borrower',
+                      ),
+                      child: Text(l10n.vehicleQuickActionMaintenance),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(
+                      '/vehicle-sharing/$vehicleId/maintenance?borrower=$borrower',
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: qaVehicleSharingSemantics(
+                      identifier: kQaVehicleSharingOtherActionsViolation,
+                      button: true,
+                      onTap: () => context.push(
+                        '/vehicle-sharing/$vehicleId/violation?borrower=$borrower',
+                      ),
+                      child: Text(l10n.vehicleQuickActionViolation),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(
+                      '/vehicle-sharing/$vehicleId/violation?borrower=$borrower',
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: qaVehicleSharingSemantics(
                       identifier: kQaVehicleSharingOtherActionsJournals,
                       button: true,
                       onTap: () => context.push(

@@ -42,6 +42,8 @@ import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
 import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
 import '../vehicle/sharing/vehicle_fuel_purchase_transport_service.dart';
+import '../vehicle/sharing/vehicle_maintenance_transport_service.dart';
+import '../vehicle/sharing/vehicle_violation_transport_service.dart';
 import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
 import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
@@ -1299,6 +1301,22 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleMaintenance) {
+            await _handleInboundVehicleMaintenance(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleTrafficViolation) {
+            await _handleInboundVehicleTrafficViolation(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else {
             await _relay.ackEnvelope(
               envelopeId: env.envelopeId,
@@ -2076,6 +2094,172 @@ class HandshakeOrchestrator {
     } catch (e, st) {
       debugPrint(
         'vehicle_fuel_purchase import failed for ${senderContact.id}: $e\n$st',
+      );
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _handleInboundVehicleMaintenance({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleMaintenanceEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleMaintenance(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_maintenance decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final imported =
+          await VehicleMaintenanceTransportService(_db).importReceivedEvent(
+        eventJson: decrypted.eventJson,
+        borrowerContactId: senderContact.id,
+      );
+      debugPrint(
+        'vehicle_maintenance imported from ${senderContact.id} '
+        'vehicle=${imported.vehicleId} event=${imported.id}',
+      );
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleMaintenanceReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: senderContact.id,
+        initiatorDisplayName: senderContact.displayName,
+        details: {
+          'vehicleId': imported.vehicleId,
+          'eventId': imported.id,
+          'category': imported.category,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        final vehicle =
+            await VehiclesRepository(_db).getVehicle(imported.vehicleId);
+        await PushNotificationService.showLocalVehicleMaintenanceNotification(
+          borrowerDisplayName: senderContact.displayName,
+          vehicleLabel: vehicle?.displayLabel,
+          vehicleId: imported.vehicleId,
+          eventId: imported.id,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_maintenance import failed for ${senderContact.id}: $e\n$st',
+      );
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _handleInboundVehicleTrafficViolation({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleTrafficViolationEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleTrafficViolation(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_traffic_violation decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final imported = await VehicleViolationTransportService(_db)
+          .importReceivedViolation(
+        violationJson: decrypted.violationJson,
+        borrowerContactId: senderContact.id,
+      );
+      debugPrint(
+        'vehicle_traffic_violation imported from ${senderContact.id} '
+        'vehicle=${imported.vehicleId} violation=${imported.id}',
+      );
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleTrafficViolationReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: senderContact.id,
+        initiatorDisplayName: senderContact.displayName,
+        details: {
+          'vehicleId': imported.vehicleId,
+          'violationId': imported.id,
+          'violationType': imported.violationType,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        final vehicle =
+            await VehiclesRepository(_db).getVehicle(imported.vehicleId);
+        await PushNotificationService
+            .showLocalVehicleTrafficViolationNotification(
+          borrowerDisplayName: senderContact.displayName,
+          vehicleLabel: vehicle?.displayLabel,
+          vehicleId: imported.vehicleId,
+          violationId: imported.id,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_traffic_violation import failed for ${senderContact.id}: '
+        '$e\n$st',
       );
     }
     await _relay.ackEnvelope(
@@ -4637,6 +4821,144 @@ class HandshakeOrchestrator {
         'linkId': linkId,
         'vehicleId': vehicleId,
         'remotePurchaseId': remotePurchaseId,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts encrypted borrower maintenance facts to the Propriétaire.
+  Future<void> sendVehicleMaintenance({
+    required String linkId,
+    required String vehicleId,
+    required String remoteEventId,
+  }) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final eventJson =
+        await VehicleMaintenanceTransportService(_db).exportEventJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteEventId: remoteEventId,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleMaintenance(
+      envelope: VehicleMaintenanceEnvelope(
+        senderLongTermPublicKey: selfPub,
+        eventJson: eventJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleMaintenance,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleMaintenanceSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remoteEventId': remoteEventId,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Posts encrypted borrower traffic violation facts to the Propriétaire.
+  Future<void> sendVehicleTrafficViolation({
+    required String linkId,
+    required String vehicleId,
+    required String remoteViolationId,
+  }) async {
+    final link = await VehiclesRepository(_db).getSharingLink(linkId);
+    if (link == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final ownerContactId = link.ownerContactId;
+    final contact = await _contacts.get(ownerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final violationJson =
+        await VehicleViolationTransportService(_db).exportViolationJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteViolationId: remoteViolationId,
+    );
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleTrafficViolation(
+      envelope: VehicleTrafficViolationEnvelope(
+        senderLongTermPublicKey: selfPub,
+        violationJson: violationJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleTrafficViolation,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleTrafficViolationSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remoteViolationId': remoteViolationId,
       },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;

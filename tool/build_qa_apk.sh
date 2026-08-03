@@ -50,6 +50,9 @@ if [[ "${simulation_locked}" == "true" ]]; then
 fi
 echo "Target: android-arm64 + android-x64 (physical phones + x86_64 QA emulators)."
 
+# Keep sqlite3 native-asset path Android-only (single source; no src/main/jniLibs).
+qa_ensure_android_jni_sqlite3 "${MOBILE}"
+
 build_args=(
   build apk --debug --flavor dev
   --dart-define=ENV=dev
@@ -75,6 +78,9 @@ if ! qa_apk_contains_libflutter_for_abi "${APK}" x86_64; then
 fi
 if ! qa_apk_contains_libflutter_for_abi "${APK}" arm64-v8a; then
   echo "ERROR: ${APK} is missing lib/arm64-v8a/libflutter.so after build." >&2
+  exit 1
+fi
+if ! qa_apk_assert_android_libsqlite3 "${APK}"; then
   exit 1
 fi
 

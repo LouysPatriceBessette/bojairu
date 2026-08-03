@@ -2179,6 +2179,37 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationVehicleMaintenanceTitle => 'Entretien enregistré';
+
+  @override
+  String get pushNotificationVehicleMaintenanceBody =>
+      'Un emprunteur a enregistré un entretien sur un véhicule partagé.';
+
+  @override
+  String pushNotificationVehicleMaintenanceBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name a enregistré un entretien sur $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleTrafficViolationTitle =>
+      'Dommage ou infraction';
+
+  @override
+  String get pushNotificationVehicleTrafficViolationBody =>
+      'Un emprunteur a enregistré un dommage ou une infraction sur un véhicule partagé.';
+
+  @override
+  String pushNotificationVehicleTrafficViolationBodyFrom(
+    String name,
+    String vehicle,
+  ) {
+    return '$name a enregistré un dommage ou une infraction sur $vehicle.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Offre enregistrée ici, mais l\'envoi au contact a échoué. Réessayez plus tard.';
 
@@ -4548,6 +4579,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get vehicleSharingFuelRelayFailed =>
       'Achat enregistré ici, mais l\'envoi au propriétaire a échoué. Réessayez plus tard.';
+
+  @override
+  String get vehicleSharingForwardRelayFailed =>
+      'Enregistré ici, mais l\'envoi au propriétaire a échoué. Réessayez plus tard.';
 
   @override
   String get vehicleUsageBlockedOwnOnBorrowerPath =>

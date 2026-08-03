@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../activity/relay_activity_log_service.dart';
 import '../../db/app_database.dart';
@@ -14,6 +13,7 @@ import '../../util/vehicle_meter_display.dart';
 import '../../vehicle/sharing/vehicle_sharing_activity_labels.dart';
 import '../../vehicle/vehicle_gap_correction.dart';
 import '../../vehicle/vehicle_kind.dart';
+import '../../vehicle/vehicle_maintenance_categories.dart';
 import '../../vehicle/vehicle_meter_journal_sort.dart';
 import '../../vehicle/vehicle_meter_reading_labels.dart';
 import '../../widgets/screen_body_padding.dart';
@@ -96,9 +96,11 @@ class _VehicleJournalsScreenState extends State<VehicleJournalsScreen> {
                 ),
               _VehicleJournalKind.maintenance => _MaintenanceJournalList(
                   vehicleId: widget.vehicleId,
+                  prefs: widget.prefs,
                 ),
               _VehicleJournalKind.violation => _ViolationJournalList(
                   vehicleId: widget.vehicleId,
+                  prefs: widget.prefs,
                 ),
             },
           ),
@@ -388,13 +390,18 @@ class _SharingSessionsJournalList extends StatelessWidget {
 }
 
 class _MaintenanceJournalList extends StatelessWidget {
-  const _MaintenanceJournalList({required this.vehicleId});
+  const _MaintenanceJournalList({
+    required this.vehicleId,
+    required this.prefs,
+  });
 
   final String vehicleId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return FutureBuilder<List<MaintenanceEvent>>(
       future: VehiclesRepository(AppDatabase.processScope)
           .listMaintenanceEvents(vehicleId),
@@ -412,13 +419,15 @@ class _MaintenanceJournalList extends StatelessWidget {
           separatorBuilder: (context, index) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final row = rows[index];
-            final date = DateFormat.yMMMd().add_Hm().format(
-                  row.servicedAt.toLocal(),
-                );
+            final date = formatPreferenceDateTime(row.servicedAt, dateFmt);
             return ListTile(
-              title: Text(row.category),
+              title: Text(
+                vehicleMaintenanceCategoryLabel(l10n, row.category),
+              ),
               subtitle: Text(date),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: Text(
+                formatMinorAsMoney(context, row.costMinor, row.currency),
+              ),
               onTap: () => context.push(
                 '/vehicle/$vehicleId/maintenance-log/${row.id}',
               ),
@@ -431,13 +440,18 @@ class _MaintenanceJournalList extends StatelessWidget {
 }
 
 class _ViolationJournalList extends StatelessWidget {
-  const _ViolationJournalList({required this.vehicleId});
+  const _ViolationJournalList({
+    required this.vehicleId,
+    required this.prefs,
+  });
 
   final String vehicleId;
+  final AppPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(prefs);
     return FutureBuilder<List<TrafficViolation>>(
       future: VehiclesRepository(AppDatabase.processScope)
           .listViolations(vehicleId),
@@ -455,13 +469,13 @@ class _ViolationJournalList extends StatelessWidget {
           separatorBuilder: (context, index) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final row = rows[index];
-            final date = DateFormat.yMMMd().add_Hm().format(
-                  row.violatedAt.toLocal(),
-                );
+            final date = formatPreferenceDateTime(row.violatedAt, dateFmt);
             return ListTile(
               title: Text(row.violationType),
               subtitle: Text(date),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: Text(
+                formatMinorAsMoney(context, row.amountMinor, row.currency),
+              ),
               onTap: () => context.push(
                 '/vehicle/$vehicleId/violation-log/${row.id}',
               ),
