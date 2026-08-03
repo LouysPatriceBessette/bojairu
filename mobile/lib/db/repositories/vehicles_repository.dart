@@ -68,6 +68,7 @@ enum MeterReadingRole {
   sessionEnd,
   standalone,
   fuelPurchase,
+  maintenance,
   correction;
 
   String get wire => name;
@@ -491,7 +492,11 @@ class VehiclesRepository {
           ..limit(1))
         .getSingleOrNull();
     if (maintenance != null) {
-      consider(maintenance.servicedAt, maintenance.meterAtService, null);
+      consider(
+        maintenance.servicedAt,
+        maintenance.meterAtService,
+        maintenance.attachmentPath,
+      );
     }
 
     return best;
@@ -1138,6 +1143,25 @@ class VehiclesRepository {
             meterAtService: drift.Value(meterAtService),
           ),
         );
+    // Oil (and any category with a meter) also advances the vehicle odometer
+    // via a canonical meter reading — including Emprunteur → Propriétaire import.
+    if (meterAtService != null) {
+      final vehicle = await getVehicle(vehicleId);
+      if (vehicle != null) {
+        final photoPath = (attachmentPath != null && attachmentPath.isNotEmpty)
+            ? attachmentPath
+            : kVehicleMeterPhotoKnownUnchangedSentinel;
+        await saveMeterReading(
+          vehicleId: vehicleId,
+          value: meterAtService,
+          unit: meterUnitForVehicle(vehicle),
+          photoPath: photoPath,
+          recordedByContactId: recordedByContactId,
+          role: MeterReadingRole.maintenance,
+          recordedAt: servicedAt,
+        );
+      }
+    }
     return (await (_db.select(_db.maintenanceEvents)
               ..where((t) => t.id.equals(id)))
             .getSingle());

@@ -423,6 +423,8 @@ class _VehicleAddScreenState extends State<VehicleAddScreen> {
               label: _initialMeterLabel(l10n),
               unitSuffix: _kind.usesHorometer ? 'h' : distanceUnitLabel,
               decimal: true,
+              meterUsesHorometer: _kind.usesHorometer,
+              meterDistanceUnit: distanceUnit,
               onChanged: (_) => _refresh(),
             ),
           ),

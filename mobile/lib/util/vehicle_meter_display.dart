@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 import '../prefs/app_preferences.dart';
 import 'display_units.dart';
@@ -76,6 +76,32 @@ String formatStoredMeterForInput(
   final displayTenths =
       _storedKmTenthsToDisplayTenths(storedTenths, distanceUnit);
   return _formatStoredTenthsCore(displayTenths);
+}
+
+/// Reformats a meter/horometer text field on blur only (never while typing).
+///
+/// Empty or unparsable input is left unchanged.
+void applyMeterInputFormatOnBlur(
+  TextEditingController controller, {
+  required bool usesHorometer,
+  required DistanceUnit distanceUnit,
+}) {
+  final parsed = parseMeterInputToStoredTenths(
+    controller.text,
+    usesHorometer: usesHorometer,
+    distanceUnit: distanceUnit,
+  );
+  if (parsed == null) return;
+  final formatted = formatStoredMeterForInput(
+    parsed,
+    usesHorometer: usesHorometer,
+    distanceUnit: distanceUnit,
+  );
+  if (controller.text == formatted) return;
+  controller.value = TextEditingValue(
+    text: formatted,
+    selection: TextSelection.collapsed(offset: formatted.length),
+  );
 }
 
 String formatStoredMeterForDisplay(

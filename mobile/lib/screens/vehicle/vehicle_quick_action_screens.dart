@@ -337,6 +337,8 @@ class _VehicleFuelPurchaseScreenState extends State<VehicleFuelPurchaseScreen> {
                             : l10n.vehicleFuelMeter,
                         unitSuffix: meterUnitSuffix,
                         decimal: true,
+                        meterUsesHorometer: usesHorometer,
+                        meterDistanceUnit: resolveDistanceUnit(widget.prefs),
                         onChanged: (_) => _refresh(),
                       ),
                     ),
@@ -591,6 +593,9 @@ class _VehicleStandaloneMeterReadingScreenState
                                 ? 'h'
                                 : distanceUnit,
                             decimal: true,
+                            meterUsesHorometer: kind?.usesHorometer ?? false,
+                            meterDistanceUnit:
+                                resolveDistanceUnit(widget.prefs),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -707,6 +712,7 @@ class _VehicleMaintenanceFormScreenState
 
   Future<void> _save() async {
     if (!_canSave) return;
+    final l10n = AppLocalizations.of(context);
     final costMajor = double.parse(_cost.text.replaceAll(',', '.'));
     final meterAtService = _category.requiresOdometer ? _parsedMeter() : null;
     final String? attachmentPath;
@@ -724,6 +730,28 @@ class _VehicleMaintenanceFormScreenState
       );
       if (!ok || !mounted) return;
       final repo = VehiclesRepository(AppDatabase.processScope);
+      final vehicle = _vehicle;
+      if (meterAtService != null && vehicle != null) {
+        final kind = VehicleKind.fromWire(vehicle.vehicleKind);
+        final usesHorometer = kind?.usesHorometer ?? false;
+        final distanceUnit = resolveDistanceUnit(widget.prefs);
+        if (!mounted) return;
+        final gapResult = await confirmMeterGapsBeforeSave(
+          context: context,
+          l10n: l10n,
+          repo: repo,
+          vehicle: vehicle,
+          parsedMeter: meterAtService,
+          actingContactId: widget.usageContext.actingContactId,
+          isOwnerContext: widget.usageContext.isOwner,
+          usesHorometer: usesHorometer,
+          distanceUnit: distanceUnit,
+          // Maintenance advances the meter; do not prompt for ordinary positive
+          // gaps (owner attribution or borrower typo). Negative + one-tank only.
+          attributePositiveGap: false,
+        );
+        if (!gapResult.proceed || !mounted) return;
+      }
       final event = await repo.saveMaintenanceEvent(
         vehicleId: widget.vehicleId,
         servicedAt: DateTime.now().toUtc(),
@@ -737,7 +765,6 @@ class _VehicleMaintenanceFormScreenState
       );
       if (!mounted) return;
       if (widget.usageContext.forwardsToOwner) {
-        final l10n = AppLocalizations.of(context);
         final relayOk = await _forwardMaintenanceToOwner(
           vehicleId: widget.vehicleId,
           remoteEventId: event.id,
@@ -855,6 +882,8 @@ class _VehicleMaintenanceFormScreenState
                             : l10n.vehicleFuelMeter,
                         unitSuffix: meterUnitSuffix,
                         decimal: true,
+                        meterUsesHorometer: kind?.usesHorometer ?? false,
+                        meterDistanceUnit: resolveDistanceUnit(widget.prefs),
                         onChanged: (_) => _refresh(),
                       ),
                       const SizedBox(height: 12),

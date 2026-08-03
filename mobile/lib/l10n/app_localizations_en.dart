@@ -3863,6 +3863,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehicleLogReadingRoleFuelPurchase => 'Fuel purchase';
 
   @override
+  String get vehicleLogReadingRoleMaintenance => 'Maintenance';
+
+  @override
   String get vehicleLogReadingRoleCorrection => 'Correction';
 
   @override
@@ -4365,6 +4368,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vehicleNegativeGapCancel => 'Cancel entry';
+
+  @override
+  String get vehicleBorrowerMeterRecheckTitle => 'Check this reading';
+
+  @override
+  String vehicleBorrowerMeterRecheckBody(String gap) {
+    return 'The new reading is $gap lower than the last known reading. Please verify the number before continuing.';
+  }
+
+  @override
+  String get vehicleBorrowerMeterRecheckConfirm => 'I confirm';
+
+  @override
+  String get vehicleBorrowerMeterRecheckCorrect => 'I\'ll correct it';
 
   @override
   String get vehicleSuspiciousGapTitle => 'Unusually large difference';

@@ -63,4 +63,14 @@ void main() {
       147438,
     );
   });
+
+  test('applyMeterInputFormatOnBlur matches display-style input', () {
+    final controller = TextEditingController(text: '50010');
+    applyMeterInputFormatOnBlur(
+      controller,
+      usesHorometer: false,
+      distanceUnit: DistanceUnit.km,
+    );
+    expect(controller.text, '50 010.0');
+  });
 }

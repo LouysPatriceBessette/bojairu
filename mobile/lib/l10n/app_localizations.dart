@@ -6463,6 +6463,12 @@ abstract class AppLocalizations {
   /// **'Fuel purchase'**
   String get vehicleLogReadingRoleFuelPurchase;
 
+  /// No description provided for @vehicleLogReadingRoleMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get vehicleLogReadingRoleMaintenance;
+
   /// No description provided for @vehicleLogReadingRoleCorrection.
   ///
   /// In en, this message translates to:
@@ -7322,6 +7328,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel entry'**
   String get vehicleNegativeGapCancel;
+
+  /// No description provided for @vehicleBorrowerMeterRecheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this reading'**
+  String get vehicleBorrowerMeterRecheckTitle;
+
+  /// No description provided for @vehicleBorrowerMeterRecheckBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The new reading is {gap} lower than the last known reading. Please verify the number before continuing.'**
+  String vehicleBorrowerMeterRecheckBody(String gap);
+
+  /// No description provided for @vehicleBorrowerMeterRecheckConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm'**
+  String get vehicleBorrowerMeterRecheckConfirm;
+
+  /// No description provided for @vehicleBorrowerMeterRecheckCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll correct it'**
+  String get vehicleBorrowerMeterRecheckCorrect;
 
   /// No description provided for @vehicleSuspiciousGapTitle.
   ///

@@ -696,13 +696,20 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
   final String eventId;
   final AppPreferences prefs;
 
+  Future<(MaintenanceEvent?, Vehicle?)> _load() async {
+    final repo = VehiclesRepository(AppDatabase.processScope);
+    final event = await repo.getMaintenanceEvent(eventId);
+    final vehicle = await repo.getVehicle(vehicleId);
+    return (event, vehicle);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dateFmt = effectiveDateFormat(prefs);
-    return FutureBuilder<MaintenanceEvent?>(
-      future: VehiclesRepository(AppDatabase.processScope)
-          .getMaintenanceEvent(eventId),
+    final distanceUnit = resolveDistanceUnit(prefs);
+    return FutureBuilder<(MaintenanceEvent?, Vehicle?)>(
+      future: _load(),
       builder: (context, snap) {
         if (!snap.hasData) {
           return Scaffold(
@@ -710,7 +717,8 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
             body: const Center(child: CircularProgressIndicator()),
           );
         }
-        final row = snap.data;
+        final row = snap.data!.$1;
+        final vehicle = snap.data!.$2;
         if (row == null) {
           return Scaffold(
             appBar: AppBar(title: Text(l10n.vehicleLogMaintenanceDetailTitle)),
@@ -718,6 +726,8 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
           );
         }
         final date = formatPreferenceDateTime(row.servicedAt, dateFmt);
+        final usesHorometer =
+            VehicleKind.fromWire(vehicle?.vehicleKind)?.usesHorometer ?? false;
         return Scaffold(
           appBar: AppBar(title: Text(l10n.vehicleLogMaintenanceDetailTitle)),
           body: ListView(
@@ -741,8 +751,19 @@ class VehicleMaintenanceDetailScreen extends StatelessWidget {
               ),
               if (row.meterAtService != null)
                 ListTile(
-                  title: Text(l10n.vehicleFuelMeter),
-                  subtitle: Text('${row.meterAtService}'),
+                  title: Text(
+                    usesHorometer
+                        ? l10n.vehicleHorometerLabel
+                        : l10n.vehicleFuelMeter,
+                  ),
+                  subtitle: Text(
+                    formatStoredMeterForDisplay(
+                      context,
+                      row.meterAtService!,
+                      usesHorometer: usesHorometer,
+                      distanceUnit: distanceUnit,
+                    ),
+                  ),
                 ),
               if (row.attachmentPath != null &&
                   meterReadingHasDisplayablePhoto(row.attachmentPath!)) ...[

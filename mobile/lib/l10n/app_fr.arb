@@ -1573,6 +1573,7 @@
   },
   "vehicleLogReadingRoleStandalone": "Lecture ponctuelle",
   "vehicleLogReadingRoleFuelPurchase": "Achat de carburant",
+  "vehicleLogReadingRoleMaintenance": "Entretien",
   "vehicleLogReadingRoleCorrection": "Correction",
   "vehicleLogReadingRoleCorrectionBy": "Correction par {userName}",
   "@vehicleLogReadingRoleCorrectionBy": {
@@ -1821,6 +1822,15 @@
   "vehicleNegativeGapBody": "Le nouveau relevé est inférieur de {gap} au dernier relevé enregistré.",
   "vehicleNegativeGapMaintain": "Conserver le relevé, vérifier plus tard",
   "vehicleNegativeGapCancel": "Annuler la saisie",
+  "vehicleBorrowerMeterRecheckTitle": "Vérifie ce chiffre",
+  "vehicleBorrowerMeterRecheckBody": "Le nouveau relevé est inférieur de {gap} au dernier relevé connu. Vérifie le chiffre avant de continuer.",
+  "@vehicleBorrowerMeterRecheckBody": {
+    "placeholders": {
+      "gap": { "type": "String" }
+    }
+  },
+  "vehicleBorrowerMeterRecheckConfirm": "Je confirme",
+  "vehicleBorrowerMeterRecheckCorrect": "Je corrige",
   "vehicleSuspiciousGapTitle": "Différentiel inhabituellement élevé",
   "vehicleSuspiciousGapBody": "Le différentiel de {gap} dépasse ce qui est plausible avec un plein ({maxGap}). Ce relevé est peut-être erroné.",
   "@vehicleSuspiciousGapBody": {

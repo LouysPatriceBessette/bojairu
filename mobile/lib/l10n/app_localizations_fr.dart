@@ -3902,6 +3902,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehicleLogReadingRoleFuelPurchase => 'Achat de carburant';
 
   @override
+  String get vehicleLogReadingRoleMaintenance => 'Entretien';
+
+  @override
   String get vehicleLogReadingRoleCorrection => 'Correction';
 
   @override
@@ -4411,6 +4414,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vehicleNegativeGapCancel => 'Annuler la saisie';
+
+  @override
+  String get vehicleBorrowerMeterRecheckTitle => 'Vérifie ce chiffre';
+
+  @override
+  String vehicleBorrowerMeterRecheckBody(String gap) {
+    return 'Le nouveau relevé est inférieur de $gap au dernier relevé connu. Vérifie le chiffre avant de continuer.';
+  }
+
+  @override
+  String get vehicleBorrowerMeterRecheckConfirm => 'Je confirme';
+
+  @override
+  String get vehicleBorrowerMeterRecheckCorrect => 'Je corrige';
 
   @override
   String get vehicleSuspiciousGapTitle => 'Différentiel inhabituellement élevé';

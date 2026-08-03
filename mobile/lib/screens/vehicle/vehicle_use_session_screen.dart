@@ -345,6 +345,7 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       if (!mounted) return;
       // Peer open use absorbs the meter advance when we close it in good faith;
       // do not create a separate "unknown" positive gap for that span.
+      final endingSession = openUse != null || blockingOpenUse != null;
       final gapResult = await confirmMeterGapsBeforeSave(
         context: context,
         l10n: l10n,
@@ -356,12 +357,14 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         usesHorometer: usesHorometer,
         distanceUnit: distanceUnit,
         attributePositiveGap: openUse == null && blockingOpenUse == null,
+        // Session end uses confirmSuspiciousSessionEndDistanceBeforeSave.
+        confirmOneTankSuspiciousGap: !endingSession,
       );
       if (!gapResult.proceed) {
         return;
       }
 
-      if (openUse != null || blockingOpenUse != null) {
+      if (endingSession) {
         final sessionToClose = openUse ?? blockingOpenUse!;
         final startReading =
             await repo.getMeterReading(sessionToClose.startReadingId);
@@ -727,6 +730,10 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
                                 ? 'h'
                                 : distanceUnit,
                             decimal: true,
+                            meterUsesHorometer: kind?.usesHorometer ?? false,
+                            meterDistanceUnit: widget.prefs == null
+                                ? DistanceUnit.km
+                                : resolveDistanceUnit(widget.prefs!),
                           ),
                         ),
                         const SizedBox(height: 12),

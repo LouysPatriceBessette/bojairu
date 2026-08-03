@@ -116,7 +116,7 @@ Future<void> applyQaE2eEnvironmentSnapshot(
 Future<void> persistQaE2eEnvironment({
   required String scenarioId,
   String languageCode = 'fr',
-  bool meterPhotoOptional = true,
+  bool meterPhotoOptional = false,
   String? postSeedAction,
   String? paymentReminderPlanId,
 }) async {

@@ -76,6 +76,14 @@ const kQaVehicleGapSuspiciousConfirm = 'qa-vehicle-gap-suspicious-confirm';
 /// Implausible-gap dialog: cancel and review entry.
 const kQaVehicleGapSuspiciousCancel = 'qa-vehicle-gap-suspicious-cancel';
 
+/// Borrower lower-than-known meter recheck: confirm the entered reading.
+const kQaVehicleBorrowerMeterRecheckConfirm =
+    'qa-vehicle-borrower-meter-recheck-confirm';
+
+/// Borrower lower-than-known meter recheck: go back and correct entry.
+const kQaVehicleBorrowerMeterRecheckCorrect =
+    'qa-vehicle-borrower-meter-recheck-correct';
+
 /// Session-end tank dialog: review the odometer / tank entry.
 const kQaVehicleSessionEndTankReview = 'qa-vehicle-session-end-tank-review';
 

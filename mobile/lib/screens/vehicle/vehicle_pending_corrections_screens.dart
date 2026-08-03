@@ -510,6 +510,8 @@ class _VehiclePendingCorrectionDetailScreenState
                   : l10n.vehicleOdometerLabel,
               unitSuffix: usesHorometer ? 'h' : distanceUnitAbbrev(distanceUnit),
               decimal: true,
+              meterUsesHorometer: usesHorometer,
+              meterDistanceUnit: distanceUnit,
             ),
             if (tankLevels.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -582,6 +584,8 @@ class _VehiclePendingCorrectionDetailScreenState
               label: l10n.vehicleGapResolutionStartMeter,
               unitSuffix: usesHorometer ? 'h' : distanceUnitAbbrev(distanceUnit),
               decimal: true,
+              meterUsesHorometer: usesHorometer,
+              meterDistanceUnit: distanceUnit,
             ),
             const SizedBox(height: 8),
             VehicleNarrowUnitField(
@@ -589,6 +593,8 @@ class _VehiclePendingCorrectionDetailScreenState
               label: l10n.vehicleGapResolutionEndMeter,
               unitSuffix: usesHorometer ? 'h' : distanceUnitAbbrev(distanceUnit),
               decimal: true,
+              meterUsesHorometer: usesHorometer,
+              meterDistanceUnit: distanceUnit,
             ),
             const SizedBox(height: 8),
             ListTile(

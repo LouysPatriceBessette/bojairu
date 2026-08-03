@@ -196,10 +196,115 @@ Future<NegativeGapChoice?> showNegativeGapDialog(
   );
 }
 
+/// Emprunteur typo recheck when the new reading is below the last known meter.
+Future<bool> showBorrowerMeterRecheckDialog(
+  BuildContext context, {
+  required String gapDisplay,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final choice = await showAppDialog<bool>(
+    context: context,
+    guardKey: 'vehicleBorrowerMeterRecheck',
+    builder: (ctx) {
+      return AlertDialog(
+        title: Text(l10n.vehicleBorrowerMeterRecheckTitle),
+        content: Text(l10n.vehicleBorrowerMeterRecheckBody(gapDisplay)),
+        actions: [
+          Semantics(
+            identifier: kDebugMode ? kQaVehicleBorrowerMeterRecheckCorrect : null,
+            container: true,
+            child: TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.vehicleBorrowerMeterRecheckCorrect),
+            ),
+          ),
+          Semantics(
+            identifier: kDebugMode ? kQaVehicleBorrowerMeterRecheckConfirm : null,
+            container: true,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.vehicleBorrowerMeterRecheckConfirm),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+  return choice ?? false;
+}
+
+/// Result of the one-tank plausibility prompt.
+enum OneTankSuspiciousGapCheck {
+  /// Gap is within the one-tank guard (or not applicable); no dialog shown.
+  notApplicable,
+
+  /// User cancelled the suspicious-gap dialog.
+  cancelled,
+
+  /// User confirmed an implausibly large gap.
+  confirmed,
+}
+
+/// One-tank plausibility prompt when [gapTenths] exceeds the max plausible gap.
+Future<OneTankSuspiciousGapCheck> confirmOneTankSuspiciousPositiveGap({
+  required BuildContext context,
+  required Vehicle vehicle,
+  required int gapTenths,
+  required bool usesHorometer,
+  required DistanceUnit distanceUnit,
+}) async {
+  if (usesHorometer || gapTenths <= 0) {
+    return OneTankSuspiciousGapCheck.notApplicable;
+  }
+  final tankCapacity = vehicle.fuelTankCapacityLiters;
+  if (tankCapacity == null || tankCapacity <= 0) {
+    return OneTankSuspiciousGapCheck.notApplicable;
+  }
+  final snapshot = await VehicleConsumptionMetrics(AppDatabase.processScope)
+      .forVehicle(vehicle.id);
+  final maxGapTenths = maxPlausiblePositiveGapTenths(
+    tankCapacityLiters: tankCapacity,
+    guardLitersPer100Km: guardConsumptionLitersPer100Km(snapshot),
+  );
+  if (!isSuspiciousPositiveGap(
+    gapTenths: gapTenths,
+    maxGapTenths: maxGapTenths,
+  )) {
+    return OneTankSuspiciousGapCheck.notApplicable;
+  }
+  if (!context.mounted) {
+    return OneTankSuspiciousGapCheck.cancelled;
+  }
+  final confirmed = await showSuspiciousPositiveGapDialog(
+    context,
+    gapDisplay: formatStoredMeterDeltaForDisplay(
+      context,
+      gapTenths,
+      usesHorometer: usesHorometer,
+      distanceUnit: distanceUnit,
+    ),
+    maxGapDisplay: formatStoredMeterDeltaForDisplay(
+      context,
+      maxGapTenths!,
+      usesHorometer: usesHorometer,
+      distanceUnit: distanceUnit,
+    ),
+  );
+  return confirmed
+      ? OneTankSuspiciousGapCheck.confirmed
+      : OneTankSuspiciousGapCheck.cancelled;
+}
+
 /// Negative- and positive-gap prompts before persisting a new meter value.
 ///
 /// When [attributePositiveGap] is false (e.g. fuel purchase during an open use
-/// session), positive-gap confirmation is skipped.
+/// session), Propriétaire positive-gap confirmation is skipped.
+/// Emprunteur never sees the any-positive "are you sure?" dialog — only the
+/// lower-than-known recheck and (when enabled) one-tank suspicious prompt.
+///
+/// When [confirmOneTankSuspiciousGap] is false (e.g. session end, which uses
+/// [confirmSuspiciousSessionEndDistanceBeforeSave]), the one-tank vs-latest
+/// plausibility prompt is skipped to avoid a duplicate dialog.
 Future<MeterGapConfirmResult> confirmMeterGapsBeforeSave({
   required BuildContext context,
   required AppLocalizations l10n,
@@ -211,20 +316,22 @@ Future<MeterGapConfirmResult> confirmMeterGapsBeforeSave({
   required bool usesHorometer,
   required DistanceUnit distanceUnit,
   required bool attributePositiveGap,
+  bool confirmOneTankSuspiciousGap = true,
 }) async {
   final latest = await repo.latestMeterValue(vehicle.id);
 
   if (latest != null && parsedMeter < latest) {
+    if (!context.mounted) return const MeterGapConfirmResult.cancel();
+    final gapDisplay = formatStoredMeterDeltaForDisplay(
+      context,
+      parsedMeter - latest,
+      usesHorometer: usesHorometer,
+      distanceUnit: distanceUnit,
+    );
     if (isOwnerContext) {
-      if (!context.mounted) return const MeterGapConfirmResult.cancel();
       final choice = await showNegativeGapDialog(
         context,
-        gapDisplay: formatStoredMeterDeltaForDisplay(
-          context,
-          parsedMeter - latest,
-          usesHorometer: usesHorometer,
-          distanceUnit: distanceUnit,
-        ),
+        gapDisplay: gapDisplay,
       );
       if (!context.mounted) return const MeterGapConfirmResult.cancel();
       if (choice != NegativeGapChoice.maintain) {
@@ -232,10 +339,23 @@ Future<MeterGapConfirmResult> confirmMeterGapsBeforeSave({
       }
       return MeterGapConfirmResult.ok(divergenceTenths: parsedMeter - latest);
     }
+    final confirmed = await showBorrowerMeterRecheckDialog(
+      context,
+      gapDisplay: gapDisplay,
+    );
+    if (!context.mounted || !confirmed) {
+      return const MeterGapConfirmResult.cancel();
+    }
     return MeterGapConfirmResult.ok(divergenceTenths: parsedMeter - latest);
   }
 
-  if (attributePositiveGap && latest != null && parsedMeter > latest) {
+  int? divergenceTenths;
+  // Positive-gap "are you sure?" is for Propriétaire attribution flows only.
+  // Emprunteur typo guards are negative recheck + one-tank suspicious below.
+  if (attributePositiveGap &&
+      isOwnerContext &&
+      latest != null &&
+      parsedMeter > latest) {
     if (!context.mounted) return const MeterGapConfirmResult.cancel();
     final confirmed = await showPositiveGapConfirmDialog(
       context,
@@ -249,9 +369,32 @@ Future<MeterGapConfirmResult> confirmMeterGapsBeforeSave({
     if (!context.mounted || !confirmed) {
       return const MeterGapConfirmResult.cancel();
     }
-    return MeterGapConfirmResult.ok(divergenceTenths: parsedMeter - latest);
+    divergenceTenths = parsedMeter - latest;
   }
 
+  if (confirmOneTankSuspiciousGap &&
+      latest != null &&
+      parsedMeter > latest) {
+    if (!context.mounted) return const MeterGapConfirmResult.cancel();
+    final gapTenths = parsedMeter - latest;
+    final check = await confirmOneTankSuspiciousPositiveGap(
+      context: context,
+      vehicle: vehicle,
+      gapTenths: gapTenths,
+      usesHorometer: usesHorometer,
+      distanceUnit: distanceUnit,
+    );
+    if (check == OneTankSuspiciousGapCheck.cancelled) {
+      return const MeterGapConfirmResult.cancel();
+    }
+    if (check == OneTankSuspiciousGapCheck.confirmed) {
+      divergenceTenths ??= gapTenths;
+    }
+  }
+
+  if (divergenceTenths != null) {
+    return MeterGapConfirmResult.ok(divergenceTenths: divergenceTenths);
+  }
   return const MeterGapConfirmResult.ok();
 }
 

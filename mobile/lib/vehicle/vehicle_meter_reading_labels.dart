@@ -97,6 +97,7 @@ Future<String> meterReadingRoleLabel({
       l10n.vehicleLogReadingRoleSessionStart(userName),
     MeterReadingRole.standalone => l10n.vehicleLogReadingRoleStandalone,
     MeterReadingRole.fuelPurchase => l10n.vehicleLogReadingRoleFuelPurchase,
+    MeterReadingRole.maintenance => l10n.vehicleLogReadingRoleMaintenance,
     MeterReadingRole.correction => l10n.vehicleLogReadingRoleCorrectionBy(userName),
     null => reading.readingRole,
   };

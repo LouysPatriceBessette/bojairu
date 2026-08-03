@@ -36,4 +36,15 @@ void main() {
     expect(prefs.getString(kQaE2eLastScenarioIdPrefKey), 'vehicle_use_session');
     expect(QaE2eFlags.meterPhotoOptional, isTrue);
   });
+
+  test('persistQaE2eEnvironment defaults meterPhotoOptional to false', () async {
+    SharedPreferences.setMockInitialValues({});
+    QaE2eFlags.setMeterPhotoOptional(true);
+
+    await persistQaE2eEnvironment(scenarioId: 'vehicle_sharing_active_owner');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(kQaE2eMeterPhotoOptionalPrefKey), isFalse);
+    expect(QaE2eFlags.meterPhotoOptional, isFalse);
+  });
 }

@@ -1737,6 +1737,7 @@
   },
   "vehicleLogReadingRoleStandalone": "One-time reading",
   "vehicleLogReadingRoleFuelPurchase": "Fuel purchase",
+  "vehicleLogReadingRoleMaintenance": "Maintenance",
   "vehicleLogReadingRoleCorrection": "Correction",
   "vehicleLogReadingRoleCorrectionBy": "Correction by {userName}",
   "@vehicleLogReadingRoleCorrectionBy": {
@@ -2013,6 +2014,15 @@
   },
   "vehicleNegativeGapMaintain": "Maintain reading, investigate later",
   "vehicleNegativeGapCancel": "Cancel entry",
+  "vehicleBorrowerMeterRecheckTitle": "Check this reading",
+  "vehicleBorrowerMeterRecheckBody": "The new reading is {gap} lower than the last known reading. Please verify the number before continuing.",
+  "@vehicleBorrowerMeterRecheckBody": {
+    "placeholders": {
+      "gap": { "type": "String" }
+    }
+  },
+  "vehicleBorrowerMeterRecheckConfirm": "I confirm",
+  "vehicleBorrowerMeterRecheckCorrect": "I'll correct it",
   "vehicleSuspiciousGapTitle": "Unusually large difference",
   "vehicleSuspiciousGapBody": "The difference of {gap} exceeds what is plausible on one tank ({maxGap}). This reading may be incorrect.",
   "@vehicleSuspiciousGapBody": {

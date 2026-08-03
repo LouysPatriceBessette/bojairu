@@ -1556,6 +1556,7 @@
   },
   "vehicleLogReadingRoleStandalone": "Lectura puntual",
   "vehicleLogReadingRoleFuelPurchase": "Compra de combustible",
+  "vehicleLogReadingRoleMaintenance": "Mantenimiento",
   "vehicleLogReadingRoleCorrection": "Corrección",
   "vehicleLogReadingRoleCorrectionBy": "Corrección por {userName}",
   "@vehicleLogReadingRoleCorrectionBy": {
@@ -1804,6 +1805,15 @@
   "vehicleNegativeGapBody": "La nueva lectura es {gap} inferior a la última guardada.",
   "vehicleNegativeGapMaintain": "Mantener lectura, investigar después",
   "vehicleNegativeGapCancel": "Cancelar entrada",
+  "vehicleBorrowerMeterRecheckTitle": "Comprueba esta lectura",
+  "vehicleBorrowerMeterRecheckBody": "La nueva lectura es {gap} inferior a la última lectura conocida. Verifica el número antes de continuar.",
+  "@vehicleBorrowerMeterRecheckBody": {
+    "placeholders": {
+      "gap": { "type": "String" }
+    }
+  },
+  "vehicleBorrowerMeterRecheckConfirm": "Confirmo",
+  "vehicleBorrowerMeterRecheckCorrect": "Lo corrijo",
   "vehicleSuspiciousGapTitle": "Diferencia inusualmente grande",
   "vehicleSuspiciousGapBody": "La diferencia de {gap} supera lo plausible con un tanque lleno ({maxGap}). Esta lectura puede ser incorrecta.",
   "@vehicleSuspiciousGapBody": {

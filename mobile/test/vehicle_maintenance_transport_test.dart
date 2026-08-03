@@ -62,6 +62,7 @@ void main() {
       imported.attachmentPath,
       kVehicleMeterPhotoKnownUnchangedSentinel,
     );
+    expect(await VehiclesRepository(db).latestMeterValue(vehicleId), 501000);
   });
 
   test('export then import round-trips maintenance fields', () async {

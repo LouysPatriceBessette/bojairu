@@ -24,6 +24,7 @@ int _meterReadingJournalRank(VehicleMeterReading reading) {
     MeterReadingRole.standalone => 3,
     MeterReadingRole.sessionEnd => 2,
     MeterReadingRole.fuelPurchase => 1,
+    MeterReadingRole.maintenance => 1,
     MeterReadingRole.correction => 4,
     null => 1,
   };

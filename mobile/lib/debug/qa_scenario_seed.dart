@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../db/app_database.dart';
 import '../db/repositories/vehicles_repository.dart';
@@ -139,9 +138,6 @@ Future<void> applyQaSharedPreferences(String scenarioId) async {
   );
   await prefs.setLanguageCode('fr');
   await prefs.completeOnboarding();
-  final rawPrefs = await SharedPreferences.getInstance();
-  await rawPrefs.setBool(kQaE2eMeterPhotoOptionalPrefKey, true);
-  QaE2eFlags.setMeterPhotoOptional(true);
   await _persistQaE2eForScenario(scenarioId);
 }
 
@@ -165,15 +161,36 @@ Future<void> _applyQaPaymentReminderPrefs(
 }
 
 Future<void> _persistQaE2eForScenario(String scenarioId) async {
+  final meterPhotoOptional = _qaMeterPhotoOptionalForScenario(scenarioId);
   switch (scenarioId) {
     case 'housing_payment_reminder_simulate_before_due':
       await persistQaE2eEnvironment(
         scenarioId: scenarioId,
+        meterPhotoOptional: meterPhotoOptional,
         paymentReminderPlanId: kQaPaymentReminderPlanId,
       );
     default:
-      await persistQaE2eEnvironment(scenarioId: scenarioId);
+      await persistQaE2eEnvironment(
+        scenarioId: scenarioId,
+        meterPhotoOptional: meterPhotoOptional,
+      );
   }
+}
+
+/// Maestro vehicle flows that enter meter values without driving the camera.
+///
+/// Multi-device / hub seeds used for manual QA keep photo required (false).
+bool _qaMeterPhotoOptionalForScenario(String scenarioId) {
+  return switch (scenarioId) {
+    'vehicle_fuel_purchase' ||
+    'vehicle_use_session' ||
+    'vehicle_session_start_gap' ||
+    'vehicle_standalone_meter_gap' ||
+    'vehicle_add' ||
+    'vehicle_consumption' =>
+      true,
+    _ => false,
+  };
 }
 
 ({String displayName, String avatarId}) _qaPersonaForScenario(
