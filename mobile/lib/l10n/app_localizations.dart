@@ -6529,6 +6529,126 @@ abstract class AppLocalizations {
   /// **'Pending corrections'**
   String get vehiclePendingCorrectionsTitle;
 
+  /// No description provided for @vehicleBorrowerBalancesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Borrower balances'**
+  String get vehicleBorrowerBalancesTitle;
+
+  /// No description provided for @vehicleBorrowerBalancesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No accepted borrowers yet.'**
+  String get vehicleBorrowerBalancesEmpty;
+
+  /// No description provided for @vehicleUsageBalanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage balance'**
+  String get vehicleUsageBalanceTitle;
+
+  /// No description provided for @vehicleUsageBalanceTileOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Borrower balances'**
+  String get vehicleUsageBalanceTileOwner;
+
+  /// No description provided for @vehicleUsageBalanceTileBorrower.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage balance'**
+  String get vehicleUsageBalanceTileBorrower;
+
+  /// No description provided for @vehicleUsageBalanceUnavailableConsumption.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage balance is unavailable until the vehicle has a reliable fuel-consumption estimate.'**
+  String get vehicleUsageBalanceUnavailableConsumption;
+
+  /// No description provided for @vehicleUsageBalanceUnavailableFuelPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage balance is unavailable until at least one fuel purchase with volume and cost is recorded.'**
+  String get vehicleUsageBalanceUnavailableFuelPrice;
+
+  /// No description provided for @vehicleUsageBalanceNetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get vehicleUsageBalanceNetLabel;
+
+  /// No description provided for @vehicleUsageBalanceOwedToOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount owed to the owner'**
+  String get vehicleUsageBalanceOwedToOwner;
+
+  /// No description provided for @vehicleUsageBalanceCreditForBorrower.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit for the borrower'**
+  String get vehicleUsageBalanceCreditForBorrower;
+
+  /// No description provided for @vehicleUsageBalanceEstimatedFuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated fuel cost ((C/100)×D×P)'**
+  String get vehicleUsageBalanceEstimatedFuel;
+
+  /// No description provided for @vehicleUsageBalanceBorrowerFuel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel purchases by borrower (A)'**
+  String get vehicleUsageBalanceBorrowerFuel;
+
+  /// No description provided for @vehicleUsageBalanceBorrowerMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance by borrower (E)'**
+  String get vehicleUsageBalanceBorrowerMaintenance;
+
+  /// No description provided for @vehicleUsageBalanceCompensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage compensation (D×T)'**
+  String get vehicleUsageBalanceCompensation;
+
+  /// No description provided for @vehicleUsageBalanceConsumption.
+  ///
+  /// In en, this message translates to:
+  /// **'Average consumption (C)'**
+  String get vehicleUsageBalanceConsumption;
+
+  /// No description provided for @vehicleUsageBalanceDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attributed distance (D)'**
+  String get vehicleUsageBalanceDistance;
+
+  /// No description provided for @vehicleUsageBalanceFuelPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Average fuel price (P)'**
+  String get vehicleUsageBalanceFuelPrice;
+
+  /// No description provided for @vehicleUsageBalanceRatePerKm.
+  ///
+  /// In en, this message translates to:
+  /// **'Compensation per km (T)'**
+  String get vehicleUsageBalanceRatePerKm;
+
+  /// No description provided for @vehicleUsageBalanceInformativeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This balance is informational. Recording a payment between owner and borrower is a separate step (coming later).'**
+  String get vehicleUsageBalanceInformativeNote;
+
+  /// No description provided for @vehicleUsageBalanceRevokedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' (revoked)'**
+  String get vehicleUsageBalanceRevokedSuffix;
+
   /// No description provided for @vehiclePendingCorrectionsEmpty.
   ///
   /// In en, this message translates to:

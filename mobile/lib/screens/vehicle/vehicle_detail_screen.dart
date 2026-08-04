@@ -338,6 +338,18 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                           context.push('/vehicle/${v.id}/violation'),
                     ),
                     const Divider(),
+                    qaVehicleSemantics(
+                      identifier: kQaVehicleDetailBorrowerBalances,
+                      child: ListTile(
+                        leading: const Icon(Icons.account_balance_wallet_outlined),
+                        title: Text(l10n.vehicleUsageBalanceTileOwner),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push(
+                          '/vehicle/${v.id}/borrower-balances',
+                        ),
+                      ),
+                    ),
+                    const Divider(),
                   ],
                   ListTile(
                     leading: const Icon(Icons.menu_book_outlined),

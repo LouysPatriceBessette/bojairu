@@ -113,6 +113,23 @@ class VehicleSharingOtherActionsScreen extends StatelessWidget {
                       '/vehicle-sharing/$vehicleId/violation?borrower=$borrower',
                     ),
                   ),
+                  const Divider(),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: qaVehicleSharingSemantics(
+                      identifier: kQaVehicleSharingOtherActionsUsageBalance,
+                      button: true,
+                      onTap: () => context.push(
+                        '/vehicle-sharing/$vehicleId/usage-balance?borrower=$borrower',
+                      ),
+                      child: Text(l10n.vehicleUsageBalanceTileBorrower),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(
+                      '/vehicle-sharing/$vehicleId/usage-balance?borrower=$borrower',
+                    ),
+                  ),
+                  const Divider(),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: qaVehicleSharingSemantics(

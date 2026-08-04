@@ -1266,6 +1266,13 @@ class VehiclesRepository {
         .get();
   }
 
+  Future<List<VehicleOdometerGap>> listOdometerGaps(String vehicleId) {
+    return (_db.select(_db.vehicleOdometerGaps)
+          ..where((t) => t.vehicleId.equals(vehicleId))
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.recordedAt)]))
+        .get();
+  }
+
   // --- Sharing ---
 
   Future<VehicleSharingLink> createSharingOffer({

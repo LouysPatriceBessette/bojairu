@@ -3948,6 +3948,75 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclePendingCorrectionsTitle => 'Corrections en attente';
 
   @override
+  String get vehicleBorrowerBalancesTitle => 'Soldes des emprunteurs';
+
+  @override
+  String get vehicleBorrowerBalancesEmpty =>
+      'Aucun emprunteur accepté pour le moment.';
+
+  @override
+  String get vehicleUsageBalanceTitle => 'Solde d\'utilisation';
+
+  @override
+  String get vehicleUsageBalanceTileOwner => 'Soldes des emprunteurs';
+
+  @override
+  String get vehicleUsageBalanceTileBorrower => 'Solde d\'utilisation';
+
+  @override
+  String get vehicleUsageBalanceUnavailableConsumption =>
+      'Le solde d\'utilisation n\'est pas disponible tant que la consommation du véhicule n\'a pas une estimation fiable.';
+
+  @override
+  String get vehicleUsageBalanceUnavailableFuelPrice =>
+      'Le solde d\'utilisation n\'est pas disponible tant qu\'au moins un achat de carburant avec volume et prix n\'a pas été enregistré.';
+
+  @override
+  String get vehicleUsageBalanceNetLabel => 'Solde';
+
+  @override
+  String get vehicleUsageBalanceOwedToOwner => 'Montant dû au propriétaire';
+
+  @override
+  String get vehicleUsageBalanceCreditForBorrower =>
+      'Crédit pour l\'emprunteur';
+
+  @override
+  String get vehicleUsageBalanceEstimatedFuel =>
+      'Coût carburant estimé ((C/100)×D×P)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerFuel =>
+      'Achats de carburant de l\'emprunteur (A)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerMaintenance =>
+      'Entretien de l\'emprunteur (E)';
+
+  @override
+  String get vehicleUsageBalanceCompensation =>
+      'Compensation d\'utilisation (D×T)';
+
+  @override
+  String get vehicleUsageBalanceConsumption => 'Consommation moyenne (C)';
+
+  @override
+  String get vehicleUsageBalanceDistance => 'Distance attribuée (D)';
+
+  @override
+  String get vehicleUsageBalanceFuelPrice => 'Prix moyen du carburant (P)';
+
+  @override
+  String get vehicleUsageBalanceRatePerKm => 'Compensation par km (T)';
+
+  @override
+  String get vehicleUsageBalanceInformativeNote =>
+      'Ce solde est informatif. L\'enregistrement d\'un paiement entre propriétaire et emprunteur sera une étape séparée (à venir).';
+
+  @override
+  String get vehicleUsageBalanceRevokedSuffix => ' (révoqué)';
+
+  @override
   String get vehiclePendingCorrectionsEmpty => 'Aucune correction en attente.';
 
   @override

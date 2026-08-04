@@ -31,6 +31,7 @@ import 'screens/vehicle/vehicle_pending_corrections_screens.dart';
 import 'screens/vehicle/vehicle_journals_screen.dart';
 import 'screens/vehicle/vehicle_use_session_screen.dart';
 import 'screens/vehicle/vehicle_quick_action_screens.dart';
+import 'screens/vehicle/vehicle_usage_balance_screens.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_hub_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_invite_form_screen.dart';
 import 'screens/vehicle_sharing/vehicle_sharing_other_actions_screen.dart';
@@ -533,6 +534,23 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                 ),
               ),
               GoRoute(
+                path: 'borrower-balances',
+                builder: (context, state) => VehicleBorrowerBalancesScreen(
+                  vehicleId: state.pathParameters['vehicleId']!,
+                  prefs: prefs,
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':linkId',
+                    builder: (context, state) => VehicleUsageBalanceScreen(
+                      vehicleId: state.pathParameters['vehicleId']!,
+                      linkId: state.pathParameters['linkId']!,
+                      prefs: prefs,
+                    ),
+                  ),
+                ],
+              ),
+              GoRoute(
                 path: 'pending-corrections',
                 builder: (context, state) =>
                     VehiclePendingCorrectionsListScreen(
@@ -686,6 +704,17 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
             builder: (context, state) {
               final borrower = state.uri.queryParameters['borrower'] ?? '';
               return VehicleSharingOtherActionsScreen(
+                vehicleId: state.pathParameters['vehicleId']!,
+                borrowerContactId: borrower,
+                prefs: prefs,
+              );
+            },
+          ),
+          GoRoute(
+            path: ':vehicleId/usage-balance',
+            builder: (context, state) {
+              final borrower = state.uri.queryParameters['borrower'] ?? '';
+              return VehicleBorrowerUsageBalanceScreen(
                 vehicleId: state.pathParameters['vehicleId']!,
                 borrowerContactId: borrower,
                 prefs: prefs,

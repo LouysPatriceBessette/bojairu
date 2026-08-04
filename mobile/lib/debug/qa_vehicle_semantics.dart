@@ -52,6 +52,11 @@ const kQaVehicleDetail = 'qa-vehicle-detail';
 const kQaVehicleDetailOdometerReading = 'qa-vehicle-detail-odometer-reading';
 const kQaVehicleDetailEdit = 'qa-vehicle-detail-edit';
 const kQaVehicleDetailExport = 'qa-vehicle-detail-export';
+const kQaVehicleDetailBorrowerBalances =
+    'qa-vehicle-detail-borrower-balances';
+const kQaVehicleBorrowerBalancesScreen =
+    'qa-vehicle-borrower-balances-screen';
+const kQaVehicleUsageBalanceScreen = 'qa-vehicle-usage-balance-screen';
 const kQaVehicleExportConfirm = 'qa-vehicle-export-confirm';
 const kQaVehicleExportCancel = 'qa-vehicle-export-cancel';
 const kQaVehicleExportSuccessDone = 'qa-vehicle-export-success-done';

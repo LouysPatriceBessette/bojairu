@@ -3952,6 +3952,74 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vehiclePendingCorrectionsTitle => 'Correcciones pendientes';
 
   @override
+  String get vehicleBorrowerBalancesTitle => 'Saldos de los prestatarios';
+
+  @override
+  String get vehicleBorrowerBalancesEmpty =>
+      'Aún no hay prestatarios aceptados.';
+
+  @override
+  String get vehicleUsageBalanceTitle => 'Saldo de uso';
+
+  @override
+  String get vehicleUsageBalanceTileOwner => 'Saldos de los prestatarios';
+
+  @override
+  String get vehicleUsageBalanceTileBorrower => 'Saldo de uso';
+
+  @override
+  String get vehicleUsageBalanceUnavailableConsumption =>
+      'El saldo de uso no está disponible hasta que el vehículo tenga una estimación fiable del consumo.';
+
+  @override
+  String get vehicleUsageBalanceUnavailableFuelPrice =>
+      'El saldo de uso no está disponible hasta que se registre al menos una compra de combustible con volumen y precio.';
+
+  @override
+  String get vehicleUsageBalanceNetLabel => 'Saldo';
+
+  @override
+  String get vehicleUsageBalanceOwedToOwner => 'Importe debido al propietario';
+
+  @override
+  String get vehicleUsageBalanceCreditForBorrower =>
+      'Crédito para el prestatario';
+
+  @override
+  String get vehicleUsageBalanceEstimatedFuel =>
+      'Coste estimado de combustible ((C/100)×D×P)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerFuel =>
+      'Compras de combustible del prestatario (A)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerMaintenance =>
+      'Mantenimiento del prestatario (E)';
+
+  @override
+  String get vehicleUsageBalanceCompensation => 'Compensación por uso (D×T)';
+
+  @override
+  String get vehicleUsageBalanceConsumption => 'Consumo medio (C)';
+
+  @override
+  String get vehicleUsageBalanceDistance => 'Distancia atribuida (D)';
+
+  @override
+  String get vehicleUsageBalanceFuelPrice => 'Precio medio del combustible (P)';
+
+  @override
+  String get vehicleUsageBalanceRatePerKm => 'Compensación por km (T)';
+
+  @override
+  String get vehicleUsageBalanceInformativeNote =>
+      'Este saldo es informativo. Registrar un pago entre propietario y prestatario será un paso aparte (próximamente).';
+
+  @override
+  String get vehicleUsageBalanceRevokedSuffix => ' (revocado)';
+
+  @override
   String get vehiclePendingCorrectionsEmpty =>
       'No hay correcciones pendientes.';
 

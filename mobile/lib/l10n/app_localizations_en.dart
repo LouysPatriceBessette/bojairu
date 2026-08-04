@@ -3909,6 +3909,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclePendingCorrectionsTitle => 'Pending corrections';
 
   @override
+  String get vehicleBorrowerBalancesTitle => 'Borrower balances';
+
+  @override
+  String get vehicleBorrowerBalancesEmpty => 'No accepted borrowers yet.';
+
+  @override
+  String get vehicleUsageBalanceTitle => 'Usage balance';
+
+  @override
+  String get vehicleUsageBalanceTileOwner => 'Borrower balances';
+
+  @override
+  String get vehicleUsageBalanceTileBorrower => 'Usage balance';
+
+  @override
+  String get vehicleUsageBalanceUnavailableConsumption =>
+      'Usage balance is unavailable until the vehicle has a reliable fuel-consumption estimate.';
+
+  @override
+  String get vehicleUsageBalanceUnavailableFuelPrice =>
+      'Usage balance is unavailable until at least one fuel purchase with volume and cost is recorded.';
+
+  @override
+  String get vehicleUsageBalanceNetLabel => 'Balance';
+
+  @override
+  String get vehicleUsageBalanceOwedToOwner => 'Amount owed to the owner';
+
+  @override
+  String get vehicleUsageBalanceCreditForBorrower => 'Credit for the borrower';
+
+  @override
+  String get vehicleUsageBalanceEstimatedFuel =>
+      'Estimated fuel cost ((C/100)×D×P)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerFuel =>
+      'Fuel purchases by borrower (A)';
+
+  @override
+  String get vehicleUsageBalanceBorrowerMaintenance =>
+      'Maintenance by borrower (E)';
+
+  @override
+  String get vehicleUsageBalanceCompensation => 'Usage compensation (D×T)';
+
+  @override
+  String get vehicleUsageBalanceConsumption => 'Average consumption (C)';
+
+  @override
+  String get vehicleUsageBalanceDistance => 'Attributed distance (D)';
+
+  @override
+  String get vehicleUsageBalanceFuelPrice => 'Average fuel price (P)';
+
+  @override
+  String get vehicleUsageBalanceRatePerKm => 'Compensation per km (T)';
+
+  @override
+  String get vehicleUsageBalanceInformativeNote =>
+      'This balance is informational. Recording a payment between owner and borrower is a separate step (coming later).';
+
+  @override
+  String get vehicleUsageBalanceRevokedSuffix => ' (revoked)';
+
+  @override
   String get vehiclePendingCorrectionsEmpty => 'No pending corrections.';
 
   @override

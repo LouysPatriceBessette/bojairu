@@ -22,9 +22,9 @@
 
 ## 3. Metrics & reconciliation
 
-- [ ] 3.1 Borrower-scoped distance and fuel statistics
-- [ ] 3.2 Reconciliation window per borrower
-- [ ] 3.3 Owner aggregate view across all sharers
+- [x] 3.1 Borrower-scoped distance and fuel statistics — **informative running usage balance** (formula + shared detail UI); broader stats charts still open
+- [x] 3.2 Reconciliation window per borrower — running window from `acceptedAt` until future confirmed usage payment (payment flow not shipped)
+- [ ] 3.3 Owner aggregate view across all sharers — owner **per-Emprunteur balance list** shipped; usage-ratio aggregate allocation still open (`vehicle-expense-sharing`)
 
 ## 4. Expense sharing
 

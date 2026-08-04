@@ -85,6 +85,10 @@ const kQaVehicleSharingOtherActionsViolation =
 const kQaVehicleSharingOtherActionsJournals =
     'qa-vehicle-sharing-other-actions-journals';
 
+/// Usage balance action on the other-actions screen.
+const kQaVehicleSharingOtherActionsUsageBalance =
+    'qa-vehicle-sharing-other-actions-usage-balance';
+
 Widget qaVehicleSharingSemantics({
   required String identifier,
   required Widget child,
