@@ -15791,6 +15791,20 @@ class $VehicleUsesTable extends VehicleUses
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _fuelCatchUpResponseReceivedMeta =
+      const VerificationMeta('fuelCatchUpResponseReceived');
+  @override
+  late final GeneratedColumn<bool> fuelCatchUpResponseReceived =
+      GeneratedColumn<bool>(
+        'fuel_catch_up_response_received',
+        aliasedName,
+        true,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("fuel_catch_up_response_received" IN (0, 1))',
+        ),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -15805,6 +15819,7 @@ class $VehicleUsesTable extends VehicleUses
     drivingCityPercent,
     drivingTrafficPercent,
     sessionConsumptionMode,
+    fuelCatchUpResponseReceived,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -15921,6 +15936,15 @@ class $VehicleUsesTable extends VehicleUses
         ),
       );
     }
+    if (data.containsKey('fuel_catch_up_response_received')) {
+      context.handle(
+        _fuelCatchUpResponseReceivedMeta,
+        fuelCatchUpResponseReceived.isAcceptableOrUnknown(
+          data['fuel_catch_up_response_received']!,
+          _fuelCatchUpResponseReceivedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -15978,6 +16002,10 @@ class $VehicleUsesTable extends VehicleUses
         DriftSqlType.string,
         data['${effectivePrefix}session_consumption_mode'],
       ),
+      fuelCatchUpResponseReceived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}fuel_catch_up_response_received'],
+      ),
     );
   }
 
@@ -16005,6 +16033,13 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
 
   /// `simple` or `detailed` at session end; null on legacy rows.
   final String? sessionConsumptionMode;
+
+  /// Emprunteur fuel catch-up (kind 23) ack for this open session.
+  ///
+  /// `null` = not awaiting (owner path / legacy). `false` = session start
+  /// forwarded, waiting for Propriétaire catch-up. `true` = catch-up received
+  /// (including empty). While `false`, session-end distance guard is skipped.
+  final bool? fuelCatchUpResponseReceived;
   const VehicleUse({
     required this.id,
     required this.vehicleId,
@@ -16018,6 +16053,7 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
     this.drivingCityPercent,
     this.drivingTrafficPercent,
     this.sessionConsumptionMode,
+    this.fuelCatchUpResponseReceived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -16048,6 +16084,11 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
     if (!nullToAbsent || sessionConsumptionMode != null) {
       map['session_consumption_mode'] = Variable<String>(
         sessionConsumptionMode,
+      );
+    }
+    if (!nullToAbsent || fuelCatchUpResponseReceived != null) {
+      map['fuel_catch_up_response_received'] = Variable<bool>(
+        fuelCatchUpResponseReceived,
       );
     }
     return map;
@@ -16081,6 +16122,10 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
       sessionConsumptionMode: sessionConsumptionMode == null && nullToAbsent
           ? const Value.absent()
           : Value(sessionConsumptionMode),
+      fuelCatchUpResponseReceived:
+          fuelCatchUpResponseReceived == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fuelCatchUpResponseReceived),
     );
   }
 
@@ -16110,6 +16155,9 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
       sessionConsumptionMode: serializer.fromJson<String?>(
         json['sessionConsumptionMode'],
       ),
+      fuelCatchUpResponseReceived: serializer.fromJson<bool?>(
+        json['fuelCatchUpResponseReceived'],
+      ),
     );
   }
   @override
@@ -16130,6 +16178,9 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
       'sessionConsumptionMode': serializer.toJson<String?>(
         sessionConsumptionMode,
       ),
+      'fuelCatchUpResponseReceived': serializer.toJson<bool?>(
+        fuelCatchUpResponseReceived,
+      ),
     };
   }
 
@@ -16146,6 +16197,7 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
     Value<int?> drivingCityPercent = const Value.absent(),
     Value<int?> drivingTrafficPercent = const Value.absent(),
     Value<String?> sessionConsumptionMode = const Value.absent(),
+    Value<bool?> fuelCatchUpResponseReceived = const Value.absent(),
   }) => VehicleUse(
     id: id ?? this.id,
     vehicleId: vehicleId ?? this.vehicleId,
@@ -16167,6 +16219,9 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
     sessionConsumptionMode: sessionConsumptionMode.present
         ? sessionConsumptionMode.value
         : this.sessionConsumptionMode,
+    fuelCatchUpResponseReceived: fuelCatchUpResponseReceived.present
+        ? fuelCatchUpResponseReceived.value
+        : this.fuelCatchUpResponseReceived,
   );
   VehicleUse copyWithCompanion(VehicleUsesCompanion data) {
     return VehicleUse(
@@ -16198,6 +16253,9 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
       sessionConsumptionMode: data.sessionConsumptionMode.present
           ? data.sessionConsumptionMode.value
           : this.sessionConsumptionMode,
+      fuelCatchUpResponseReceived: data.fuelCatchUpResponseReceived.present
+          ? data.fuelCatchUpResponseReceived.value
+          : this.fuelCatchUpResponseReceived,
     );
   }
 
@@ -16215,7 +16273,8 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
           ..write('drivingRoutePercent: $drivingRoutePercent, ')
           ..write('drivingCityPercent: $drivingCityPercent, ')
           ..write('drivingTrafficPercent: $drivingTrafficPercent, ')
-          ..write('sessionConsumptionMode: $sessionConsumptionMode')
+          ..write('sessionConsumptionMode: $sessionConsumptionMode, ')
+          ..write('fuelCatchUpResponseReceived: $fuelCatchUpResponseReceived')
           ..write(')'))
         .toString();
   }
@@ -16234,6 +16293,7 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
     drivingCityPercent,
     drivingTrafficPercent,
     sessionConsumptionMode,
+    fuelCatchUpResponseReceived,
   );
   @override
   bool operator ==(Object other) =>
@@ -16250,7 +16310,9 @@ class VehicleUse extends DataClass implements Insertable<VehicleUse> {
           other.drivingRoutePercent == this.drivingRoutePercent &&
           other.drivingCityPercent == this.drivingCityPercent &&
           other.drivingTrafficPercent == this.drivingTrafficPercent &&
-          other.sessionConsumptionMode == this.sessionConsumptionMode);
+          other.sessionConsumptionMode == this.sessionConsumptionMode &&
+          other.fuelCatchUpResponseReceived ==
+              this.fuelCatchUpResponseReceived);
 }
 
 class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
@@ -16266,6 +16328,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
   final Value<int?> drivingCityPercent;
   final Value<int?> drivingTrafficPercent;
   final Value<String?> sessionConsumptionMode;
+  final Value<bool?> fuelCatchUpResponseReceived;
   final Value<int> rowid;
   const VehicleUsesCompanion({
     this.id = const Value.absent(),
@@ -16280,6 +16343,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
     this.drivingCityPercent = const Value.absent(),
     this.drivingTrafficPercent = const Value.absent(),
     this.sessionConsumptionMode = const Value.absent(),
+    this.fuelCatchUpResponseReceived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VehicleUsesCompanion.insert({
@@ -16295,6 +16359,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
     this.drivingCityPercent = const Value.absent(),
     this.drivingTrafficPercent = const Value.absent(),
     this.sessionConsumptionMode = const Value.absent(),
+    this.fuelCatchUpResponseReceived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        vehicleId = Value(vehicleId),
@@ -16314,6 +16379,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
     Expression<int>? drivingCityPercent,
     Expression<int>? drivingTrafficPercent,
     Expression<String>? sessionConsumptionMode,
+    Expression<bool>? fuelCatchUpResponseReceived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -16334,6 +16400,8 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
         'driving_traffic_percent': drivingTrafficPercent,
       if (sessionConsumptionMode != null)
         'session_consumption_mode': sessionConsumptionMode,
+      if (fuelCatchUpResponseReceived != null)
+        'fuel_catch_up_response_received': fuelCatchUpResponseReceived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -16351,6 +16419,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
     Value<int?>? drivingCityPercent,
     Value<int?>? drivingTrafficPercent,
     Value<String?>? sessionConsumptionMode,
+    Value<bool?>? fuelCatchUpResponseReceived,
     Value<int>? rowid,
   }) {
     return VehicleUsesCompanion(
@@ -16368,6 +16437,8 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
           drivingTrafficPercent ?? this.drivingTrafficPercent,
       sessionConsumptionMode:
           sessionConsumptionMode ?? this.sessionConsumptionMode,
+      fuelCatchUpResponseReceived:
+          fuelCatchUpResponseReceived ?? this.fuelCatchUpResponseReceived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -16417,6 +16488,11 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
         sessionConsumptionMode.value,
       );
     }
+    if (fuelCatchUpResponseReceived.present) {
+      map['fuel_catch_up_response_received'] = Variable<bool>(
+        fuelCatchUpResponseReceived.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -16438,6 +16514,7 @@ class VehicleUsesCompanion extends UpdateCompanion<VehicleUse> {
           ..write('drivingCityPercent: $drivingCityPercent, ')
           ..write('drivingTrafficPercent: $drivingTrafficPercent, ')
           ..write('sessionConsumptionMode: $sessionConsumptionMode, ')
+          ..write('fuelCatchUpResponseReceived: $fuelCatchUpResponseReceived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -29774,6 +29851,7 @@ typedef $$VehicleUsesTableCreateCompanionBuilder =
       Value<int?> drivingCityPercent,
       Value<int?> drivingTrafficPercent,
       Value<String?> sessionConsumptionMode,
+      Value<bool?> fuelCatchUpResponseReceived,
       Value<int> rowid,
     });
 typedef $$VehicleUsesTableUpdateCompanionBuilder =
@@ -29790,6 +29868,7 @@ typedef $$VehicleUsesTableUpdateCompanionBuilder =
       Value<int?> drivingCityPercent,
       Value<int?> drivingTrafficPercent,
       Value<String?> sessionConsumptionMode,
+      Value<bool?> fuelCatchUpResponseReceived,
       Value<int> rowid,
     });
 
@@ -29859,6 +29938,11 @@ class $$VehicleUsesTableFilterComposer
 
   ColumnFilters<String> get sessionConsumptionMode => $composableBuilder(
     column: $table.sessionConsumptionMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get fuelCatchUpResponseReceived => $composableBuilder(
+    column: $table.fuelCatchUpResponseReceived,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -29931,6 +30015,11 @@ class $$VehicleUsesTableOrderingComposer
     column: $table.sessionConsumptionMode,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get fuelCatchUpResponseReceived => $composableBuilder(
+    column: $table.fuelCatchUpResponseReceived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VehicleUsesTableAnnotationComposer
@@ -29993,6 +30082,11 @@ class $$VehicleUsesTableAnnotationComposer
     column: $table.sessionConsumptionMode,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get fuelCatchUpResponseReceived => $composableBuilder(
+    column: $table.fuelCatchUpResponseReceived,
+    builder: (column) => column,
+  );
 }
 
 class $$VehicleUsesTableTableManager
@@ -30038,6 +30132,7 @@ class $$VehicleUsesTableTableManager
                 Value<int?> drivingCityPercent = const Value.absent(),
                 Value<int?> drivingTrafficPercent = const Value.absent(),
                 Value<String?> sessionConsumptionMode = const Value.absent(),
+                Value<bool?> fuelCatchUpResponseReceived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleUsesCompanion(
                 id: id,
@@ -30052,6 +30147,7 @@ class $$VehicleUsesTableTableManager
                 drivingCityPercent: drivingCityPercent,
                 drivingTrafficPercent: drivingTrafficPercent,
                 sessionConsumptionMode: sessionConsumptionMode,
+                fuelCatchUpResponseReceived: fuelCatchUpResponseReceived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -30068,6 +30164,7 @@ class $$VehicleUsesTableTableManager
                 Value<int?> drivingCityPercent = const Value.absent(),
                 Value<int?> drivingTrafficPercent = const Value.absent(),
                 Value<String?> sessionConsumptionMode = const Value.absent(),
+                Value<bool?> fuelCatchUpResponseReceived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VehicleUsesCompanion.insert(
                 id: id,
@@ -30082,6 +30179,7 @@ class $$VehicleUsesTableTableManager
                 drivingCityPercent: drivingCityPercent,
                 drivingTrafficPercent: drivingTrafficPercent,
                 sessionConsumptionMode: sessionConsumptionMode,
+                fuelCatchUpResponseReceived: fuelCatchUpResponseReceived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

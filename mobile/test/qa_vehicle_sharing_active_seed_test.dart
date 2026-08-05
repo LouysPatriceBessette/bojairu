@@ -32,6 +32,16 @@ void main() {
     expect(link, isNotNull);
     expect(link!.status, VehicleSharingLinkStatus.active.wire);
     expect(link.borrowerContactId, kQaFcmWakeMonicaContactId);
+    expect(link.createdAt.toUtc(), kQaVehicleSharingActiveLinkAt);
+    expect(link.acceptedAt!.toUtc(), kQaVehicleSharingActiveLinkAt);
+    expect(link.ratePerKmMinor, kQaVehicleSharingActiveRatePerKmMinor);
+    // Must stay before usage-history baseline (unix 1785853111).
+    expect(
+      link.acceptedAt!.toUtc().isBefore(
+        DateTime.fromMillisecondsSinceEpoch(1785853111 * 1000, isUtc: true),
+      ),
+      isTrue,
+    );
 
     final active = await repo.listActiveLinksAsOwner();
     expect(active.map((e) => e.id), contains(kQaVehicleSharingActiveLinkId));

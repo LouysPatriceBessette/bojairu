@@ -10,11 +10,11 @@ void main() {
       );
       expect(
         consumptionReliabilityFromPeriodCount(1),
-        VehicleConsumptionReliability.none,
+        VehicleConsumptionReliability.preliminary,
       );
       expect(
         consumptionReliabilityFromPeriodCount(2),
-        VehicleConsumptionReliability.preliminary,
+        VehicleConsumptionReliability.reliable,
       );
       expect(
         consumptionReliabilityFromPeriodCount(3),

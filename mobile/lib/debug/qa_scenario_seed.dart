@@ -29,6 +29,8 @@ import 'qa_vehicle_sale_portability_seed.dart';
 import 'qa_vehicle_seed_helpers.dart';
 import 'qa_vehicle_sharing_active_seed.dart';
 import 'qa_vehicle_sharing_offer_seed.dart';
+import 'qa_vehicle_sharing_usage_history_2nd_fill_seed.dart';
+import 'qa_vehicle_sharing_usage_history_3rd_fill_seed.dart';
 import 'web_dev_db_snapshot.dart';
 
 export 'qa_scenario_seed_helpers.dart' show kQaSettlementOpenPlanId;
@@ -65,6 +67,10 @@ const kQaScenarioIds = <String>{
   'vehicle_sharing_offer_borrower',
   'vehicle_sharing_active_owner',
   'vehicle_sharing_active_borrower',
+  'vehicle_sharing_usage_history_2nd_fill_owner',
+  'vehicle_sharing_usage_history_2nd_fill_borrower',
+  'vehicle_sharing_usage_history_3rd_fill_owner',
+  'vehicle_sharing_usage_history_3rd_fill_borrower',
   'fcm_wake_push_proposer',
   'fcm_wake_push_recipient',
   'housing_payment_reminder_simulate_before_due',
@@ -147,7 +153,11 @@ bool _qaNotificationsEnabledForScenario(String scenarioId) {
       scenarioId == 'vehicle_sharing_offer_owner' ||
       scenarioId == 'vehicle_sharing_offer_borrower' ||
       scenarioId == 'vehicle_sharing_active_owner' ||
-      scenarioId == 'vehicle_sharing_active_borrower';
+      scenarioId == 'vehicle_sharing_active_borrower' ||
+      scenarioId == 'vehicle_sharing_usage_history_2nd_fill_owner' ||
+      scenarioId == 'vehicle_sharing_usage_history_2nd_fill_borrower' ||
+      scenarioId == 'vehicle_sharing_usage_history_3rd_fill_owner' ||
+      scenarioId == 'vehicle_sharing_usage_history_3rd_fill_borrower';
 }
 
 Future<void> _applyQaPaymentReminderPrefs(
@@ -229,6 +239,22 @@ bool _qaMeterPhotoOptionalForScenario(String scenarioId) {
       displayName: 'Monica QA',
       avatarId: 'a01',
     ),
+    'vehicle_sharing_usage_history_2nd_fill_owner' => (
+      displayName: 'Louys QA',
+      avatarId: 'a02',
+    ),
+    'vehicle_sharing_usage_history_2nd_fill_borrower' => (
+      displayName: 'Monica QA',
+      avatarId: 'a01',
+    ),
+    'vehicle_sharing_usage_history_3rd_fill_owner' => (
+      displayName: 'Louys QA',
+      avatarId: 'a02',
+    ),
+    'vehicle_sharing_usage_history_3rd_fill_borrower' => (
+      displayName: 'Monica QA',
+      avatarId: 'a01',
+    ),
     _ => (displayName: 'Monica QA', avatarId: 'a01'),
   };
 }
@@ -278,6 +304,14 @@ Future<void> applyQaScenario(AppDatabase db, String scenarioId) async {
       await seedQaVehicleSharingActiveOwner(db);
     case 'vehicle_sharing_active_borrower':
       await seedQaVehicleSharingActiveBorrower(db);
+    case 'vehicle_sharing_usage_history_2nd_fill_owner':
+      await seedQaVehicleSharingUsageHistory2ndFillOwner(db);
+    case 'vehicle_sharing_usage_history_2nd_fill_borrower':
+      await seedQaVehicleSharingUsageHistory2ndFillBorrower(db);
+    case 'vehicle_sharing_usage_history_3rd_fill_owner':
+      await seedQaVehicleSharingUsageHistory3rdFillOwner(db);
+    case 'vehicle_sharing_usage_history_3rd_fill_borrower':
+      await seedQaVehicleSharingUsageHistory3rdFillBorrower(db);
     case 'fcm_wake_push_proposer':
       await seedQaFcmWakePushProposer(db);
     case 'fcm_wake_push_recipient':

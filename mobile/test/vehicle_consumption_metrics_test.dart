@@ -60,6 +60,94 @@ void main() {
     expect(snapshot.litersPer100Km, closeTo(40, 0.1));
   });
 
+  test('includes partial top-ups between full-tank anchors in fuel volume',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    AppDatabase.bindProcessScope(db);
+    addTearDown(() {
+      AppDatabase.clearProcessScopeIfReferencing(db);
+      db.close();
+    });
+
+    const vehicleId = 'vehicle:partial';
+    final t0 = DateTime.utc(2026, 8, 1);
+    final t1 = DateTime.utc(2026, 8, 10);
+    final tPartial = DateTime.utc(2026, 8, 15);
+    final t2 = DateTime.utc(2026, 8, 20);
+
+    await db.into(db.vehicles).insert(
+          VehiclesCompanion.insert(
+            id: vehicleId,
+            ownerContactId: kVehicleOwnerSelfContactId,
+            vehicleKind: VehicleKind.car.wire,
+            displayLabel: 'Partial',
+            createdAt: t0,
+            updatedAt: t0,
+          ),
+        );
+
+    Future<void> insertPurchase({
+      required String id,
+      required DateTime at,
+      required int meter,
+      required double liters,
+      required bool full,
+    }) {
+      return db.into(db.fuelPurchases).insert(
+            FuelPurchasesCompanion.insert(
+              id: id,
+              vehicleId: vehicleId,
+              purchasedAt: at,
+              costMinor: 4000,
+              currency: 'CAD',
+              volumeLiters: Value(liters),
+              meterReadingValue: Value(meter),
+              isFullTank: full,
+              recordedByContactId: kVehicleOwnerSelfContactId,
+              tankFillFraction: full ? const Value.absent() : const Value(40),
+            ),
+          );
+    }
+
+    // Mirrors Louys verify: 37 → 45 → 20 partial → 45.
+    await insertPurchase(
+      id: 'fuel:a',
+      at: t0,
+      meter: 504651,
+      liters: 37,
+      full: true,
+    );
+    await insertPurchase(
+      id: 'fuel:b',
+      at: t1,
+      meter: 510303,
+      liters: 45,
+      full: true,
+    );
+    await insertPurchase(
+      id: 'fuel:p',
+      at: tPartial,
+      meter: 517081,
+      liters: 20,
+      full: false,
+    );
+    await insertPurchase(
+      id: 'fuel:c',
+      at: t2,
+      meter: 518704,
+      liters: 45,
+      full: true,
+    );
+
+    final snapshot = await VehicleConsumptionMetrics(db).forVehicle(vehicleId);
+    expect(snapshot.hasSufficientData, isTrue);
+    expect(snapshot.periodsInWindow, 2);
+    // 45 + (20+45) = 110 L over 1405.3 km → ~7.83 L/100 km.
+    expect(snapshot.volumeInWindow, closeTo(110, 0.001));
+    expect(snapshot.distanceInWindow, 14053);
+    expect(snapshot.litersPer100Km, closeTo(7.83, 0.05));
+  });
+
   test('records reliable estimate history once per anchor end', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     AppDatabase.bindProcessScope(db);

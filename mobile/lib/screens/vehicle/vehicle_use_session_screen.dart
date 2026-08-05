@@ -217,7 +217,11 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     int? baselineMeter;
     VehicleTankFillLevel tankLevel = VehicleTankFillLevel.defaultChoice;
     var fullTank = !endingSession;
-    if (denial == null && v != null && !endingSession) {
+    // Emprunteur: never pre-fill odometer or tank from last known state at
+    // session start — they must enter both explicitly.
+    final prefillFromKnownState =
+        denial == null && v != null && !endingSession && widget.usageContext.isOwner;
+    if (prefillFromKnownState) {
       final kind = VehicleKind.fromWire(v.vehicleKind);
       final usesHorometer = kind?.usesHorometer ?? false;
       final distanceUnit = widget.prefs == null
@@ -243,6 +247,11 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
               VehicleTankFillLevel.defaultChoice;
         }
       }
+    } else if (denial == null && v != null && !endingSession) {
+      // Keep silent baseline for gap checks; leave form fields empty.
+      final anchor = await repo.latestMeterAnchorDetail(v.id);
+      baselineMeter = anchor?.value;
+      _reading.clear();
     }
     if (!mounted) return;
     setState(() {
@@ -263,6 +272,10 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       } else if (denial != null || v == null) {
         _reading.clear();
         _fullTank = true;
+        _tankFillLevel = VehicleTankFillLevel.defaultChoice;
+      } else if (widget.usageContext.isBorrower) {
+        _reading.clear();
+        _fullTank = false;
         _tankFillLevel = VehicleTankFillLevel.defaultChoice;
       } else {
         _fullTank = fullTank;
@@ -374,6 +387,9 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         final fuelDuringSession =
             await repo.fuelLitersPurchasedDuringOpenUse(sessionToClose);
         if (!mounted) return;
+        // false = awaiting kind-23 catch-up; null/true = run the guard.
+        final catchUpReady =
+            sessionToClose.fuelCatchUpResponseReceived != false;
         final distanceOk = await confirmSuspiciousSessionEndDistanceBeforeSave(
           context: context,
           repo: repo,
@@ -383,6 +399,7 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
           fuelLitersDuringSession: fuelDuringSession,
           usesHorometer: usesHorometer,
           distanceUnit: distanceUnit,
+          fuelCatchUpResponseReceived: catchUpReady,
         );
         if (!distanceOk) {
           return;
@@ -516,6 +533,9 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
             remoteUseId: opened.id,
             startReadingId: reading.id,
           );
+          if (relayOk) {
+            await repo.markFuelCatchUpResponsePending(opened.id);
+          }
           if (!mounted) return;
           if (!relayOk) {
             ScaffoldMessenger.of(context).showSnackBar(

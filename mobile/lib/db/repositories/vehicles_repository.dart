@@ -1039,6 +1039,31 @@ class VehiclesRepository {
         .getSingle());
   }
 
+  /// Emprunteur: mark open session as awaiting Propriétaire fuel catch-up (kind 23).
+  Future<void> markFuelCatchUpResponsePending(String useId) async {
+    await (_db.update(_db.vehicleUses)..where((t) => t.id.equals(useId))).write(
+      const VehicleUsesCompanion(
+        fuelCatchUpResponseReceived: drift.Value(false),
+      ),
+    );
+  }
+
+  /// Emprunteur: Propriétaire catch-up received (empty or not) for [vehicleId].
+  Future<void> markFuelCatchUpResponseReceived(String vehicleId) async {
+    await (_db.update(_db.vehicleUses)
+          ..where(
+            (t) =>
+                t.vehicleId.equals(vehicleId) &
+                t.endedAt.isNull() &
+                t.fuelCatchUpResponseReceived.equals(false),
+          ))
+        .write(
+      const VehicleUsesCompanion(
+        fuelCatchUpResponseReceived: drift.Value(true),
+      ),
+    );
+  }
+
   /// Inserts a fully closed use session (gap resolution retroactive entry).
   Future<VehicleUse> insertRetroactiveClosedUseSession({
     required String vehicleId,
@@ -1091,12 +1116,21 @@ class VehiclesRepository {
     int? meterReadingValue,
     String? meterPhotoPath,
     int? tankFillFraction,
+    /// Stable creator id for cross-device sync; when null a new local id is
+    /// allocated. When set and a row already exists, returns that row (no-op).
+    String? id,
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
-    final id = _newVehicleId('fuel:');
+    final resolvedId = (id != null && id.trim().isNotEmpty)
+        ? id.trim()
+        : _newVehicleId('fuel:');
+    final existing = await getFuelPurchase(resolvedId);
+    if (existing != null) {
+      return existing;
+    }
     await _db.into(_db.fuelPurchases).insert(
           FuelPurchasesCompanion.insert(
-            id: id,
+            id: resolvedId,
             vehicleId: vehicleId,
             purchasedAt: purchasedAt,
             costMinor: costMinor,
@@ -1112,7 +1146,7 @@ class VehiclesRepository {
           ),
         );
     return (await (_db.select(_db.fuelPurchases)
-              ..where((t) => t.id.equals(id)))
+              ..where((t) => t.id.equals(resolvedId)))
             .getSingle());
   }
 
@@ -1204,6 +1238,88 @@ class VehiclesRepository {
         .get();
   }
 
+  /// Newest fuel purchase by [purchasedAt], then meter, then id.
+  Future<FuelPurchase?> latestFuelPurchase(String vehicleId) async {
+    final rows = await listFuelPurchases(vehicleId);
+    if (rows.isEmpty) return null;
+    rows.sort(_compareFuelPurchasesNewestFirst);
+    return rows.first;
+  }
+
+  /// Purchases strictly after [cursor] (same vehicle), oldest-first for catch-up.
+  Future<List<FuelPurchase>> listFuelPurchasesStrictlyAfter(
+    FuelPurchase cursor,
+  ) async {
+    final rows = await listFuelPurchases(cursor.vehicleId);
+    final after = rows
+        .where((p) => _fuelPurchaseIsStrictlyAfter(p, cursor))
+        .toList();
+    after.sort(_compareFuelPurchasesOldestFirst);
+    return after;
+  }
+
+  /// Last full-tank purchase (with meter) and every purchase at or after it.
+  /// Oldest-first. Empty when no full-tank anchor exists.
+  Future<List<FuelPurchase>> listFuelPurchasesFromLastFullTankInclusive(
+    String vehicleId,
+  ) async {
+    final anchor = await latestFullTankFuelPurchase(vehicleId);
+    if (anchor == null) return const [];
+    final rows = await listFuelPurchases(vehicleId);
+    final selected = rows
+        .where(
+          (p) =>
+              p.id == anchor.id || _fuelPurchaseIsStrictlyAfter(p, anchor),
+        )
+        .toList();
+    selected.sort(_compareFuelPurchasesOldestFirst);
+    return selected;
+  }
+
+  /// Catch-up set for session-start sync (Propriétaire → Emprunteur).
+  ///
+  /// When [lastKnownPurchaseId] resolves on this vehicle, returns purchases
+  /// strictly after that row. Otherwise returns last full-tank + following.
+  Future<List<FuelPurchase>> fuelPurchasesForSessionStartCatchUp(
+    String vehicleId, {
+    String? lastKnownPurchaseId,
+  }) async {
+    final cursorId = lastKnownPurchaseId?.trim();
+    if (cursorId != null && cursorId.isNotEmpty) {
+      final cursor = await getFuelPurchase(cursorId);
+      if (cursor != null && cursor.vehicleId == vehicleId) {
+        return listFuelPurchasesStrictlyAfter(cursor);
+      }
+    }
+    return listFuelPurchasesFromLastFullTankInclusive(vehicleId);
+  }
+
+  static int _compareFuelPurchasesNewestFirst(FuelPurchase a, FuelPurchase b) {
+    final byDate = b.purchasedAt.compareTo(a.purchasedAt);
+    if (byDate != 0) return byDate;
+    final am = a.meterReadingValue ?? -1;
+    final bm = b.meterReadingValue ?? -1;
+    if (am != bm) return bm.compareTo(am);
+    return b.id.compareTo(a.id);
+  }
+
+  static int _compareFuelPurchasesOldestFirst(FuelPurchase a, FuelPurchase b) {
+    return -_compareFuelPurchasesNewestFirst(a, b);
+  }
+
+  static bool _fuelPurchaseIsStrictlyAfter(
+    FuelPurchase candidate,
+    FuelPurchase cursor,
+  ) {
+    final byDate = candidate.purchasedAt.compareTo(cursor.purchasedAt);
+    if (byDate > 0) return true;
+    if (byDate < 0) return false;
+    final cm = candidate.meterReadingValue ?? -1;
+    final um = cursor.meterReadingValue ?? -1;
+    if (cm != um) return cm > um;
+    return candidate.id.compareTo(cursor.id) > 0;
+  }
+
   /// Sum of [FuelPurchase.volumeLiters] recorded since [use.startedAt].
   Future<double> fuelLitersPurchasedDuringOpenUse(VehicleUse use) async {
     final rows = await (_db.select(_db.fuelPurchases)
@@ -1211,6 +1327,44 @@ class VehiclesRepository {
             (t) =>
                 t.vehicleId.equals(use.vehicleId) &
                 t.purchasedAt.isBiggerOrEqualValue(use.startedAt),
+          ))
+        .get();
+    var total = 0.0;
+    for (final purchase in rows) {
+      final volume = purchase.volumeLiters;
+      if (volume != null && volume > 0) {
+        total += volume;
+      }
+    }
+    return total;
+  }
+
+  /// Newest full-tank purchase that has a meter reading, or `null`.
+  Future<FuelPurchase?> latestFullTankFuelPurchase(String vehicleId) async {
+    final rows = await (_db.select(_db.fuelPurchases)
+          ..where(
+            (t) =>
+                t.vehicleId.equals(vehicleId) &
+                t.isFullTank.equals(true) &
+                t.meterReadingValue.isNotNull(),
+          )
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
+          ..limit(1))
+        .get();
+    return rows.firstOrNull;
+  }
+
+  /// Sum of [FuelPurchase.volumeLiters] with [purchasedAt] strictly after
+  /// [afterPurchasedAt] (typically the last full-tank purchase).
+  Future<double> fuelVolumeLitersPurchasedAfter(
+    String vehicleId, {
+    required DateTime afterPurchasedAt,
+  }) async {
+    final rows = await (_db.select(_db.fuelPurchases)
+          ..where(
+            (t) =>
+                t.vehicleId.equals(vehicleId) &
+                t.purchasedAt.isBiggerThanValue(afterPurchasedAt),
           ))
         .get();
     var total = 0.0;

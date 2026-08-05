@@ -1,13 +1,13 @@
 /// Reliability of a tank-to-tank fuel consumption estimate from the number of
 /// full-tank intervals in the rolling calculation window.
 enum VehicleConsumptionReliability {
-  /// Fewer than two plein→plein intervals — no estimate.
+  /// No plein→plein interval yet — no estimate.
   none,
 
-  /// Exactly two intervals in the window.
+  /// Exactly one interval in the window (second full tank).
   preliminary,
 
-  /// Three or four intervals in the window.
+  /// Two to four intervals in the window.
   reliable,
 
   /// Five intervals in the window (maximum window size).
@@ -29,8 +29,8 @@ const int kMaxFullTankIntervalsInConsumptionWindow = 5;
 
 /// Maps the count of intervals in the active window to a reliability level.
 VehicleConsumptionReliability consumptionReliabilityFromPeriodCount(int count) {
-  if (count < 2) return VehicleConsumptionReliability.none;
-  if (count == 2) return VehicleConsumptionReliability.preliminary;
+  if (count < 1) return VehicleConsumptionReliability.none;
+  if (count == 1) return VehicleConsumptionReliability.preliminary;
   if (count <= 4) return VehicleConsumptionReliability.reliable;
   return VehicleConsumptionReliability.veryReliable;
 }

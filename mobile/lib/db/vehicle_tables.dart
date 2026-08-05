@@ -74,6 +74,12 @@ class VehicleUses extends Table {
   IntColumn get drivingTrafficPercent => integer().nullable()();
   /// `simple` or `detailed` at session end; null on legacy rows.
   TextColumn get sessionConsumptionMode => text().nullable()();
+  /// Emprunteur fuel catch-up (kind 23) ack for this open session.
+  ///
+  /// `null` = not awaiting (owner path / legacy). `false` = session start
+  /// forwarded, waiting for Propriétaire catch-up. `true` = catch-up received
+  /// (including empty). While `false`, session-end distance guard is skipped.
+  BoolColumn get fuelCatchUpResponseReceived => boolean().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

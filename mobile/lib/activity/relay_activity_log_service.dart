@@ -262,6 +262,10 @@ abstract final class RelayActivityLogKinds {
   static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
   static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
   static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
+  static const vehicleFuelPurchaseCatchUpSent =
+      'vehicle_fuel_purchase_catch_up_sent';
+  static const vehicleFuelPurchaseCatchUpReceived =
+      'vehicle_fuel_purchase_catch_up_received';
   static const vehicleMaintenanceSent = 'vehicle_maintenance_sent';
   static const vehicleMaintenanceReceived = 'vehicle_maintenance_received';
   static const vehicleTrafficViolationSent = 'vehicle_traffic_violation_sent';
@@ -280,6 +284,8 @@ abstract final class RelayActivityLogKinds {
     vehicleUseSessionEndReceived,
     vehicleFuelPurchaseSent,
     vehicleFuelPurchaseReceived,
+    vehicleFuelPurchaseCatchUpSent,
+    vehicleFuelPurchaseCatchUpReceived,
     vehicleMaintenanceSent,
     vehicleMaintenanceReceived,
     vehicleTrafficViolationSent,

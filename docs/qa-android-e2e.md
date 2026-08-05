@@ -279,7 +279,14 @@ follow-up (a single-AVD restore would leave Monica skewed).
 
 ```bash
 ./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_active_seed
+./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_usage_history_seed_2nd_fill
+./tool/melosw run qa:run-multi-scenario -- vehicle_sharing_usage_history_seed_3rd_fill
 ```
+
+`vehicle_sharing_usage_history_seed_3rd_fill` extends the 2nd-fill journal with
+the owner's 20 L non-full top-up and 3rd plein, Monica's catch-up of those
+fuels (including fill-3), and her closed session ending at 52 000.0 km (synced
+onto Louys). Asserts hubs only, then leaves both apps for manual follow-up.
 
 After product Dart changes under `mobile/`, rebuild the APK (omit `--skip-build`).
 YAML/bash-only: `--skip-build` is fine.

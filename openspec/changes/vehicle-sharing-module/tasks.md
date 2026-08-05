@@ -37,6 +37,7 @@
 
 - [x] 5.1 Contacts picker for invite (connected Contacts only)
 - [ ] 5.2 Relay sync for sharing links and usage facts
+- [x] 5.2a Fuel catch-up (kind 23) on session start: Emprunteur sends `lastKnownPurchaseId`; Propriétaire always replies (empty purchases = ack); stable fuel ids; Emprunteur `fuelCatchUpResponseReceived` gates session-end distance guard while awaiting
 - [ ] 5.3 Gate borrowing on `vehicle-sharing`; gate sharing out on both modules (debug-only stub)
 - [x] 5.4 Vehicle sharing hub (`vehicle-sharing-hub-ui`): accessible vehicles, statistics, quick actions
 - [x] 5.5 Remove any sharing-side dependencies on prototype `car_sharing` screens (`vehicle-legacy-code-removal`)

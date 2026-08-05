@@ -54,6 +54,7 @@ class VehicleUseSessionTransportService {
       throw StateError('start reading not found: $startReadingId');
     }
     final photoB64 = await _encodePhotoBase64(reading.photoPath);
+    final lastKnown = await _vehicles.latestFuelPurchase(vehicleId);
     return jsonEncode({
       'kind': startKind,
       'linkId': linkId,
@@ -66,7 +67,16 @@ class VehicleUseSessionTransportService {
       'tankFillFraction': reading.tankFillFraction,
       'photoBase64': photoB64,
       'photoIsSentinel': isKnownUnchangedMeterPhotoPath(reading.photoPath),
+      if (lastKnown != null) 'lastKnownPurchaseId': lastKnown.id,
     });
+  }
+
+  /// Reads the optional fuel catch-up cursor from a session-start payload.
+  static String? lastKnownPurchaseIdFromSessionJson(String sessionJson) {
+    final root = jsonDecode(sessionJson) as Map<String, dynamic>;
+    final id = (root['lastKnownPurchaseId'] as String?)?.trim();
+    if (id == null || id.isEmpty) return null;
+    return id;
   }
 
   /// Exports end JSON for relay AEAD (Emprunteur → Propriétaire).

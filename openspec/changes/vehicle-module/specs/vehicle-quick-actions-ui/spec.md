@@ -26,6 +26,7 @@ On the **Vehicle module hub**, quick-action submissions for a **owned** vehicle 
 - **WHEN** the Propriétaire submits **Fuel purchase** from the Vehicle hub for their car
 - **THEN** the purchase is stored on the owned vehicle record immediately
 - **THEN** consumption and alert-tile logic can react on the next hub refresh
+- **THEN** active Emprunteurs do **not** receive a proactive fuel envelope at save time; missing owner/peer purchases reach Emprunteurs via **session-start fuel catch-up** (`vehicle-sharing-usage-logging`) when they next start a use
 
 ### Requirement: Vehicle sharing hub uses the borrower path and forwards to the Propriétaire
 On the **Vehicle sharing hub**, quick-action submissions apply only to **accessible** vehicles whose owner is **not** the local user (`vehicle-usage-role-separation`). This is the **borrower path**.

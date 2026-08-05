@@ -27,21 +27,21 @@ int? maxPlausiblePositiveGapTenths({
   required double? tankCapacityLiters,
   required double guardLitersPer100Km,
 }) {
-  return maxPlausibleSessionDistanceTenths(
+  return maxPlausibleDistanceTenthsFromFuel(
     tankCapacityLiters: tankCapacityLiters,
-    fuelPurchasedLitersDuringSession: 0,
+    additionalFuelLitersAfterLastFullTank: 0,
     guardLitersPer100Km: guardLitersPer100Km,
   );
 }
 
-/// Max plausible session distance from fuel available in the tank.
+/// Max plausible distance from fuel available since the last full tank.
 ///
-/// [fuelPurchasedLitersDuringSession] is ignored for the upper bound: fuel on
-/// board cannot exceed [tankCapacityLiters] (a full-tank purchase fills to
-/// capacity, it does not add purchase volume on top).
-int? maxPlausibleSessionDistanceTenths({
+/// After a full tank, the vehicle is treated as having [tankCapacityLiters].
+/// Later non-full (and any other) purchases add their [volumeLiters] on top —
+/// e.g. 60 L capacity + 20 L top-up → 80 L for the ceiling.
+int? maxPlausibleDistanceTenthsFromFuel({
   required double? tankCapacityLiters,
-  required double fuelPurchasedLitersDuringSession,
+  required double additionalFuelLitersAfterLastFullTank,
   required double guardLitersPer100Km,
 }) {
   if (tankCapacityLiters == null ||
@@ -49,12 +49,25 @@ int? maxPlausibleSessionDistanceTenths({
       guardLitersPer100Km <= 0) {
     return null;
   }
-  final effectiveFuelLiters = tankCapacityLiters;
-  if (effectiveFuelLiters <= 0) {
-    return null;
-  }
+  final added = additionalFuelLitersAfterLastFullTank > 0
+      ? additionalFuelLitersAfterLastFullTank
+      : 0.0;
+  final effectiveFuelLiters = tankCapacityLiters + added;
   final maxKm = effectiveFuelLiters * 100 / guardLitersPer100Km;
   return (maxKm * 10).round();
+}
+
+/// Alias kept for call sites that still name the session-end helper.
+int? maxPlausibleSessionDistanceTenths({
+  required double? tankCapacityLiters,
+  required double fuelPurchasedLitersDuringSession,
+  required double guardLitersPer100Km,
+}) {
+  return maxPlausibleDistanceTenthsFromFuel(
+    tankCapacityLiters: tankCapacityLiters,
+    additionalFuelLitersAfterLastFullTank: fuelPurchasedLitersDuringSession,
+    guardLitersPer100Km: guardLitersPer100Km,
+  );
 }
 
 bool isSuspiciousPositiveGap({

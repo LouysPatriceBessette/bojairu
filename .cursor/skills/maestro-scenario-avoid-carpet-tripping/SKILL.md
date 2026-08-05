@@ -35,6 +35,7 @@ These failures happened across **many** agents and turns; they are **not** tied 
 | **Parallel multi-device** | `inviter-standby &` + invitee foreground → races and hour-long flakes |
 | **`tapOn` COMPLETED ≠ action** | Treated tap as success; sheet/dialog never opened (`excludeSemantics` without `onTap`) |
 | **No validation loop** | Claimed fixed / « almost done » without green run + artifact |
+| **Date forcée hors « aujourd’hui »** | Seed or link `acceptedAt` in a future year (e.g. housing `kQaSeedCreatedAt` 2027) while the journal / device clock is today — zeros usage-balance distance; user must redirect (2026-08-04) |
 
 **User installed skills precisely to stop blind YAML.** If you skip Step 0 below, you repeat the same 24 h disaster on the next scenario.
 
@@ -45,12 +46,13 @@ Skill lessons and bans for premature “success” claims: `no-probability-codin
 ## Step 0 — Mandatory reads (before the first edit)
 
 ```
-[ ] This skill (full file)
+[ ] This skill (full file) — especially **date actuelle** under Non-negotiable → Selectors, time, seed
 [ ] .cursor/skills/maestro-compartarenta/SKILL.md + reference.md
 [ ] .cursor/skills/maestro-e2e/rules/selectors.md + rules/platforms/flutter.md
 [ ] docs/qa-android-e2e.md — semantics table, run commands, TLS note
 [ ] Nearest existing scenario (grep by feature — see table below)
 [ ] git status + git diff — know staged vs unstaged before blaming « the code »
+[ ] If editing seeds with `acceptedAt` / windows: confirm chronology vs first journal event (not housing 2027)
 ```
 
 **Maestro MCP** (emulators running): `list_devices` → inspect hierarchy on the **exact** screen you will automate. MCP is for **proof**, not decoration.
@@ -249,9 +251,17 @@ Rebuild APK when `mobile/` changed; `--skip-build` only for YAML/bash-only edits
   - Prefer a regex on the stable product substring (`.*Rappel de paiement.*`) so runs keep working with or without a prefix while it still exists.
   - After the tap, **do not** treat Maestro `COMPLETED` as proof — prove outcome with `qa-*` (and/or coordinator artifacts such as shade-closed MD5). In-app journal steps stay `id:` only.
   - This exception does **not** authorize `text:` taps on Flutter UI.
-- **Ne jamais forcer une date autre que la date actuelle**, sauf si le scénario a l'objectif spécifique de tester un évènement futur.
-  - Manifest `device_date` for period/scenario logic is OK; for **default** runs prefer today.
-  - If TLS fails with `certificate is not yet valid`: emulator clock is outside cert `notBefore` — fix date, not Maestro steps.
+- **Ne jamais forcer une date autre que la date actuelle**, sauf si le scénario a l'objectif **spécifique et nommé** de tester un évènement futur (ex. période de logement / échéance).
+  - **Scope (binding — not only the emulator clock):** this covers **every** time the agent chooses for QA: manifest `device_date`, AVD wall clock, **and** seed Dart fields that start product windows (`createdAt`, `acceptedAt`, `purchasedAt`, session `startedAt`/`endedAt`, payment anchors, etc.).
+  - **Default:** `device_date: current` (host now, with timezone as in the reference manifest). Prefer today for default vehicle / sharing / usage-history runs.
+  - **Forbidden without an explicit future-event objective:**
+    - Reusing housing’s `kQaSeedCreatedAt` (`2027-01-01`) — or any other far-future housing anchor — for **vehicle-sharing** links, usage journals, or balance windows.
+    - Placing a share `acceptedAt` / window start **after** the seeded sessions and purchases that the scenario is meant to show on Solde / hub / history.
+    - Inventing a “convenient” calendar year so dump timestamps “look tidy” while the device clock is today.
+  - **Chronology self-check (required before delivering a seed that feeds a date window):** if product code filters by `[acceptedAt|createdAt … now]`, then **every** row that must count must have `at >= windowStart` and `at <= now` on a `device_date: current` run. If the first journal event is before `acceptedAt`, the seed is wrong — fix the seed dates, do not “explain” zero balances as product OK.
+  - **Demonstrated failure (2026-08-04, `vehicle_sharing_usage_history_seed_3rd_fill`):** share link used `kQaSeedCreatedAt` → **2027-01-01**; dump sessions/fuels were **2026-08-04/05**. Solde showed C/P/T correct but **D = 0**, A/E = 0 (window empty). User correction: that future accept date was never desired. **Fix:** `kQaVehicleSharingActiveLinkAt` = **2026-08-04 13:00 UTC** (before baseline meter unix `1785853111`). Regression: seed tests assert link before baseline + usage-balance `distanceKm > 0`.
+  - Manifest `device_date` for a **named** period/settlement scenario is OK; that exception does **not** license future dates on unrelated vehicle seeds.
+  - If TLS fails with `certificate is not yet valid`: emulator clock is outside cert `notBefore` — align clock to **today** (or cert-valid range), not Maestro steps.
 - **Ne jamais seeder un émulateur deux fois de suite inutilement.**
 - **Full-stop before every non-first seed on the same AVD instance (proven 2026-07-14):** when a scenario needs a **second** (or later) `seed_qa_scenario` / `pm clear` on the same emulator process, **fully stop the emulator** (`adb emu kill` / `qa_kill_emulator`) and **cold-boot** before that seed. A second `pm clear` + cold-start on a still-running AVD after Maestro (or after System UI stress) often never writes `seed_applied` (`poll … applied=<empty>` then seed timeout). First seed after a fresh AVD start is fine; mid-run reseeds are not. Reference orchestrator: `tool/run_vehicle_sale_export_import_scenario.sh` phases 4→5.
 - **Right-aligned control + full-width Semantics hitbox (demonstrated 2026-07-14):** `Align(alignment: centerRight)` wrapping `Semantics(excludeSemantics: true, …)` can report a **full-row** `bounds` in Maestro hierarchy while the visible `TextButton` sits on the right. `tapOn id:` then COMPLETED (center of bounds) without firing `onPressed` — dialog never opens. Hierarchy proof: `qa-vehicle-import-action` bounds `[42,325][1038,451]` with visual « Importer » on the right edge. **Fix (situational):** size the Semantics to the control (`Row` + `MainAxisAlignment.end`, or equivalent intrinsic width), not the full cross-axis of the list. (`Row`+`end` alone did **not** shrink bounds under `ListView` — still `[42,325][1038,451]` as child of `ScrollView` after rebuild; see next bullet.)
@@ -327,6 +337,7 @@ background terminal. Claim PASS only from the user’s green log (with
 | Dialog open but assert on wrong id | Wait dialog id on **correct** route host | Global edit of shared `_return_*` |
 | Sync event not arrived yet | `qa_wait_for_logcat_on_serial` or wait next id | Remove assert |
 | App bug (wrong data, duplicate row, crash) | **Fix Dart** (ask if same pattern elsewhere) | Skip step / `optional: true` on assert |
+| Usage balance / windowed totals all zero but C/P/T OK | Seed chronology: `acceptedAt` after journal, or housing `kQaSeedCreatedAt` on vehicle link | Blame formula / « no distance in product » |
 | `HandshakeException` / cert date on screenshot | `device_date` / clock vs `openssl x509 -dates` | Coordinator race theories |
 | Maestro infra exit / empty artifact | adb, grpc, tooling — INCONCLUSIVE | « Bug absent » |
 | User had PASSED; new task is small | Cherry-pick one fix from stash | Refactor whole wizard |
@@ -365,6 +376,8 @@ New scenario checklist: manifest fields (`id`, `device_date`, `seed`, `flow`) ma
 - [ ] No assert before prerequisite action (dialog Ok before back)
 - [ ] No `index` forgotten when testing duplicate rows
 - [ ] No hub/final assert before async event (wait logcat or next id)
+- [ ] No forced non-today dates (seed link/window or AVD) unless the scenario’s stated goal is a future event
+- [ ] Vehicle / usage-history seeds: share `acceptedAt` **before** first journal event; never housing `kQaSeedCreatedAt` (2027) for that link
 
 **Coordinator**
 
@@ -405,7 +418,7 @@ Ask in chat (plain Markdown) when product scope is ambiguous.
 - [ ] `verify_qa_semantics.py` → 0
 - [ ] Scenario green **from the user’s run** (single or multi) with artifacts — agent did not launch it
 - [ ] Logs show device serial per Maestro block
-- [ ] `flutter analyze` + `flutter test` if `mobile/` touched
+- [ ] `flutter analyze` + **targeted** `flutter test` if `mobile/` touched (full suite = developer; remind on large changes)
 - [ ] Diff scope = what was requested — no drive-by refactors
 
 **Definition of done:** the scenario automates **existing** UI by id; failures mean app or flow wiring is wrong — not something to hide.

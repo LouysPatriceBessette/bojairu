@@ -95,7 +95,7 @@ See `vehicle-sharing-module` for collaboration, relay sync, borrower metrics, ex
 
 - [x] 10.1 End-of-use session form: route / city / traffic integer percents (sum = 100) under odometer photo; persist on `VehicleUses`
 - [x] 10.2 Tank-to-tank NNLS fit for per-condition L/100 km (minimum two full-tank intervals with session mix data)
-- [x] 10.3 Rolling window of five plein→plein intervals; reliability gradation (none / preliminary / reliable / very reliable) with user-facing messages
+- [x] 10.3 Rolling window of five plein→plein intervals; reliability gradation (none / preliminary from 1st interval / reliable / very reliable) with user-facing messages
 - [x] 10.4 Persist reliable+ estimate history (`VehicleConsumptionEstimateHistory`); show on statistics screen
 - [ ] 10.5 Boat-specific operating-condition mix and consumption model (horometer / marine use patterns — **deferred**; see `design.md` § Decisions)
 
@@ -107,7 +107,7 @@ See `vehicle-sharing-module` for collaboration, relay sync, borrower metrics, ex
 
 ## 12. Session-end distance plausibility guard
 
-- [x] 12.0 **Session-end distance guard**: on session **end** reading, compare `end − start` to `(tankCapacity + fuelPurchasedDuringSession) × 100 / guardConsumption`; guard consumption = max(route, city, traffic) known values or 7.5 L/100 km; confirmation dialog before save when exceeded (`vehicle_odometer_gap_plausibility`, `confirmSuspiciousSessionEndDistanceBeforeSave`). Not applied at session start or standalone gap attribution.
+- [x] 12.0 **Session-end distance guard**: on session **end** reading, compare distance since the **last full-tank** meter (`end − lastFullTankMeter`; fallback `end − start` when no full-tank meter) to `(tankCapacity + fuelVolumesPurchasedAfterThatFullTank) × 100 / guardConsumption` — partial top-ups after the last plein count (e.g. 60 L + 20 L → 80 L); guard consumption = max(route, city, traffic) known values or 7.5 L/100 km; confirmation dialog before save when exceeded (`vehicle_odometer_gap_plausibility`, `confirmSuspiciousSessionEndDistanceBeforeSave`). Not applied at session start or standalone gap attribution.
 
 ## 13. Consumption estimation mode
 

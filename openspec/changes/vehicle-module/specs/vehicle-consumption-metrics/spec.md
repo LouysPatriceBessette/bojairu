@@ -6,12 +6,19 @@ On the **Propriétaire's** device, the system SHALL compute and display:
 - consumption per km using full-tank anchors (see `fuel-purchase-tracking`)
 - methodology / explainability for each displayed metric
 
+For each plein→plein interval, fuel volume SHALL be the sum of **all** fuel purchases recorded after the opening full-tank anchor through and including the closing full-tank purchase (partial top-ups between anchors count). The opening full-tank volume itself SHALL NOT be included. Distance for the interval SHALL be the meter delta between those two full-tank anchors (not distance after the last full tank until a new full tank closes the period).
+
 These metrics SHALL include distance from **all** attributed uses (owner and approved borrowers).
 
 #### Scenario: Owner sees total distance including borrower uses
 - **WHEN** an owner opens metrics for a vehicle that has borrower-attributed uses
 - **THEN** total distance includes borrower sessions
 - **THEN** the owner can inspect which uses contributed to the total
+
+#### Scenario: Partial top-up between full tanks counts in consumption
+- **WHEN** a vehicle has full-tank purchases A then C, with a non-full purchase B between them (by meter)
+- **THEN** the A→C interval fuel volume includes B's liters plus C's liters
+- **THEN** A's liters are excluded (opening anchor only)
 
 ### Requirement: Display the last full-tank anchor used for consumption
 The system MUST display the date of the last full-tank entry used as the start anchor for the currently displayed consumption calculation.

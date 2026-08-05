@@ -113,7 +113,10 @@ void main() {
     final snapshot =
         await VehicleConsumptionMetrics(db).forVehicle(vehicleId);
 
-    expect(snapshot.hasSufficientData, isFalse);
-    expect(snapshot.reliability, VehicleConsumptionReliability.none);
+    // Interval fuel:0→fuel:1 is ignored (detailed session); fuel:1→fuel:2 remains.
+    // One simple interval is enough for a preliminary estimate.
+    expect(snapshot.hasSufficientData, isTrue);
+    expect(snapshot.reliability, VehicleConsumptionReliability.preliminary);
+    expect(snapshot.periodsInWindow, 1);
   });
 }

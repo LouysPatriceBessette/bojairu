@@ -1,0 +1,19 @@
+id: vehicle_sharing_usage_history_seed_3rd_fill
+description: >-
+  Seed-only — active QA Civic share plus journal through the 3rd full-tank
+  purchase (owner 20 L top-up), Monica catch-up of fill-3, and her closed
+  session to 52 000.0 km. From 2026-08-04 consumption-verify dumps (re-stolen).
+  Manual follow-up.
+device_date: current
+timezone: America/Toronto
+skip_restore: true
+coordinator: vehicle_sharing_usage_history_seed_3rd_fill
+mode: seed_only
+role_owner:
+  avd: Louys-QA
+  seed: vehicle_sharing_usage_history_3rd_fill_owner
+  flow: qa/flows/vehicle_sharing_active_owner_assert_hub.yaml
+role_borrower:
+  avd: Monica-QA
+  seed: vehicle_sharing_usage_history_3rd_fill_borrower
+  flow: qa/flows/vehicle_sharing_active_borrower_assert_hub.yaml

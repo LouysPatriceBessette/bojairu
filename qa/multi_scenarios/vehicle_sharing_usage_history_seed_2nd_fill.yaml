@@ -1,0 +1,17 @@
+id: vehicle_sharing_usage_history_seed_2nd_fill
+description: >-
+  Seed-only — active QA Civic share plus journal through the 2nd full-tank
+  purchase (preliminary consumption). From 2026-08-04 AVD dumps. Manual follow-up.
+device_date: current
+timezone: America/Toronto
+skip_restore: true
+coordinator: vehicle_sharing_usage_history_seed_2nd_fill
+mode: seed_only
+role_owner:
+  avd: Louys-QA
+  seed: vehicle_sharing_usage_history_2nd_fill_owner
+  flow: qa/flows/vehicle_sharing_active_owner_assert_hub.yaml
+role_borrower:
+  avd: Monica-QA
+  seed: vehicle_sharing_usage_history_2nd_fill_borrower
+  flow: qa/flows/vehicle_sharing_active_borrower_assert_hub.yaml

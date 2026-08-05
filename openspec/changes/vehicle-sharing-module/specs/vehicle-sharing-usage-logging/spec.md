@@ -32,6 +32,31 @@ The system MUST NOT provide a flow for Emprunteurs to log fuel purchases tied to
 - **THEN** the completion flow does not prompt for liters consumed on that session
 - **THEN** fuel allocation relies on anchors and shared ratios per `vehicle-expense-sharing`
 
+### Requirement: Session-start fuel catch-up from Propriétaire
+When an Emprunteur starts a use session, the session-start envelope SHALL include the stable id of the Emprunteur's newest local fuel purchase when one exists (`lastKnownPurchaseId`). After the Propriétaire imports that session start, the Propriétaire SHALL reply with a **fuel purchase catch-up** envelope (dedicated kind) containing:
+
+- purchases **strictly after** the cursor purchase when that id exists on the Propriétaire vehicle ledger, or
+- the **latest full-tank** purchase and all purchases after it when the cursor is absent or unknown,
+
+for any recorder. The catch-up envelope MUST NOT be sent when the selected set is empty. Fuel purchase ids SHALL be stable across installations (creator id preserved on import) so the cursor can match. The Emprunteur device SHALL upsert catch-up rows onto the shared vehicle record so session-end distance guards can see owner top-ups recorded after the Emprunteur's last known purchase.
+
+#### Scenario: Catch-up after session start delivers owner top-up
+- **WHEN** the Propriétaire records a non-full fuel purchase after the Emprunteur's last known purchase
+- **AND** the Emprunteur starts a new use session (session start reaches the Propriétaire)
+- **THEN** the Propriétaire sends a catch-up envelope including that purchase
+- **THEN** the Emprunteur ledger stores that purchase under the same stable id
+
+#### Scenario: Empty catch-up still acknowledges the Emprunteur
+- **WHEN** the Propriétaire has no fuel purchases to add after the Emprunteur cursor (or last full-tank set)
+- **THEN** the Propriétaire still sends a catch-up envelope with an empty purchase list
+- **THEN** the Emprunteur marks the open session's fuel catch-up response as received
+
+#### Scenario: Session-end distance guard waits for catch-up
+- **WHEN** the Emprunteur has forwarded session start and has not yet received catch-up
+- **THEN** the session-end excessive-distance guard is skipped
+- **WHEN** catch-up is received (empty or not)
+- **THEN** the guard applies again for that session
+
 ### Requirement: Shared vehicles use gap attribution for unlogged meter increases
 On a shared vehicle, when a session **start** reading exceeds the latest stored reading, gap attribution per `vehicle-odometer-gap-attribution` SHALL offer the Propriétaire and active Emprunteurs as attribution targets. Attributed participants MUST receive **informational** notifications when another participant assigns them the gap. **Unknown** attributions MUST notify the Propriétaire (unless self). **Negative** gaps MUST notify the Propriétaire for photo verification (unless self). Only the **Propriétaire** MAY revise a stored gap attribution; the app MUST NOT implement an in-app contestation workflow.
 

@@ -18,6 +18,17 @@ import 'qa_vehicle_sharing_offer_seed.dart';
 const kQaVehicleSharingActiveVehicleId = 'vehicle:qa-civic-sharing';
 const kQaVehicleSharingActiveLinkId = 'vshare:qa-civic-monica';
 
+/// Share create/accept time for the active QA Civic link.
+///
+/// Must be **before** every usage-history dump event (baseline meter unix
+/// `1785853111` = 2026-08-04 14:18:31 UTC). Do **not** use [kQaSeedCreatedAt]
+/// (2027-01-01 housing anchor) — that puts the usage-balance window after the
+/// entire journal and zeros distance/borrower costs.
+final kQaVehicleSharingActiveLinkAt = DateTime.utc(2026, 8, 4, 13);
+
+/// Usage compensation **T** on the active QA Civic share (CAD cents per km).
+const kQaVehicleSharingActiveRatePerKmMinor = 10;
+
 /// Louys: connected Monica + owned QA Civic + **active** share to Monica.
 Future<void> seedQaVehicleSharingActiveOwner(AppDatabase db) async {
   final now = kQaSeedCreatedAt;
@@ -83,7 +94,7 @@ Future<void> seedQaVehicleSharingActiveOwnerLocalData(AppDatabase db) async {
     recordedByContactId: kVehicleOwnerSelfContactId,
     role: MeterReadingRole.standalone,
   );
-  final linkAt = kQaSeedCreatedAt;
+  final linkAt = kQaVehicleSharingActiveLinkAt;
   await db.into(db.vehicleSharingLinks).insert(
         VehicleSharingLinksCompanion.insert(
           id: kQaVehicleSharingActiveLinkId,
@@ -93,7 +104,7 @@ Future<void> seedQaVehicleSharingActiveOwnerLocalData(AppDatabase db) async {
           status: VehicleSharingLinkStatus.active.wire,
           createdAt: linkAt,
           acceptedAt: drift.Value(linkAt),
-          ratePerKmMinor: const drift.Value(25),
+          ratePerKmMinor: const drift.Value(kQaVehicleSharingActiveRatePerKmMinor),
           rateCurrency: const drift.Value('CAD'),
           availabilityWeekJson: const drift.Value(''),
           ownerRulesText: const drift.Value(''),
@@ -117,7 +128,7 @@ Future<void> seedQaVehicleSharingActiveBorrowerLocalData(AppDatabase db) async {
     fuelTankCapacityLiters: 60,
     consumptionEstimationMode: VehicleConsumptionEstimationMode.simple.wire,
   );
-  final now = kQaSeedCreatedAt;
+  final linkAt = kQaVehicleSharingActiveLinkAt;
   await db.into(db.vehicleSharingLinks).insert(
         VehicleSharingLinksCompanion.insert(
           id: kQaVehicleSharingActiveLinkId,
@@ -125,9 +136,9 @@ Future<void> seedQaVehicleSharingActiveBorrowerLocalData(AppDatabase db) async {
           ownerContactId: kQaFcmWakeLouysContactId,
           borrowerContactId: kVehicleBorrowerSelfContactId,
           status: VehicleSharingLinkStatus.active.wire,
-          createdAt: now,
-          acceptedAt: drift.Value(now),
-          ratePerKmMinor: const drift.Value(25),
+          createdAt: linkAt,
+          acceptedAt: drift.Value(linkAt),
+          ratePerKmMinor: const drift.Value(kQaVehicleSharingActiveRatePerKmMinor),
           rateCurrency: const drift.Value('CAD'),
           availabilityWeekJson: const drift.Value(''),
           ownerRulesText: const drift.Value(''),

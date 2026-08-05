@@ -280,12 +280,26 @@ void main() {
     expect(await repo.openUseForVehicle(vehicleId), isNotNull);
   });
 
-  test('export start json includes meter and sentinel photo flag', () async {
+  test('export start json includes meter, sentinel photo, and fuel cursor',
+      () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     await seedOwnedVehicle(db);
     final transport = VehicleUseSessionTransportService(db);
     final repo = VehiclesRepository(db);
+
+    final fuel = await repo.saveFuelPurchase(
+      id: 'fuel:cursor-1',
+      vehicleId: vehicleId,
+      purchasedAt: DateTime.utc(2026, 8, 1, 9),
+      costMinor: 5000,
+      currency: 'CAD',
+      isFullTank: true,
+      recordedByContactId: borrowerContactId,
+      volumeLiters: 30,
+      meterReadingValue: 110000,
+      meterPhotoPath: kVehicleMeterPhotoKnownUnchangedSentinel,
+    );
 
     final reading = await repo.saveMeterReading(
       vehicleId: vehicleId,
@@ -314,5 +328,6 @@ void main() {
     expect(root['meterTenths'], 111000);
     expect(root['photoIsSentinel'], isTrue);
     expect(root['remoteUseId'], use.id);
+    expect(root['lastKnownPurchaseId'], fuel.id);
   });
 }

@@ -45,6 +45,7 @@ import '../vehicle/sharing/vehicle_fuel_purchase_transport_service.dart';
 import '../vehicle/sharing/vehicle_maintenance_transport_service.dart';
 import '../vehicle/sharing/vehicle_violation_transport_service.dart';
 import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
+import '../vehicle/vehicle_owner_contact.dart';
 import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
 import 'identity_keystore.dart';
@@ -1317,6 +1318,14 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleFuelPurchaseCatchUp) {
+            await _handleInboundVehicleFuelPurchaseCatchUp(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else {
             await _relay.ackEnvelope(
               envelopeId: env.envelopeId,
@@ -1943,6 +1952,18 @@ class HandshakeOrchestrator {
           correctionReadingId: imported.correctionReadingId,
         );
       }
+      try {
+        await _maybeSendFuelPurchaseCatchUpAfterSessionStart(
+          vehicleId: imported.vehicleId,
+          borrowerContactId: senderContact.id,
+          sessionJson: decrypted.sessionJson,
+        );
+      } catch (e, st) {
+        debugPrint(
+          'vehicle_fuel_purchase_catch_up send failed after session start '
+          'for ${senderContact.id}: $e\n$st',
+        );
+      }
     } catch (e, st) {
       debugPrint(
         'vehicle_use_session_start import failed for ${senderContact.id}: $e\n$st',
@@ -2094,6 +2115,177 @@ class HandshakeOrchestrator {
     } catch (e, st) {
       debugPrint(
         'vehicle_fuel_purchase import failed for ${senderContact.id}: $e\n$st',
+      );
+    }
+    await _relay.ackEnvelope(
+      envelopeId: envelope.envelopeId,
+      recipient: myListenAddr,
+    );
+  }
+
+  Future<void> _maybeSendFuelPurchaseCatchUpAfterSessionStart({
+    required String vehicleId,
+    required String borrowerContactId,
+    required String sessionJson,
+  }) async {
+    final links =
+        await VehiclesRepository(_db).listSharingLinksForVehicle(vehicleId);
+    VehicleSharingLink? link;
+    for (final row in links) {
+      if (row.status == VehicleSharingLinkStatus.active.wire &&
+          row.borrowerContactId == borrowerContactId &&
+          row.ownerContactId == kVehicleOwnerSelfContactId) {
+        link = row;
+        break;
+      }
+    }
+    if (link == null) {
+      debugPrint(
+        'vehicle_fuel_purchase_catch_up skipped: no active link '
+        'vehicle=$vehicleId borrower=$borrowerContactId',
+      );
+      return;
+    }
+    final lastKnown =
+        VehicleUseSessionTransportService.lastKnownPurchaseIdFromSessionJson(
+      sessionJson,
+    );
+    await sendVehicleFuelPurchaseCatchUp(
+      linkId: link.id,
+      vehicleId: vehicleId,
+      borrowerContactId: borrowerContactId,
+      lastKnownPurchaseId: lastKnown,
+    );
+  }
+
+  /// Posts fuel purchase catch-up to the Emprunteur (always sends, even if empty).
+  Future<void> sendVehicleFuelPurchaseCatchUp({
+    required String linkId,
+    required String vehicleId,
+    required String borrowerContactId,
+    String? lastKnownPurchaseId,
+  }) async {
+    final catchUpJson =
+        await VehicleFuelPurchaseTransportService(_db).exportCatchUpJson(
+      linkId: linkId,
+      vehicleId: vehicleId,
+      lastKnownPurchaseId: lastKnownPurchaseId,
+    );
+
+    final contact = await _contacts.get(borrowerContactId);
+    if (contact == null || contact.kind != 'connected') {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final peerPubB64 = contact.peerPublicMaterial;
+    if (peerPubB64 == null || peerPubB64.isEmpty) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    final peerPub = RelayRouting.unb64(peerPubB64);
+    final frame = await EnvelopeCodec.encryptVehicleFuelPurchaseCatchUp(
+      envelope: VehicleFuelPurchaseCatchUpEnvelope(
+        senderLongTermPublicKey: selfPub,
+        catchUpJson: catchUpJson,
+      ),
+      senderLongTermPrivateKey: selfPriv,
+      peerLongTermPublicKey: peerPub,
+    );
+    final selfAddr = await RelayRouting.steadyStateAddress(
+      firstPub: selfPub,
+      secondPub: peerPub,
+    );
+    final peerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peerPub,
+      secondPub: selfPub,
+    );
+    await _ensureSteadyRoutingRegistered(
+      selfListenAddr: selfAddr,
+      peerListenAddr: peerAddr,
+    );
+    await _relay.postEnvelope(
+      senderIdentity: selfAddr,
+      recipientIdentity: peerAddr,
+      idempotencyKey: _randomBytes(16),
+      ciphertext: frame,
+      kind: EnvelopeKind.vehicleFuelPurchaseCatchUp,
+      ttl: _steadyTtl,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleFuelPurchaseCatchUpSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'borrowerContactId': borrowerContactId,
+        'lastKnownPurchaseId': ?lastKnownPurchaseId,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  Future<void> _handleInboundVehicleFuelPurchaseCatchUp({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    final VehicleFuelPurchaseCatchUpEnvelope decrypted;
+    try {
+      decrypted = await EnvelopeCodec.decryptVehicleFuelPurchaseCatchUp(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+    } on EnvelopeDecryptionError catch (e, st) {
+      debugPrint(
+        'vehicle_fuel_purchase_catch_up decrypt failed for ${contact.id} '
+        '(envelope ${envelope.envelopeId}): $e\n$st',
+      );
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+      return;
+    }
+    var senderContact = contact;
+    if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+      final matched = await _contactForPeerPublicKey(
+        decrypted.senderLongTermPublicKey,
+      );
+      if (matched == null) {
+        await _relay.ackEnvelope(
+          envelopeId: envelope.envelopeId,
+          recipient: myListenAddr,
+        );
+        return;
+      }
+      senderContact = matched;
+    }
+
+    try {
+      final imported = await VehicleFuelPurchaseTransportService(_db)
+          .importCatchUpPurchases(catchUpJson: decrypted.catchUpJson);
+      debugPrint(
+        'vehicle_fuel_purchase_catch_up imported from ${senderContact.id} '
+        'count=${imported.length}',
+      );
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleFuelPurchaseCatchUpReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: senderContact.id,
+        initiatorDisplayName: senderContact.displayName,
+        details: {
+          'purchaseCount': imported.length,
+          if (imported.isNotEmpty) 'vehicleId': imported.first.vehicleId,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_fuel_purchase_catch_up import failed for '
+        '${senderContact.id}: $e\n$st',
       );
     }
     await _relay.ackEnvelope(

@@ -99,10 +99,13 @@ Future<bool> showSuspiciousPositiveGapDialog(
   return choice ?? false;
 }
 
-/// Session-end distance guard: one tank capacity at the guard consumption rate.
+/// Session-end distance guard vs fuel available since the last full tank.
 ///
-/// Uses the odometer delta since the latest fuel purchase with a meter reading
-/// when available; otherwise falls back to the session start reading.
+/// Distance is `end − lastFullTankMeter` when a full-tank purchase with a meter
+/// exists; otherwise `end − sessionStart`. The ceiling uses tank capacity plus
+/// volumes of fuel purchases recorded **after** that last full tank (partial
+/// top-ups count). Gap attribution vs the prior known meter still happens at
+/// session **start**.
 Future<bool> confirmSuspiciousSessionEndDistanceBeforeSave({
   required BuildContext context,
   required VehiclesRepository repo,
@@ -112,17 +115,13 @@ Future<bool> confirmSuspiciousSessionEndDistanceBeforeSave({
   required double fuelLitersDuringSession,
   required bool usesHorometer,
   required DistanceUnit distanceUnit,
+  /// When false, Emprunteur is still awaiting fuel catch-up — skip this guard.
+  bool fuelCatchUpResponseReceived = true,
 }) async {
   if (usesHorometer) {
     return true;
   }
-  final sinceFuelTenths = await repo.distanceTenthsSinceLastFuelPurchase(
-    vehicle.id,
-    currentMeterTenths: parsedEndMeterTenths,
-  );
-  final distanceTenths =
-      sinceFuelTenths ?? (parsedEndMeterTenths - sessionStartMeterTenths);
-  if (distanceTenths <= 0) {
+  if (!fuelCatchUpResponseReceived) {
     return true;
   }
   final tankCapacity = vehicle.fuelTankCapacityLiters;
@@ -130,12 +129,30 @@ Future<bool> confirmSuspiciousSessionEndDistanceBeforeSave({
     return true;
   }
 
+  final lastFull = await repo.latestFullTankFuelPurchase(vehicle.id);
+  final lastFullMeter = lastFull?.meterReadingValue;
+  late final int distanceTenths;
+  late final double additionalFuelLiters;
+  if (lastFull != null && lastFullMeter != null) {
+    distanceTenths = parsedEndMeterTenths - lastFullMeter;
+    additionalFuelLiters = await repo.fuelVolumeLitersPurchasedAfter(
+      vehicle.id,
+      afterPurchasedAt: lastFull.purchasedAt,
+    );
+  } else {
+    distanceTenths = parsedEndMeterTenths - sessionStartMeterTenths;
+    additionalFuelLiters = fuelLitersDuringSession;
+  }
+  if (distanceTenths <= 0) {
+    return true;
+  }
+
   final snapshot = await VehicleConsumptionMetrics(AppDatabase.processScope)
       .forVehicle(vehicle.id);
   final guardL100 = guardConsumptionLitersPer100Km(snapshot);
-  final maxDistanceTenths = maxPlausibleSessionDistanceTenths(
+  final maxDistanceTenths = maxPlausibleDistanceTenthsFromFuel(
     tankCapacityLiters: tankCapacity,
-    fuelPurchasedLitersDuringSession: fuelLitersDuringSession,
+    additionalFuelLitersAfterLastFullTank: additionalFuelLiters,
     guardLitersPer100Km: guardL100,
   );
   if (!isSuspiciousPositiveGap(

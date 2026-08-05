@@ -139,8 +139,15 @@ class VehicleConsumptionMetrics {
       );
     }
     final delta = endMeter - startMeter;
-    final vol = newest.volumeLiters;
-    if (vol == null || vol <= 0 || delta <= 0) {
+    final allPurchases = await (_db.select(_db.fuelPurchases)
+          ..where((t) => t.vehicleId.equals(vehicleId)))
+        .get();
+    final vol = _fuelLitersBetweenFullTankAnchors(
+      allPurchases,
+      start: previous,
+      end: newest,
+    );
+    if (vol <= 0 || delta <= 0) {
       return VehicleConsumptionSnapshot(
         hasSufficientData: false,
         anchorStartAt: previous.purchasedAt,
@@ -462,19 +469,30 @@ class VehicleConsumptionMetrics {
             (t) => t.vehicleId.equals(vehicleId) & t.endedAt.isNotNull(),
           ))
         .get();
+    final allPurchases = await (_db.select(_db.fuelPurchases)
+          ..where((t) => t.vehicleId.equals(vehicleId)))
+        .get();
 
     final intervals = <FullTankConsumptionInterval>[];
     for (var i = 1; i < chronological.length; i++) {
       final start = chronological[i - 1];
       final end = chronological[i];
-      final vol = end.volumeLiters;
       final endMeter = end.meterReadingValue;
       final startMeter = start.meterReadingValue;
-      if (vol == null ||
-          vol <= 0 ||
-          endMeter == null ||
+      if (endMeter == null ||
           startMeter == null ||
           endMeter <= startMeter) {
+        continue;
+      }
+
+      // Liters put in after the opening plein through (and including) the
+      // closing plein — partial top-ups between anchors count.
+      final vol = _fuelLitersBetweenFullTankAnchors(
+        allPurchases,
+        start: start,
+        end: end,
+      );
+      if (vol <= 0) {
         continue;
       }
 
@@ -530,6 +548,40 @@ class VehicleConsumptionMetrics {
       );
     }
     return intervals;
+  }
+
+  /// Sum of purchase volumes strictly after [start] through [end] inclusive.
+  ///
+  /// Prefers meter order when both purchases have meters; otherwise
+  /// [purchasedAt]. The opening plein volume is excluded; closing plein and
+  /// any partial top-ups in between are included.
+  double _fuelLitersBetweenFullTankAnchors(
+    List<FuelPurchase> purchases, {
+    required FuelPurchase start,
+    required FuelPurchase end,
+  }) {
+    var total = 0.0;
+    final startMeter = start.meterReadingValue;
+    final endMeter = end.meterReadingValue;
+    final useMeters = startMeter != null && endMeter != null;
+
+    for (final purchase in purchases) {
+      final volume = purchase.volumeLiters;
+      if (volume == null || volume <= 0) continue;
+
+      if (useMeters) {
+        final meter = purchase.meterReadingValue;
+        if (meter == null) continue;
+        if (meter <= startMeter || meter > endMeter) continue;
+      } else {
+        if (!purchase.purchasedAt.isAfter(start.purchasedAt) ||
+            purchase.purchasedAt.isAfter(end.purchasedAt)) {
+          continue;
+        }
+      }
+      total += volume;
+    }
+    return total;
   }
 
   Future<int> totalLifetimeUsage(String vehicleId) async {

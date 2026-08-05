@@ -724,7 +724,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1136,6 +1136,13 @@ class AppDatabase extends _$AppDatabase {
           m,
           vehicleSharingLinks,
           vehicleSharingLinks.expiresAt,
+        );
+      }
+      if (from < 40) {
+        await _migrateAddColumn(
+          m,
+          vehicleUses,
+          vehicleUses.fuelCatchUpResponseReceived,
         );
       }
     },

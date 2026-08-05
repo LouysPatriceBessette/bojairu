@@ -1,5 +1,5 @@
 ---
-description: Run flutter analyze after mobile changes; run flutter test unless the change clearly cannot affect test results
+description: Run flutter analyze after mobile changes; run targeted tests only (user runs full suite periodically)
 alwaysApply: true
 ---
 
@@ -15,36 +15,49 @@ After **any** edit under `mobile/` (or shared packages consumed by the mobile ap
 
    Prefer `./tool/flutterw` over a global `flutter` binary. For a one-file tweak, analyzing that path (or package) is enough when the change cannot affect other packages.
 
-2. **Test** (full suite must pass) — **unless the skip rule below applies**:
+2. **Test — targeted only** (agent default):
 
    ```bash
-   cd mobile && ./tool/flutterw test
+   cd mobile && ./tool/flutterw test test/<relevant>_test.dart
    ```
 
-   When the change is scoped, you may run a targeted file first for speed, then the full suite before delivery.
+   Run the test file(s) that cover the changed logic (and any new tests you added). Do **not** run the full suite
+   `./tool/flutterw test` as a delivery gate — it is slow in the agent environment; the developer runs it
+   periodically.
 
-3. **Iterate** until required commands are fully green. Do not hand off with a failing or (when still required) skipped verification step.
+3. **Iterate** until analyze and the chosen targeted tests are green. Do not hand off with a failing analyze
+   or a failing targeted test you were required to run.
 
-## Skip `flutter test` when it cannot matter
+## Skip targeted tests when they cannot matter
 
-**Do not** run `flutter test` when it is **obvious** that the change cannot affect test outcomes — for example:
+**Do not** run tests when it is **obvious** that the change cannot affect test outcomes — for example:
 
 - Pure layout swap with no logic, routing, or widget identity change that tests assert (e.g. moving an existing link from left to right on the same row)
 - Comments, docs-only wording in Dart comments, or formatting/whitespace-only edits
 - Debug/QA copy that no unit/widget test reads
 
-Still run **analyze** on touched Dart. If there is any reasonable doubt that a test could fail, run the suite (or a targeted file). Prefer skipping a useless full suite over burning minutes after a trivial UI tweak.
+Still run **analyze** on touched Dart. If there is any reasonable doubt, run the **relevant targeted** file(s). Prefer skipping useless test runs after a trivial UI tweak.
 
 This skip does **not** apply to Maestro / `qa:run-*` (separate policy in Maestro skills).
 
+## Full suite — developer-owned; agent reminds on large changes
+
+The **full** suite (`cd mobile && ./tool/flutterw test`) is the developer’s job from time to time — **not** the agent’s default.
+
+When the change is **large** (broad refactor, many packages/files, shared infra such as Drift/schema, relay client, seed plumbing used widely, or several unrelated behaviors in one delivery), **remind the user in the delivery message** to run the full suite locally, e.g.:
+
+> Gros changement — pense à rouler `cd mobile && ./tool/flutterw test` de ton côté.
+
+Do **not** start the full suite yourself unless the user explicitly asks in that turn.
+
 ## If an existing test fails
 
-- If the failure is **clearly caused by your change**, fix the product code or update the test as appropriate and re-run until green.
-- If the failure appears **unrelated** to your change, **stop** and tell the user which test failed (name + file + short error). Do **not** change that test unless they explicitly allow it. After they respond, continue iterating until analyze and (when required) test are green.
+- If the failure is **clearly caused by your change**, fix the product code or update the test as appropriate and re-run the **targeted** test until green.
+- If the failure appears **unrelated** to your change, **stop** and tell the user which test failed (name + file + short error). Do **not** change that test unless they explicitly allow it.
 
 ## Delivery bar
 
-Only report completion when `flutter analyze --fatal-infos` succeeds with no remaining issues, and either `flutter test` succeeded or the **skip rule** above clearly applied (state that briefly when skipping).
+Only report completion when `flutter analyze --fatal-infos` succeeds with no remaining issues, and either the **targeted** tests you ran succeeded or the **skip rule** above clearly applied (state that briefly when skipping). On large changes, include the full-suite reminder.
 
 ## QA APK native SQLite (after clean / APK rebuild)
 
