@@ -28,10 +28,28 @@ class VehicleConsumptionEstimationModeFields extends StatelessWidget {
     };
   }
 
+  (String word, String wordCap) _volumeUnitWords(AppLocalizations l10n) {
+    return switch (resolveLiquidVolumeUnit(prefs)) {
+      LiquidVolumeUnit.liter => (
+          l10n.vehicleLiquidVolumeUnitLitres,
+          l10n.vehicleLiquidVolumeUnitLitresCap,
+        ),
+      LiquidVolumeUnit.usGallon => (
+          l10n.vehicleLiquidVolumeUnitUsGallons,
+          l10n.vehicleLiquidVolumeUnitUsGallonsCap,
+        ),
+      LiquidVolumeUnit.imperialGallon => (
+          l10n.vehicleLiquidVolumeUnitImperialGallons,
+          l10n.vehicleLiquidVolumeUnitImperialGallonsCap,
+        ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final distanceUnit = _distanceUnitWord(l10n);
+    final volumeWords = _volumeUnitWords(l10n);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -54,6 +72,7 @@ class VehicleConsumptionEstimationModeFields extends StatelessWidget {
                   title: Text(l10n.vehicleConsumptionEstimationModeSimpleTitle),
                   subtitle: Text(
                     l10n.vehicleConsumptionEstimationModeSimpleDescription(
+                      volumeWords.$1,
                       distanceUnit,
                     ),
                   ),
@@ -66,6 +85,7 @@ class VehicleConsumptionEstimationModeFields extends StatelessWidget {
                 title: Text(l10n.vehicleConsumptionEstimationModeDetailedTitle),
                 subtitle: Text(
                   l10n.vehicleConsumptionEstimationModeDetailedDescription(
+                    volumeWords.$2,
                     distanceUnit,
                   ),
                 ),

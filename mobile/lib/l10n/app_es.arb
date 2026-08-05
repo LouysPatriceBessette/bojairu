@@ -1619,15 +1619,65 @@
   "vehicleUsageBalanceNetLabel": "Saldo",
   "vehicleUsageBalanceOwedToOwner": "Importe debido al propietario",
   "vehicleUsageBalanceCreditForBorrower": "Crédito para el prestatario",
-  "vehicleUsageBalanceEstimatedFuel": "Coste estimado de combustible ((C/100)×D×P)",
-  "vehicleUsageBalanceBorrowerFuel": "Compras de combustible del prestatario (A)",
-  "vehicleUsageBalanceBorrowerMaintenance": "Mantenimiento del prestatario (E)",
-  "vehicleUsageBalanceCompensation": "Compensación por uso (D×T)",
+  "vehicleUsageBalanceMyMileage": "Mi kilometraje",
+  "vehicleUsageBalanceMyMileageMiles": "Mi mileage",
+  "vehicleUsageBalanceEstimatedFuel": "Combustible usado",
+  "vehicleUsageBalanceBorrowerFuel": "Compras de combustible",
+  "vehicleUsageBalanceBorrowerMaintenance": "Mantenimientos",
+  "vehicleUsageBalanceCompensation": "Compensación por uso",
   "vehicleUsageBalanceConsumption": "Consumo medio (C)",
   "vehicleUsageBalanceDistance": "Distancia atribuida (D)",
   "vehicleUsageBalanceFuelPrice": "Precio medio del combustible (P)",
   "vehicleUsageBalanceRatePerKm": "Compensación por km (T)",
   "vehicleUsageBalanceInformativeNote": "Este saldo es informativo. Registrar un pago entre propietario y prestatario será un paso aparte (próximamente).",
+  "vehicleUsageBalanceMileageSessionDatesBlurb": "Según las fechas de fin de sesión de uso",
+  "vehicleUsageBalanceCompensationDistanceBlurb": "Distancia recorrida: {distance} {unit}",
+  "@vehicleUsageBalanceCompensationDistanceBlurb": {
+    "placeholders": {
+      "distance": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceCompensationRateBlurb": "Compensación por uso: {rate} $ / {unit}",
+  "@vehicleUsageBalanceCompensationRateBlurb": {
+    "placeholders": {
+      "rate": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceFuelPriceBlurb": "Precio medio del combustible: {price} / {volumeUnit}",
+  "@vehicleUsageBalanceFuelPriceBlurb": {
+    "placeholders": {
+      "price": { "type": "String" },
+      "volumeUnit": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceFuelConsumptionBlurb": "Consumo medio: {consumption} {volumeUnit} / 100 {distanceUnit}",
+  "@vehicleUsageBalanceFuelConsumptionBlurb": {
+    "placeholders": {
+      "consumption": { "type": "String" },
+      "volumeUnit": { "type": "String" },
+      "distanceUnit": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceFuelDistanceBlurb": "Distancia recorrida: {distance} {unit}",
+  "@vehicleUsageBalanceFuelDistanceBlurb": {
+    "placeholders": {
+      "distance": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceFuelPurchasesDeductedBlurb": "Se deduce la suma de las compras de combustible que ha realizado",
+  "vehicleUsageBalanceMaintenanceDeductedBlurb": "Se deduce la suma de los mantenimientos que ha realizado",
+  "vehicleUsageBalanceDistanceAmount": "{distance} {unit}",
+  "@vehicleUsageBalanceDistanceAmount": {
+    "placeholders": {
+      "distance": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "vehicleDistanceUnitKilometre": "kilómetro",
+  "vehicleDistanceUnitMile": "milla",
   "vehicleUsageBalanceRevokedSuffix": " (revocado)",
   "vehiclePendingCorrectionsEmpty": "No hay correcciones pendientes.",
   "vehiclePendingCorrectionDetailTitle": "Corrección de odómetro",
@@ -1722,8 +1772,21 @@
   "vehicleUseSessionEnded": "Sesión terminada.",
   "vehicleConsumptionTitle": "Consumo",
   "vehicleConsumptionInsufficient": "Datos insuficientes para el consumo",
-  "vehicleConsumptionPer100Km": "{value} L/100 km",
-  "vehicleConsumptionPerHour": "{value} L/h",
+  "vehicleConsumptionPer100Km": "{value} {volumeUnit}/100 {distanceUnit}",
+  "@vehicleConsumptionPer100Km": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "volumeUnit": { "type": "String" },
+      "distanceUnit": { "type": "String" }
+    }
+  },
+  "vehicleConsumptionPerHour": "{value} {volumeUnit}/h",
+  "@vehicleConsumptionPerHour": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "volumeUnit": { "type": "String" }
+    }
+  },
   "vehicleDrivingConditionColumn": "Condición",
   "vehicleDrivingConditionProportionColumn": "Proporción (del kilometraje recorrido)",
   "vehicleDrivingConditionRoute": "Carretera",
@@ -1735,32 +1798,50 @@
   "vehicleConsumptionReliabilityVeryReliable": "Esta estimación es muy fiable porque se basa en muchos datos que ha introducido.",
   "vehicleConsumptionEstimationModeTitle": "Modo de estimación del consumo de combustible",
   "vehicleConsumptionEstimationModeSimpleTitle": "Simple",
-  "vehicleConsumptionEstimationModeSimpleDescription": "Solo litros por 100 {distanceUnit}",
+  "vehicleConsumptionEstimationModeSimpleDescription": "Solo {volumeUnitWord} por 100 {distanceUnit}",
   "@vehicleConsumptionEstimationModeSimpleDescription": {
     "placeholders": {
+      "volumeUnitWord": { "type": "String" },
       "distanceUnit": { "type": "String" }
     }
   },
   "vehicleConsumptionEstimationModeDetailedTitle": "Detallado",
-  "vehicleConsumptionEstimationModeDetailedDescription": "Litros por 100 {distanceUnit} para conducción en carretera / ciudad / tráfico",
+  "vehicleConsumptionEstimationModeDetailedDescription": "{volumeUnitWordCap} por 100 {distanceUnit} para conducción en carretera / ciudad / tráfico",
   "@vehicleConsumptionEstimationModeDetailedDescription": {
     "placeholders": {
+      "volumeUnitWordCap": { "type": "String" },
       "distanceUnit": { "type": "String" }
     }
   },
   "vehicleDistanceUnitKilometres": "kilómetros",
   "vehicleDistanceUnitMiles": "millas",
+  "vehicleLiquidVolumeUnitLitres": "litros",
+  "vehicleLiquidVolumeUnitUsGallons": "galones US",
+  "vehicleLiquidVolumeUnitImperialGallons": "galones imperiales",
+  "vehicleLiquidVolumeUnitLitresCap": "Litros",
+  "vehicleLiquidVolumeUnitUsGallonsCap": "Galones US",
+  "vehicleLiquidVolumeUnitImperialGallonsCap": "Galones imperiales",
   "vehicleConsumptionRequireDetailedForBorrowers": "Exigir a los prestatarios los porcentajes carretera / ciudad / tráfico",
-  "vehicleConsumptionSimpleEstimate": "Consumo: {value} L/100 km",
+  "vehicleConsumptionSimpleEstimate": "Consumo: {value} {volumeUnit}/100 {distanceUnit}",
   "@vehicleConsumptionSimpleEstimate": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "volumeUnit": { "type": "String" },
+      "distanceUnit": { "type": "String" }
     }
   },
   "vehicleConsumptionInsufficientDetailedData": "No hay datos suficientes para una estimación detallada (carretera / ciudad / tráfico). Se muestra la estimación simple hasta que se registren más sesiones detalladas.",
   "vehicleConsumptionCarriedFromDetailedMode": "Esta estimación procede de su modo detallado anterior. Se afinará con nuevos períodos entre repostajes completos en modo simple.",
   "vehicleStatisticsConsumptionHistoryTitle": "Historial de estimaciones fiables",
-  "vehicleConsumptionHistoryBlended": "{date}: {value} L/100 km",
+  "vehicleConsumptionHistoryBlended": "{date}: {value} {volumeUnit}/100 {distanceUnit}",
+  "@vehicleConsumptionHistoryBlended": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "value": { "type": "String" },
+      "volumeUnit": { "type": "String" },
+      "distanceUnit": { "type": "String" }
+    }
+  },
   "vehicleSessionEndTankConfirmTitle": "Confirmar nivel del depósito",
   "vehicleSessionEndTankConfirmBody": "Ha declarado el depósito al {percent} % después de {distance} desde la última compra de combustible. Confirme que es correcto.",
   "vehicleSessionEndTankConfirmReview": "Revisar la entrada",
@@ -1863,13 +1944,19 @@
       "name": {"type": "String"}
     }
   },
-  "vehicleSharingInviteRateLabel": "Centavos por km de uso (opcional)",
+  "vehicleSharingInviteRateLabel": "Centavos por {unit} de uso (opcional)",
+  "@vehicleSharingInviteRateLabel": {
+    "placeholders": {
+      "unit": { "type": "String" }
+    }
+  },
   "vehicleSharingInviteRateHelper": "Compensa el desgaste normal.",
   "vehicleSharingInviteRateInvalid": "Indica un número entero de centavos (≥ 0).",
-  "vehicleSharingInviteRatePer100Km": "{amount} por 100 km",
-  "@vehicleSharingInviteRatePer100Km": {
+  "vehicleSharingInviteRatePer100Distance": "{amount} por 100 {unit}",
+  "@vehicleSharingInviteRatePer100Distance": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {"type": "String"},
+      "unit": {"type": "String"}
     }
   },
   "vehicleSharingInviteAvailabilitySection": "Periodo de disponibilidad (opcional)",
@@ -1877,7 +1964,12 @@
   "vehicleSharingInviteAvailabilitySaveFirst": "Guarda o cancela el periodo de disponibilidad antes de enviar.",
   "vehicleSharingInviteRulesLabel": "Otras reglas",
   "vehicleSharingInviteSend": "Enviar invitación",
-  "vehicleSharingInviteDisclaimerBody1": "Solo el importe por kilómetro es seguido por la aplicación.",
+  "vehicleSharingInviteDisclaimerBody1": "Solo el importe por {unit} es seguido por la aplicación.",
+  "@vehicleSharingInviteDisclaimerBody1": {
+    "placeholders": {
+      "unit": { "type": "String" }
+    }
+  },
   "vehicleSharingInviteDisclaimerBody2": "La disponibilidad y las demás reglas son solo orientativas para su prestatario.",
   "vehicleSharingInviteDisclaimerDoNotShow": "No volver a mostrar",
   "vehicleSharingAccept": "Aceptar",

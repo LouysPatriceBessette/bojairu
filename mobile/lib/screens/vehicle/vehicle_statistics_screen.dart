@@ -105,6 +105,23 @@ class _VehicleStatisticsScreenState extends State<VehicleStatisticsScreen> {
                       future: metrics.listReliableEstimateHistory(v.id),
                       builder: (context, snap) {
                         final entries = snap.data;
+                        final distanceUnit =
+                            resolveDistanceUnit(widget.prefs);
+                        final liquidUnit =
+                            resolveLiquidVolumeUnit(widget.prefs);
+                        final volumeAbbrev =
+                            liquidVolumeUnitAbbrev(liquidUnit);
+                        final distanceAbbrev =
+                            distanceUnitAbbrev(distanceUnit).toLowerCase();
+                        String formatPer100(double litersPer100Km) {
+                          final display = litersPer100KmToDisplay(
+                            litersPer100Km,
+                            volumeUnit: liquidUnit,
+                            distanceUnit: distanceUnit,
+                          );
+                          return display.toStringAsFixed(1);
+                        }
+
                         if (entries == null) {
                           return ListTile(title: Text(v.displayLabel));
                         }
@@ -123,12 +140,13 @@ class _VehicleStatisticsScreenState extends State<VehicleStatisticsScreen> {
                               entry.anchorEndAt,
                               dateFmt,
                             );
-                            final blended = entry.litersPer100Km
-                                .toStringAsFixed(1);
+                            final blended = formatPer100(entry.litersPer100Km);
                             final lines = <String>[
                               l10n.vehicleConsumptionHistoryBlended(
                                 date,
                                 blended,
+                                volumeAbbrev,
+                                distanceAbbrev,
                               ),
                             ];
                             final route = entry.litersPer100KmRoute;
@@ -139,15 +157,15 @@ class _VehicleStatisticsScreenState extends State<VehicleStatisticsScreen> {
                                 traffic != null) {
                               lines.add(
                                 '${l10n.vehicleDrivingConditionRoute}: '
-                                '${l10n.vehicleConsumptionPer100Km(route.toStringAsFixed(1))}',
+                                '${l10n.vehicleConsumptionPer100Km(formatPer100(route), volumeAbbrev, distanceAbbrev)}',
                               );
                               lines.add(
                                 '${l10n.vehicleDrivingConditionCity}: '
-                                '${l10n.vehicleConsumptionPer100Km(city.toStringAsFixed(1))}',
+                                '${l10n.vehicleConsumptionPer100Km(formatPer100(city), volumeAbbrev, distanceAbbrev)}',
                               );
                               lines.add(
                                 '${l10n.vehicleDrivingConditionTraffic}: '
-                                '${l10n.vehicleConsumptionPer100Km(traffic.toStringAsFixed(1))}',
+                                '${l10n.vehicleConsumptionPer100Km(formatPer100(traffic), volumeAbbrev, distanceAbbrev)}',
                               );
                             }
                             final reliability =

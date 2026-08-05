@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
 import '../../relay/relay_client.dart';
+import '../../util/display_units.dart';
 import '../../util/format_money.dart';
 import '../../vehicle/sharing/vehicle_sharing_offer_deadline_dialog.dart';
 import '../../vehicle/vehicle_module_access.dart';
@@ -85,7 +86,13 @@ class _VehicleSharingInviteFormScreenState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.vehicleSharingInviteDisclaimerBody1),
+                  Text(
+                    l10n.vehicleSharingInviteDisclaimerBody1(
+                      resolveDistanceUnit(widget.prefs) == DistanceUnit.miles
+                          ? l10n.vehicleDistanceUnitMile
+                          : l10n.vehicleDistanceUnitKilometre,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Text(l10n.vehicleSharingInviteDisclaimerBody2),
                   const SizedBox(height: 16),
@@ -165,11 +172,22 @@ class _VehicleSharingInviteFormScreenState
     }
   }
 
-  /// Cents (sous) per km; empty field counts as 0.
-  int get _rateCentsPerKm {
+  /// Cents (sous) per preferred distance unit; empty field counts as 0.
+  int get _rateCentsPerDisplayUnit {
     final raw = _rateController.text.trim();
     if (raw.isEmpty) return 0;
     return int.tryParse(raw) ?? -1;
+  }
+
+  /// Canonical sous per km for persistence.
+  int? _parseRateCentsPerKm() {
+    final display = _rateCentsPerDisplayUnit;
+    if (display < 0) return null;
+    final distanceUnit = resolveDistanceUnit(widget.prefs);
+    return displayRateToPerKmMinor(
+      display.toDouble(),
+      distanceUnit: distanceUnit,
+    ).round();
   }
 
   Future<void> _loadContact() async {
@@ -296,12 +314,6 @@ class _VehicleSharingInviteFormScreenState
     setState(() {
       quietHoursCopyUiDay(_availabilityGrid, sourceUiDay, selected);
     });
-  }
-
-  int? _parseRateCentsPerKm() {
-    final cents = _rateCentsPerKm;
-    if (cents < 0) return null;
-    return cents;
   }
 
   Future<void> _submit() async {
@@ -550,10 +562,13 @@ class _VehicleSharingInviteFormScreenState
     final currency = widget.prefs.currency.trim().isEmpty
         ? 'CAD'
         : widget.prefs.currency.trim();
-    final centsPerKm = _rateCentsPerKm < 0 ? 0 : _rateCentsPerKm;
-    final per100KmAmount = formatMinorAsMoney(
+    final distanceUnit = resolveDistanceUnit(widget.prefs);
+    final rateUnit = distanceUnitShort(distanceUnit);
+    final centsPerDisplay =
+        _rateCentsPerDisplayUnit < 0 ? 0 : _rateCentsPerDisplayUnit;
+    final per100Amount = formatMinorAsMoney(
       context,
-      centsPerKm * 100,
+      centsPerDisplay * 100,
       currency,
     );
     final em = Theme.of(context).textTheme.bodyLarge?.fontSize ?? 14;
@@ -571,7 +586,7 @@ class _VehicleSharingInviteFormScreenState
             const SizedBox(height: 16),
           ],
           Text(
-            l10n.vehicleSharingInviteRateLabel,
+            l10n.vehicleSharingInviteRateLabel(rateUnit),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 4),
@@ -585,7 +600,10 @@ class _VehicleSharingInviteFormScreenState
             children: [
               Expanded(
                 child: Text(
-                  l10n.vehicleSharingInviteRatePer100Km(per100KmAmount),
+                  l10n.vehicleSharingInviteRatePer100Distance(
+                    per100Amount,
+                    rateUnit,
+                  ),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),

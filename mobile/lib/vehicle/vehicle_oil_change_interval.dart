@@ -1,8 +1,6 @@
 import '../prefs/app_preferences.dart';
 import '../util/display_units.dart';
 
-const double kmPerMile = 1.609344;
-
 /// Parses oil-change interval form input into stored tenths (km or engine hours).
 ///
 /// Land: multiplier ×1000 on the user's distance unit (km or miles), then km tenths.

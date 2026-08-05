@@ -414,10 +414,20 @@ class _VehicleCardState extends State<_VehicleCard> {
                           );
                         },
                       ),
-                    if (data.consumptionLabel(l10n).isNotEmpty)
+                    if (data
+                        .consumptionLabel(
+                          l10n,
+                          liquidUnit: liquidUnit,
+                          distanceUnit: distanceUnit,
+                        )
+                        .isNotEmpty)
                       Builder(
                         builder: (context) {
-                          final consumptionLabel = data.consumptionLabel(l10n);
+                          final consumptionLabel = data.consumptionLabel(
+                            l10n,
+                            liquidUnit: liquidUnit,
+                            distanceUnit: distanceUnit,
+                          );
                           return qaVehicleSemantics(
                             identifier: kQaVehicleCardQaCivicConsumption,
                             label: consumptionLabel,
@@ -556,14 +566,24 @@ class _VehicleCardData {
     return consumption.reliability.message(l10n);
   }
 
-  String consumptionLabel(AppLocalizations l10n) {
+  String consumptionLabel(
+    AppLocalizations l10n, {
+    required LiquidVolumeUnit liquidUnit,
+    required DistanceUnit distanceUnit,
+  }) {
+    final volumeAbbrev = liquidVolumeUnitAbbrev(liquidUnit);
+    final distanceAbbrev = distanceUnitAbbrev(distanceUnit).toLowerCase();
     if (!consumption.hasSufficientData) {
       return '';
     }
     if (kind?.usesHorometer ?? false) {
       final v = consumption.litersPerHour;
       if (v == null) return '';
-      return l10n.vehicleConsumptionPerHour(v.toStringAsFixed(2));
+      final display = litersPerHourToDisplay(v, volumeUnit: liquidUnit);
+      return l10n.vehicleConsumptionPerHour(
+        display.toStringAsFixed(2),
+        volumeAbbrev,
+      );
     }
     if (consumption.hasModeBreakdown &&
         estimationMode == VehicleConsumptionEstimationMode.detailed) {
@@ -571,15 +591,34 @@ class _VehicleCardData {
       final city = consumption.litersPer100KmCity;
       final traffic = consumption.litersPer100KmTraffic;
       if (route == null || city == null || traffic == null) return '';
-      return '${l10n.vehicleDrivingConditionRoute}: '
-          '${l10n.vehicleConsumptionPer100Km(route.toStringAsFixed(1))}\n'
-          '${l10n.vehicleDrivingConditionCity}: '
-          '${l10n.vehicleConsumptionPer100Km(city.toStringAsFixed(1))}\n'
-          '${l10n.vehicleDrivingConditionTraffic}: '
-          '${l10n.vehicleConsumptionPer100Km(traffic.toStringAsFixed(1))}';
+      String per100(double litersPer100Km) {
+        final display = litersPer100KmToDisplay(
+          litersPer100Km,
+          volumeUnit: liquidUnit,
+          distanceUnit: distanceUnit,
+        );
+        return l10n.vehicleConsumptionPer100Km(
+          display.toStringAsFixed(1),
+          volumeAbbrev,
+          distanceAbbrev,
+        );
+      }
+
+      return '${l10n.vehicleDrivingConditionRoute}: ${per100(route)}\n'
+          '${l10n.vehicleDrivingConditionCity}: ${per100(city)}\n'
+          '${l10n.vehicleDrivingConditionTraffic}: ${per100(traffic)}';
     }
     final v = consumption.litersPer100Km;
     if (v == null) return '';
-    return l10n.vehicleConsumptionSimpleEstimate(v.toStringAsFixed(1));
+    final display = litersPer100KmToDisplay(
+      v,
+      volumeUnit: liquidUnit,
+      distanceUnit: distanceUnit,
+    );
+    return l10n.vehicleConsumptionSimpleEstimate(
+      display.toStringAsFixed(1),
+      volumeAbbrev,
+      distanceAbbrev,
+    );
   }
 }

@@ -176,6 +176,12 @@ void main() {
     expect(b.borrowerFuelCostMinor, 100);
     expect(b.borrowerMaintenanceCostMinor, 50);
     expect(b.balanceMinor, 404);
+    expect(b.distanceLineItems, hasLength(1));
+    expect(b.distanceLineItems.single.distanceTenths, 123);
+    expect(b.borrowerFuelLineItems, hasLength(1));
+    expect(b.borrowerFuelLineItems.single.costMinor, 100);
+    expect(b.borrowerMaintenanceLineItems, hasLength(1));
+    expect(b.borrowerMaintenanceLineItems.single.costMinor, 50);
   });
 
   test('excludes unknown and split gaps; ignores other borrowers', () {

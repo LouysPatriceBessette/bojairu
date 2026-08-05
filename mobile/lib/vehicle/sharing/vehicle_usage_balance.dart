@@ -68,6 +68,9 @@ class VehicleUsageBalanceBreakdown {
     required this.balanceMinor,
     required this.windowStart,
     required this.windowEnd,
+    required this.distanceLineItems,
+    required this.borrowerFuelLineItems,
+    required this.borrowerMaintenanceLineItems,
   });
 
   /// **C** — L/100 km.
@@ -101,6 +104,15 @@ class VehicleUsageBalanceBreakdown {
 
   final DateTime windowStart;
   final DateTime windowEnd;
+
+  /// Borrower distance rows (uses + attributed gaps) in the window, oldest first.
+  final List<UsageBalanceDistanceFact> distanceLineItems;
+
+  /// Borrower fuel purchases in the window, oldest first.
+  final List<UsageBalanceCostFact> borrowerFuelLineItems;
+
+  /// Borrower maintenance events in the window, oldest first.
+  final List<UsageBalanceCostFact> borrowerMaintenanceLineItems;
 }
 
 /// Result of [computeVehicleUsageBalance].
@@ -193,11 +205,15 @@ VehicleUsageBalanceResult computeVehicleUsageBalance({
 
   final rate = ratePerKmMinor < 0 ? 0 : ratePerKmMinor;
   var distanceTenths = 0;
+  final distanceLineItems = <UsageBalanceDistanceFact>[];
 
   for (final use in useDistances) {
     if (use.attributedContactId != borrowerContactId) continue;
     if (!_inWindow(use.at, windowStart, windowEnd)) continue;
-    if (use.distanceTenths > 0) distanceTenths += use.distanceTenths;
+    if (use.distanceTenths > 0) {
+      distanceTenths += use.distanceTenths;
+      distanceLineItems.add(use);
+    }
   }
 
   for (final gap in gapDistances) {
@@ -205,24 +221,34 @@ VehicleUsageBalanceResult computeVehicleUsageBalance({
     if (gap.attributedContactId == 'split') continue;
     if (gap.attributedContactId != borrowerContactId) continue;
     if (!_inWindow(gap.at, windowStart, windowEnd)) continue;
-    if (gap.distanceTenths > 0) distanceTenths += gap.distanceTenths;
+    if (gap.distanceTenths > 0) {
+      distanceTenths += gap.distanceTenths;
+      distanceLineItems.add(gap);
+    }
   }
+  distanceLineItems.sort((a, b) => a.at.compareTo(b.at));
 
   final distanceKm = distanceTenths / 10.0;
 
   var aMinor = 0;
+  final fuelLineItems = <UsageBalanceCostFact>[];
   for (final row in fuelCostsByBorrower) {
     if (row.recordedByContactId != borrowerContactId) continue;
     if (!_inWindow(row.at, windowStart, windowEnd)) continue;
     aMinor += row.costMinor;
+    fuelLineItems.add(row);
   }
+  fuelLineItems.sort((a, b) => a.at.compareTo(b.at));
 
   var eMinor = 0;
+  final maintenanceLineItems = <UsageBalanceCostFact>[];
   for (final row in maintenanceCostsByBorrower) {
     if (row.recordedByContactId != borrowerContactId) continue;
     if (!_inWindow(row.at, windowStart, windowEnd)) continue;
     eMinor += row.costMinor;
+    maintenanceLineItems.add(row);
   }
+  maintenanceLineItems.sort((a, b) => a.at.compareTo(b.at));
 
   final c = consumption.litersPer100Km!;
   final litersConsumed = (c / 100.0) * distanceKm;
@@ -246,6 +272,9 @@ VehicleUsageBalanceResult computeVehicleUsageBalance({
       balanceMinor: balanceMinor,
       windowStart: windowStart,
       windowEnd: windowEnd,
+      distanceLineItems: distanceLineItems,
+      borrowerFuelLineItems: fuelLineItems,
+      borrowerMaintenanceLineItems: maintenanceLineItems,
     ),
   );
 }

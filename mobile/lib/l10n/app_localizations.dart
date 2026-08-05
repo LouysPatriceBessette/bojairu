@@ -6589,28 +6589,40 @@ abstract class AppLocalizations {
   /// **'Credit for the borrower'**
   String get vehicleUsageBalanceCreditForBorrower;
 
+  /// No description provided for @vehicleUsageBalanceMyMileage.
+  ///
+  /// In en, this message translates to:
+  /// **'My mileage'**
+  String get vehicleUsageBalanceMyMileage;
+
+  /// No description provided for @vehicleUsageBalanceMyMileageMiles.
+  ///
+  /// In en, this message translates to:
+  /// **'My mileage'**
+  String get vehicleUsageBalanceMyMileageMiles;
+
   /// No description provided for @vehicleUsageBalanceEstimatedFuel.
   ///
   /// In en, this message translates to:
-  /// **'Estimated fuel cost ((C/100)×D×P)'**
+  /// **'Fuel used'**
   String get vehicleUsageBalanceEstimatedFuel;
 
   /// No description provided for @vehicleUsageBalanceBorrowerFuel.
   ///
   /// In en, this message translates to:
-  /// **'Fuel purchases by borrower (A)'**
+  /// **'Fuel purchases'**
   String get vehicleUsageBalanceBorrowerFuel;
 
   /// No description provided for @vehicleUsageBalanceBorrowerMaintenance.
   ///
   /// In en, this message translates to:
-  /// **'Maintenance by borrower (E)'**
+  /// **'Maintenance'**
   String get vehicleUsageBalanceBorrowerMaintenance;
 
   /// No description provided for @vehicleUsageBalanceCompensation.
   ///
   /// In en, this message translates to:
-  /// **'Usage compensation (D×T)'**
+  /// **'Usage compensation'**
   String get vehicleUsageBalanceCompensation;
 
   /// No description provided for @vehicleUsageBalanceConsumption.
@@ -6642,6 +6654,79 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This balance is informational. Recording a payment between owner and borrower is a separate step (coming later).'**
   String get vehicleUsageBalanceInformativeNote;
+
+  /// No description provided for @vehicleUsageBalanceMileageSessionDatesBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on usage session end dates'**
+  String get vehicleUsageBalanceMileageSessionDatesBlurb;
+
+  /// No description provided for @vehicleUsageBalanceCompensationDistanceBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance driven: {distance} {unit}'**
+  String vehicleUsageBalanceCompensationDistanceBlurb(
+    String distance,
+    String unit,
+  );
+
+  /// No description provided for @vehicleUsageBalanceCompensationRateBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage compensation: {rate} \$ / {unit}'**
+  String vehicleUsageBalanceCompensationRateBlurb(String rate, String unit);
+
+  /// No description provided for @vehicleUsageBalanceFuelPriceBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Average fuel price: {price} / {volumeUnit}'**
+  String vehicleUsageBalanceFuelPriceBlurb(String price, String volumeUnit);
+
+  /// No description provided for @vehicleUsageBalanceFuelConsumptionBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Average consumption: {consumption} {volumeUnit} / 100 {distanceUnit}'**
+  String vehicleUsageBalanceFuelConsumptionBlurb(
+    String consumption,
+    String volumeUnit,
+    String distanceUnit,
+  );
+
+  /// No description provided for @vehicleUsageBalanceFuelDistanceBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance driven: {distance} {unit}'**
+  String vehicleUsageBalanceFuelDistanceBlurb(String distance, String unit);
+
+  /// No description provided for @vehicleUsageBalanceFuelPurchasesDeductedBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'The sum of fuel purchases you made is deducted'**
+  String get vehicleUsageBalanceFuelPurchasesDeductedBlurb;
+
+  /// No description provided for @vehicleUsageBalanceMaintenanceDeductedBlurb.
+  ///
+  /// In en, this message translates to:
+  /// **'The sum of maintenance you performed is deducted'**
+  String get vehicleUsageBalanceMaintenanceDeductedBlurb;
+
+  /// No description provided for @vehicleUsageBalanceDistanceAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} {unit}'**
+  String vehicleUsageBalanceDistanceAmount(String distance, String unit);
+
+  /// No description provided for @vehicleDistanceUnitKilometre.
+  ///
+  /// In en, this message translates to:
+  /// **'kilometre'**
+  String get vehicleDistanceUnitKilometre;
+
+  /// No description provided for @vehicleDistanceUnitMile.
+  ///
+  /// In en, this message translates to:
+  /// **'mile'**
+  String get vehicleDistanceUnitMile;
 
   /// No description provided for @vehicleUsageBalanceRevokedSuffix.
   ///
@@ -6994,14 +7079,18 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleConsumptionPer100Km.
   ///
   /// In en, this message translates to:
-  /// **'{value} L/100 km'**
-  String vehicleConsumptionPer100Km(String value);
+  /// **'{value} {volumeUnit}/100 {distanceUnit}'**
+  String vehicleConsumptionPer100Km(
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  );
 
   /// No description provided for @vehicleConsumptionPerHour.
   ///
   /// In en, this message translates to:
-  /// **'{value} L/h'**
-  String vehicleConsumptionPerHour(String value);
+  /// **'{value} {volumeUnit}/h'**
+  String vehicleConsumptionPerHour(String value, String volumeUnit);
 
   /// No description provided for @vehicleDrivingConditionColumn.
   ///
@@ -7072,8 +7161,11 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleConsumptionEstimationModeSimpleDescription.
   ///
   /// In en, this message translates to:
-  /// **'Only liters per 100 {distanceUnit}'**
-  String vehicleConsumptionEstimationModeSimpleDescription(String distanceUnit);
+  /// **'Only {volumeUnitWord} per 100 {distanceUnit}'**
+  String vehicleConsumptionEstimationModeSimpleDescription(
+    String volumeUnitWord,
+    String distanceUnit,
+  );
 
   /// No description provided for @vehicleConsumptionEstimationModeDetailedTitle.
   ///
@@ -7084,8 +7176,9 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleConsumptionEstimationModeDetailedDescription.
   ///
   /// In en, this message translates to:
-  /// **'Liters per 100 {distanceUnit} for driving on highway / in city / in traffic'**
+  /// **'{volumeUnitWordCap} per 100 {distanceUnit} for driving on highway / in city / in traffic'**
   String vehicleConsumptionEstimationModeDetailedDescription(
+    String volumeUnitWordCap,
     String distanceUnit,
   );
 
@@ -7101,6 +7194,42 @@ abstract class AppLocalizations {
   /// **'miles'**
   String get vehicleDistanceUnitMiles;
 
+  /// No description provided for @vehicleLiquidVolumeUnitLitres.
+  ///
+  /// In en, this message translates to:
+  /// **'liters'**
+  String get vehicleLiquidVolumeUnitLitres;
+
+  /// No description provided for @vehicleLiquidVolumeUnitUsGallons.
+  ///
+  /// In en, this message translates to:
+  /// **'US gallons'**
+  String get vehicleLiquidVolumeUnitUsGallons;
+
+  /// No description provided for @vehicleLiquidVolumeUnitImperialGallons.
+  ///
+  /// In en, this message translates to:
+  /// **'imperial gallons'**
+  String get vehicleLiquidVolumeUnitImperialGallons;
+
+  /// No description provided for @vehicleLiquidVolumeUnitLitresCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Liters'**
+  String get vehicleLiquidVolumeUnitLitresCap;
+
+  /// No description provided for @vehicleLiquidVolumeUnitUsGallonsCap.
+  ///
+  /// In en, this message translates to:
+  /// **'US gallons'**
+  String get vehicleLiquidVolumeUnitUsGallonsCap;
+
+  /// No description provided for @vehicleLiquidVolumeUnitImperialGallonsCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial gallons'**
+  String get vehicleLiquidVolumeUnitImperialGallonsCap;
+
   /// No description provided for @vehicleConsumptionRequireDetailedForBorrowers.
   ///
   /// In en, this message translates to:
@@ -7110,8 +7239,12 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleConsumptionSimpleEstimate.
   ///
   /// In en, this message translates to:
-  /// **'Consumption: {value} L/100 km'**
-  String vehicleConsumptionSimpleEstimate(String value);
+  /// **'Consumption: {value} {volumeUnit}/100 {distanceUnit}'**
+  String vehicleConsumptionSimpleEstimate(
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  );
 
   /// No description provided for @vehicleConsumptionInsufficientDetailedData.
   ///
@@ -7134,8 +7267,13 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleConsumptionHistoryBlended.
   ///
   /// In en, this message translates to:
-  /// **'{date}: {value} L/100 km'**
-  String vehicleConsumptionHistoryBlended(String date, String value);
+  /// **'{date}: {value} {volumeUnit}/100 {distanceUnit}'**
+  String vehicleConsumptionHistoryBlended(
+    String date,
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  );
 
   /// No description provided for @vehicleSessionEndTankConfirmTitle.
   ///
@@ -7584,8 +7722,8 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleSharingInviteRateLabel.
   ///
   /// In en, this message translates to:
-  /// **'Cents per km of use (optional)'**
-  String get vehicleSharingInviteRateLabel;
+  /// **'Cents per {unit} of use (optional)'**
+  String vehicleSharingInviteRateLabel(String unit);
 
   /// No description provided for @vehicleSharingInviteRateHelper.
   ///
@@ -7599,11 +7737,11 @@ abstract class AppLocalizations {
   /// **'Enter a whole number of cents (≥ 0).'**
   String get vehicleSharingInviteRateInvalid;
 
-  /// No description provided for @vehicleSharingInviteRatePer100Km.
+  /// No description provided for @vehicleSharingInviteRatePer100Distance.
   ///
   /// In en, this message translates to:
-  /// **'{amount} for 100 km'**
-  String vehicleSharingInviteRatePer100Km(String amount);
+  /// **'{amount} for 100 {unit}'**
+  String vehicleSharingInviteRatePer100Distance(String amount, String unit);
 
   /// No description provided for @vehicleSharingInviteAvailabilitySection.
   ///
@@ -7638,8 +7776,8 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleSharingInviteDisclaimerBody1.
   ///
   /// In en, this message translates to:
-  /// **'Only the amount per kilometre is tracked by the app.'**
-  String get vehicleSharingInviteDisclaimerBody1;
+  /// **'Only the amount per {unit} is tracked by the app.'**
+  String vehicleSharingInviteDisclaimerBody1(String unit);
 
   /// No description provided for @vehicleSharingInviteDisclaimerBody2.
   ///

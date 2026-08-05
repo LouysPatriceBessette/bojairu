@@ -3982,20 +3982,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Crédit pour l\'emprunteur';
 
   @override
-  String get vehicleUsageBalanceEstimatedFuel =>
-      'Coût carburant estimé ((C/100)×D×P)';
+  String get vehicleUsageBalanceMyMileage => 'Mon kilométrage';
 
   @override
-  String get vehicleUsageBalanceBorrowerFuel =>
-      'Achats de carburant de l\'emprunteur (A)';
+  String get vehicleUsageBalanceMyMileageMiles => 'Mon mileage';
 
   @override
-  String get vehicleUsageBalanceBorrowerMaintenance =>
-      'Entretien de l\'emprunteur (E)';
+  String get vehicleUsageBalanceEstimatedFuel => 'Carburant utilisé';
 
   @override
-  String get vehicleUsageBalanceCompensation =>
-      'Compensation d\'utilisation (D×T)';
+  String get vehicleUsageBalanceBorrowerFuel => 'Achats de carburant';
+
+  @override
+  String get vehicleUsageBalanceBorrowerMaintenance => 'Entretiens';
+
+  @override
+  String get vehicleUsageBalanceCompensation => 'Compensation d\'utilisation';
 
   @override
   String get vehicleUsageBalanceConsumption => 'Consommation moyenne (C)';
@@ -4012,6 +4014,61 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get vehicleUsageBalanceInformativeNote =>
       'Ce solde est informatif. L\'enregistrement d\'un paiement entre propriétaire et emprunteur sera une étape séparée (à venir).';
+
+  @override
+  String get vehicleUsageBalanceMileageSessionDatesBlurb =>
+      'Selon les dates de fin de session d\'utilisation';
+
+  @override
+  String vehicleUsageBalanceCompensationDistanceBlurb(
+    String distance,
+    String unit,
+  ) {
+    return 'Distance parcourue : $distance $unit';
+  }
+
+  @override
+  String vehicleUsageBalanceCompensationRateBlurb(String rate, String unit) {
+    return 'Compensation d\'utilisation : $rate \$ / $unit';
+  }
+
+  @override
+  String vehicleUsageBalanceFuelPriceBlurb(String price, String volumeUnit) {
+    return 'Prix moyen du carburant : $price / $volumeUnit';
+  }
+
+  @override
+  String vehicleUsageBalanceFuelConsumptionBlurb(
+    String consumption,
+    String volumeUnit,
+    String distanceUnit,
+  ) {
+    return 'Consommation moyenne : $consumption $volumeUnit / 100 $distanceUnit';
+  }
+
+  @override
+  String vehicleUsageBalanceFuelDistanceBlurb(String distance, String unit) {
+    return 'Distance parcourue : $distance $unit';
+  }
+
+  @override
+  String get vehicleUsageBalanceFuelPurchasesDeductedBlurb =>
+      'La somme des achats de carburant que vous avez fait est déduite';
+
+  @override
+  String get vehicleUsageBalanceMaintenanceDeductedBlurb =>
+      'La somme des entretiens que vous avez fait est déduite';
+
+  @override
+  String vehicleUsageBalanceDistanceAmount(String distance, String unit) {
+    return '$distance $unit';
+  }
+
+  @override
+  String get vehicleDistanceUnitKilometre => 'kilomètre';
+
+  @override
+  String get vehicleDistanceUnitMile => 'mile';
 
   @override
   String get vehicleUsageBalanceRevokedSuffix => ' (révoqué)';
@@ -4213,13 +4270,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Données insuffisantes pour la consommation';
 
   @override
-  String vehicleConsumptionPer100Km(String value) {
-    return '$value L/100 km';
+  String vehicleConsumptionPer100Km(
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  ) {
+    return '$value $volumeUnit/100 $distanceUnit';
   }
 
   @override
-  String vehicleConsumptionPerHour(String value) {
-    return '$value L/h';
+  String vehicleConsumptionPerHour(String value, String volumeUnit) {
+    return '$value $volumeUnit/h';
   }
 
   @override
@@ -4263,9 +4324,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String vehicleConsumptionEstimationModeSimpleDescription(
+    String volumeUnitWord,
     String distanceUnit,
   ) {
-    return 'Seulement le nombre de litres par 100 $distanceUnit';
+    return 'Seulement le nombre de $volumeUnitWord par 100 $distanceUnit';
   }
 
   @override
@@ -4273,9 +4335,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String vehicleConsumptionEstimationModeDetailedDescription(
+    String volumeUnitWordCap,
     String distanceUnit,
   ) {
-    return 'Litres par 100 $distanceUnit pour la conduite sur route / en ville / dans le traffic';
+    return '$volumeUnitWordCap par 100 $distanceUnit pour la conduite sur route / en ville / dans le traffic';
   }
 
   @override
@@ -4285,12 +4348,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehicleDistanceUnitMiles => 'miles';
 
   @override
+  String get vehicleLiquidVolumeUnitLitres => 'litres';
+
+  @override
+  String get vehicleLiquidVolumeUnitUsGallons => 'gallons US';
+
+  @override
+  String get vehicleLiquidVolumeUnitImperialGallons => 'gallons impériaux';
+
+  @override
+  String get vehicleLiquidVolumeUnitLitresCap => 'Litres';
+
+  @override
+  String get vehicleLiquidVolumeUnitUsGallonsCap => 'Gallons US';
+
+  @override
+  String get vehicleLiquidVolumeUnitImperialGallonsCap => 'Gallons impériaux';
+
+  @override
   String get vehicleConsumptionRequireDetailedForBorrowers =>
       'Imposer aux emprunteurs la saisie des pourcentages route / ville / trafic';
 
   @override
-  String vehicleConsumptionSimpleEstimate(String value) {
-    return 'Consommation : $value L/100 km';
+  String vehicleConsumptionSimpleEstimate(
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  ) {
+    return 'Consommation : $value $volumeUnit/100 $distanceUnit';
   }
 
   @override
@@ -4306,8 +4391,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Historique des estimations fiables';
 
   @override
-  String vehicleConsumptionHistoryBlended(String date, String value) {
-    return '$date : $value L/100 km';
+  String vehicleConsumptionHistoryBlended(
+    String date,
+    String value,
+    String volumeUnit,
+    String distanceUnit,
+  ) {
+    return '$date : $value $volumeUnit/100 $distanceUnit';
   }
 
   @override
@@ -4557,8 +4647,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get vehicleSharingInviteRateLabel =>
-      'Sous par km d\'utilisation (optionnel)';
+  String vehicleSharingInviteRateLabel(String unit) {
+    return 'Sous par $unit d\'utilisation (optionnel)';
+  }
 
   @override
   String get vehicleSharingInviteRateHelper => 'Compense l\'usure normale.';
@@ -4568,8 +4659,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Indiquez un nombre entier de sous (≥ 0).';
 
   @override
-  String vehicleSharingInviteRatePer100Km(String amount) {
-    return '$amount pour 100 km';
+  String vehicleSharingInviteRatePer100Distance(String amount, String unit) {
+    return '$amount pour 100 $unit';
   }
 
   @override
@@ -4590,8 +4681,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehicleSharingInviteSend => 'Envoyer l\'invitation';
 
   @override
-  String get vehicleSharingInviteDisclaimerBody1 =>
-      'Seul le montant par kilomètre sera suivi par l\'application.';
+  String vehicleSharingInviteDisclaimerBody1(String unit) {
+    return 'Seul le montant par $unit sera suivi par l\'application.';
+  }
 
   @override
   String get vehicleSharingInviteDisclaimerBody2 =>
