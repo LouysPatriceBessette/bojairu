@@ -34,6 +34,11 @@ class EnvelopeKind {
   static const int vehicleMaintenance = 21;
   static const int vehicleTrafficViolation = 22;
   static const int vehicleFuelPurchaseCatchUp = 23;
+  static const int vehicleUsageBalanceFreezePropose = 24;
+  static const int vehicleUsageBalanceFreezeDecision = 25;
+  static const int vehicleUsageTransferPropose = 26;
+  static const int vehicleUsageTransferDecision = 27;
+  static const int vehicleUsageBalanceFreezeCatchUp = 28;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -353,6 +358,28 @@ class VehicleFuelPurchaseCatchUpEnvelope {
   final String catchUpJson;
 }
 
+/// Usage-balance freeze propose / decision / freeze-catch-up JSON envelopes.
+class VehicleUsageBalanceFreezeEnvelope {
+  VehicleUsageBalanceFreezeEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.payloadJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String payloadJson;
+}
+
+/// Usage-balance transfer propose / decision JSON envelopes.
+class VehicleUsageTransferEnvelope {
+  VehicleUsageTransferEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.payloadJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String payloadJson;
+}
+
 // ---------- HKDF info strings ----------
 
 const String _helloAeadInfo = 'compartarenta/handshake-v1/hello-aead';
@@ -396,6 +423,16 @@ const String _vehicleTrafficViolationAeadInfo =
     'compartarenta/steady-v1/vehicle-traffic-violation-aead';
 const String _vehicleFuelPurchaseCatchUpAeadInfo =
     'compartarenta/steady-v1/vehicle-fuel-purchase-catch-up-aead';
+const String _vehicleUsageBalanceFreezeProposeAeadInfo =
+    'compartarenta/steady-v1/vehicle-usage-balance-freeze-propose-aead';
+const String _vehicleUsageBalanceFreezeDecisionAeadInfo =
+    'compartarenta/steady-v1/vehicle-usage-balance-freeze-decision-aead';
+const String _vehicleUsageTransferProposeAeadInfo =
+    'compartarenta/steady-v1/vehicle-usage-transfer-propose-aead';
+const String _vehicleUsageTransferDecisionAeadInfo =
+    'compartarenta/steady-v1/vehicle-usage-transfer-decision-aead';
+const String _vehicleUsageBalanceFreezeCatchUpAeadInfo =
+    'compartarenta/steady-v1/vehicle-usage-balance-freeze-catch-up-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -1962,6 +1999,245 @@ class EnvelopeCodec {
     return VehicleFuelPurchaseCatchUpEnvelope(
       senderLongTermPublicKey: senderPub,
       catchUpJson: (json['catch_up_json'] as String?) ?? '{}',
+    );
+  }
+
+  static Future<Uint8List> _encryptSteadyPayloadJson({
+    required int kind,
+    required String aeadInfo,
+    required Uint8List senderLongTermPublicKey,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+    required String payloadJson,
+    required String jsonKey,
+  }) async {
+    final shared = await _x25519(
+      privateKey: senderLongTermPrivateKey,
+      peerPublicKey: peerLongTermPublicKey,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: aeadInfo,
+      length: 32,
+    );
+    final header = _steadyHeader(
+      kind: kind,
+      senderPub: senderLongTermPublicKey,
+      aeadNonce: _defaultNonceSource(),
+    );
+    final body = utf8.encode(jsonEncode({jsonKey: payloadJson}));
+    final aeadNonce = header.sublist(header.length - 12);
+    final encrypted = await _aeadEncrypt(
+      key: key,
+      nonce: aeadNonce,
+      plaintext: body,
+      aad: header,
+    );
+    return _concat(header, encrypted);
+  }
+
+  static Future<({Uint8List senderPub, String payloadJson})>
+      _decryptSteadyPayloadJson({
+    required Uint8List frame,
+    required int kind,
+    required String aeadInfo,
+    required Uint8List receiverLongTermPrivateKey,
+    required String jsonKey,
+  }) async {
+    _expectKind(frame, kind);
+    final senderPub = Uint8List.fromList(frame.sublist(2, 34));
+    final aeadNonce = Uint8List.fromList(frame.sublist(34, 46));
+    final body = frame.sublist(46);
+    final shared = await _x25519(
+      privateKey: receiverLongTermPrivateKey,
+      peerPublicKey: senderPub,
+    );
+    final key = await _hkdf(
+      ikm: shared,
+      salt: const <int>[],
+      info: aeadInfo,
+      length: 32,
+    );
+    final plain = await _aeadDecrypt(
+      key: key,
+      nonce: aeadNonce,
+      cipherWithTag: body,
+      aad: Uint8List.fromList(frame.sublist(0, 46)),
+    );
+    final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return (
+      senderPub: senderPub,
+      payloadJson: (json[jsonKey] as String?) ?? '{}',
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUsageBalanceFreezePropose({
+    required VehicleUsageBalanceFreezeEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUsageBalanceFreezePropose,
+      aeadInfo: _vehicleUsageBalanceFreezeProposeAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleUsageBalanceFreezeEnvelope>
+      decryptVehicleUsageBalanceFreezePropose({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUsageBalanceFreezePropose,
+      aeadInfo: _vehicleUsageBalanceFreezeProposeAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleUsageBalanceFreezeEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUsageBalanceFreezeDecision({
+    required VehicleUsageBalanceFreezeEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUsageBalanceFreezeDecision,
+      aeadInfo: _vehicleUsageBalanceFreezeDecisionAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleUsageBalanceFreezeEnvelope>
+      decryptVehicleUsageBalanceFreezeDecision({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUsageBalanceFreezeDecision,
+      aeadInfo: _vehicleUsageBalanceFreezeDecisionAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleUsageBalanceFreezeEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUsageTransferPropose({
+    required VehicleUsageTransferEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUsageTransferPropose,
+      aeadInfo: _vehicleUsageTransferProposeAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleUsageTransferEnvelope> decryptVehicleUsageTransferPropose({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUsageTransferPropose,
+      aeadInfo: _vehicleUsageTransferProposeAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleUsageTransferEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUsageTransferDecision({
+    required VehicleUsageTransferEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUsageTransferDecision,
+      aeadInfo: _vehicleUsageTransferDecisionAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleUsageTransferEnvelope>
+      decryptVehicleUsageTransferDecision({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUsageTransferDecision,
+      aeadInfo: _vehicleUsageTransferDecisionAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleUsageTransferEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUsageBalanceFreezeCatchUp({
+    required VehicleUsageBalanceFreezeEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUsageBalanceFreezeCatchUp,
+      aeadInfo: _vehicleUsageBalanceFreezeCatchUpAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleUsageBalanceFreezeEnvelope>
+      decryptVehicleUsageBalanceFreezeCatchUp({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUsageBalanceFreezeCatchUp,
+      aeadInfo: _vehicleUsageBalanceFreezeCatchUpAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleUsageBalanceFreezeEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
     );
   }
 }

@@ -3731,6 +3731,78 @@ abstract class AppLocalizations {
     String vehicle,
   );
 
+  /// No description provided for @pushNotificationUsageBalanceFreezeProposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze balance'**
+  String get pushNotificationUsageBalanceFreezeProposeTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceFreezeProposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} asks to freeze the usage balance.'**
+  String pushNotificationUsageBalanceFreezeProposeBody(String name);
+
+  /// No description provided for @pushNotificationUsageBalanceFreezeAcceptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance frozen'**
+  String get pushNotificationUsageBalanceFreezeAcceptedTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceFreezeAcceptedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted freezing the usage balance.'**
+  String pushNotificationUsageBalanceFreezeAcceptedBody(String name);
+
+  /// No description provided for @pushNotificationUsageBalanceFreezeRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze declined'**
+  String get pushNotificationUsageBalanceFreezeRejectedTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceFreezeRejectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} declined freezing the usage balance.'**
+  String pushNotificationUsageBalanceFreezeRejectedBody(String name);
+
+  /// No description provided for @pushNotificationUsageBalanceTransferProposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer declared'**
+  String get pushNotificationUsageBalanceTransferProposeTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceTransferProposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} declared a transfer for the usage balance.'**
+  String pushNotificationUsageBalanceTransferProposeBody(String name);
+
+  /// No description provided for @pushNotificationUsageBalanceTransferAcceptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer accepted'**
+  String get pushNotificationUsageBalanceTransferAcceptedTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceTransferAcceptedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} confirmed receipt of the transfer.'**
+  String pushNotificationUsageBalanceTransferAcceptedBody(String name);
+
+  /// No description provided for @pushNotificationUsageBalanceTransferRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer declined'**
+  String get pushNotificationUsageBalanceTransferRejectedTitle;
+
+  /// No description provided for @pushNotificationUsageBalanceTransferRejectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} declined the transfer declaration.'**
+  String pushNotificationUsageBalanceTransferRejectedBody(String name);
+
   /// No description provided for @vehicleSharingOfferRelayFailed.
   ///
   /// In en, this message translates to:
@@ -6733,6 +6805,136 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' (revoked)'**
   String get vehicleUsageBalanceRevokedSuffix;
+
+  /// No description provided for @vehicleUsageBalanceFreezeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze this balance'**
+  String get vehicleUsageBalanceFreezeButton;
+
+  /// No description provided for @vehicleUsageBalanceTransferButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get vehicleUsageBalanceTransferButton;
+
+  /// No description provided for @vehicleUsageBalanceFreezeProposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An agreement request to freeze this balance will be sent.'**
+  String get vehicleUsageBalanceFreezeProposeBody;
+
+  /// No description provided for @vehicleUsageBalanceTransferProposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount transferred to the owner:'**
+  String get vehicleUsageBalanceTransferProposeBody;
+
+  /// No description provided for @vehicleUsageBalanceTransferProposeBodyToBorrower.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount transferred to the borrower:'**
+  String get vehicleUsageBalanceTransferProposeBodyToBorrower;
+
+  /// No description provided for @vehicleUsageBalanceFreezeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze the balance?'**
+  String get vehicleUsageBalanceFreezeConfirmTitle;
+
+  /// No description provided for @vehicleUsageBalanceFreezeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} requests to freeze {amount}.\n\n{when}'**
+  String vehicleUsageBalanceFreezeConfirmBody(
+    String name,
+    String amount,
+    String when,
+  );
+
+  /// No description provided for @vehicleUsageBalanceTransferConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm receipt of a transfer'**
+  String get vehicleUsageBalanceTransferConfirmTitle;
+
+  /// No description provided for @vehicleUsageBalanceDecisionLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get vehicleUsageBalanceDecisionLater;
+
+  /// No description provided for @vehicleUsageBalanceDecisionReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get vehicleUsageBalanceDecisionReject;
+
+  /// No description provided for @vehicleUsageBalanceDecisionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get vehicleUsageBalanceDecisionConfirm;
+
+  /// No description provided for @vehicleUsageBalanceCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get vehicleUsageBalanceCancel;
+
+  /// No description provided for @vehicleUsageBalanceSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get vehicleUsageBalanceSubmit;
+
+  /// No description provided for @vehicleUsageBalanceNotInCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not included in the current balance'**
+  String get vehicleUsageBalanceNotInCurrent;
+
+  /// No description provided for @vehicleUsageBalanceCarriedForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Carried balance'**
+  String get vehicleUsageBalanceCarriedForward;
+
+  /// No description provided for @vehicleUsageBalanceCarriedFreezeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get vehicleUsageBalanceCarriedFreezeLabel;
+
+  /// No description provided for @vehicleUsageBalanceCarriedTransferSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer sent'**
+  String get vehicleUsageBalanceCarriedTransferSent;
+
+  /// No description provided for @vehicleUsageBalanceCarriedTransferReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer received'**
+  String get vehicleUsageBalanceCarriedTransferReceived;
+
+  /// No description provided for @vehicleUsageBalancePendingDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision pending'**
+  String get vehicleUsageBalancePendingDecision;
+
+  /// No description provided for @vehicleUsageBalanceHistoricalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance of {date}'**
+  String vehicleUsageBalanceHistoricalTitle(String date);
+
+  /// No description provided for @vehicleUsageBalanceBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get vehicleUsageBalanceBack;
 
   /// No description provided for @vehiclePendingCorrectionsEmpty.
   ///

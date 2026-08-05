@@ -2210,6 +2210,58 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationUsageBalanceFreezeProposeTitle => 'Figer le solde';
+
+  @override
+  String pushNotificationUsageBalanceFreezeProposeBody(String name) {
+    return '$name demande de figer le solde d\'utilisation.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceFreezeAcceptedTitle => 'Solde figé';
+
+  @override
+  String pushNotificationUsageBalanceFreezeAcceptedBody(String name) {
+    return '$name a accepté de figer le solde d\'utilisation.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceFreezeRejectedTitle =>
+      'Figeage refusé';
+
+  @override
+  String pushNotificationUsageBalanceFreezeRejectedBody(String name) {
+    return '$name a refusé de figer le solde d\'utilisation.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferProposeTitle =>
+      'Virement déclaré';
+
+  @override
+  String pushNotificationUsageBalanceTransferProposeBody(String name) {
+    return '$name a déclaré un virement pour le solde d\'utilisation.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferAcceptedTitle =>
+      'Virement accepté';
+
+  @override
+  String pushNotificationUsageBalanceTransferAcceptedBody(String name) {
+    return '$name a confirmé la réception du virement.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferRejectedTitle =>
+      'Virement refusé';
+
+  @override
+  String pushNotificationUsageBalanceTransferRejectedBody(String name) {
+    return '$name a refusé la déclaration de virement.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Offre enregistrée ici, mais l\'envoi au contact a échoué. Réessayez plus tard.';
 
@@ -4072,6 +4124,82 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vehicleUsageBalanceRevokedSuffix => ' (révoqué)';
+
+  @override
+  String get vehicleUsageBalanceFreezeButton => 'Figer ce solde';
+
+  @override
+  String get vehicleUsageBalanceTransferButton => 'Virement';
+
+  @override
+  String get vehicleUsageBalanceFreezeProposeBody =>
+      'Une demande d\'accord pour figer ce solde sera envoyée.';
+
+  @override
+  String get vehicleUsageBalanceTransferProposeBody =>
+      'Montant qui a été viré au propriétaire :';
+
+  @override
+  String get vehicleUsageBalanceTransferProposeBodyToBorrower =>
+      'Montant qui a été viré à l\'emprunteur :';
+
+  @override
+  String get vehicleUsageBalanceFreezeConfirmTitle => 'Figer le solde ?';
+
+  @override
+  String vehicleUsageBalanceFreezeConfirmBody(
+    String name,
+    String amount,
+    String when,
+  ) {
+    return '$name demande de figer de $amount.\n\n$when';
+  }
+
+  @override
+  String get vehicleUsageBalanceTransferConfirmTitle =>
+      'Confirmer la réception d\'un virement';
+
+  @override
+  String get vehicleUsageBalanceDecisionLater => 'Plus tard';
+
+  @override
+  String get vehicleUsageBalanceDecisionReject => 'Rejeter';
+
+  @override
+  String get vehicleUsageBalanceDecisionConfirm => 'Confirmer';
+
+  @override
+  String get vehicleUsageBalanceCancel => 'Annuler';
+
+  @override
+  String get vehicleUsageBalanceSubmit => 'Soumettre';
+
+  @override
+  String get vehicleUsageBalanceNotInCurrent =>
+      'Non inclus dans le solde actuel';
+
+  @override
+  String get vehicleUsageBalanceCarriedForward => 'Solde reporté';
+
+  @override
+  String get vehicleUsageBalanceCarriedFreezeLabel => 'Solde';
+
+  @override
+  String get vehicleUsageBalanceCarriedTransferSent => 'Virement envoyé';
+
+  @override
+  String get vehicleUsageBalanceCarriedTransferReceived => 'Virement reçu';
+
+  @override
+  String get vehicleUsageBalancePendingDecision => 'Décision en attente';
+
+  @override
+  String vehicleUsageBalanceHistoricalTitle(String date) {
+    return 'Solde du $date';
+  }
+
+  @override
+  String get vehicleUsageBalanceBack => 'Retour';
 
   @override
   String get vehiclePendingCorrectionsEmpty => 'Aucune correction en attente.';

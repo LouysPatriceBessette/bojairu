@@ -15,10 +15,12 @@ class VehicleUsageBalanceService {
     DateTime? now,
   }) async {
     final windowEnd = now ?? DateTime.now().toUtc();
+    final freezeAt = lastConfirmedUsagePaymentAt?.toUtc() ??
+        await _repo.latestConfirmedFreezeAt(link.id);
     final windowStart = usageBalanceWindowStart(
       linkCreatedAt: link.createdAt.toUtc(),
       linkAcceptedAt: link.acceptedAt?.toUtc(),
-      lastConfirmedUsagePaymentAt: lastConfirmedUsagePaymentAt?.toUtc(),
+      lastConfirmedUsagePaymentAt: freezeAt,
     );
 
     final consumption = await VehicleConsumptionMetrics(AppDatabase.processScope)

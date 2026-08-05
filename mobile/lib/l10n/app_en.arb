@@ -995,6 +995,48 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationUsageBalanceFreezeProposeTitle": "Freeze balance",
+  "pushNotificationUsageBalanceFreezeProposeBody": "{name} asks to freeze the usage balance.",
+  "@pushNotificationUsageBalanceFreezeProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeAcceptedTitle": "Balance frozen",
+  "pushNotificationUsageBalanceFreezeAcceptedBody": "{name} accepted freezing the usage balance.",
+  "@pushNotificationUsageBalanceFreezeAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeRejectedTitle": "Freeze declined",
+  "pushNotificationUsageBalanceFreezeRejectedBody": "{name} declined freezing the usage balance.",
+  "@pushNotificationUsageBalanceFreezeRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferProposeTitle": "Transfer declared",
+  "pushNotificationUsageBalanceTransferProposeBody": "{name} declared a transfer for the usage balance.",
+  "@pushNotificationUsageBalanceTransferProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferAcceptedTitle": "Transfer accepted",
+  "pushNotificationUsageBalanceTransferAcceptedBody": "{name} confirmed receipt of the transfer.",
+  "@pushNotificationUsageBalanceTransferAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferRejectedTitle": "Transfer declined",
+  "pushNotificationUsageBalanceTransferRejectedBody": "{name} declined the transfer declaration.",
+  "@pushNotificationUsageBalanceTransferRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Offer saved here, but sending to the contact failed. Try again later.",
   "vehicleSharingAcceptRelayFailed": "Acceptance saved here, but sending to the owner failed. Try again later.",
   "pushNotificationHousingAgreementActivatedTitle": "Unanimous agreement",
@@ -1860,6 +1902,40 @@
   "vehicleDistanceUnitKilometre": "kilometre",
   "vehicleDistanceUnitMile": "mile",
   "vehicleUsageBalanceRevokedSuffix": " (revoked)",
+  "vehicleUsageBalanceFreezeButton": "Freeze this balance",
+  "vehicleUsageBalanceTransferButton": "Transfer",
+  "vehicleUsageBalanceFreezeProposeBody": "An agreement request to freeze this balance will be sent.",
+  "vehicleUsageBalanceTransferProposeBody": "Amount transferred to the owner:",
+  "vehicleUsageBalanceTransferProposeBodyToBorrower": "Amount transferred to the borrower:",
+  "vehicleUsageBalanceFreezeConfirmTitle": "Freeze the balance?",
+  "vehicleUsageBalanceFreezeConfirmBody": "{name} requests to freeze {amount}.\n\n{when}",
+  "@vehicleUsageBalanceFreezeConfirmBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "amount": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceTransferConfirmTitle": "Confirm receipt of a transfer",
+  "vehicleUsageBalanceDecisionLater": "Later",
+  "vehicleUsageBalanceDecisionReject": "Reject",
+  "vehicleUsageBalanceDecisionConfirm": "Confirm",
+  "vehicleUsageBalanceCancel": "Cancel",
+  "vehicleUsageBalanceSubmit": "Submit",
+  "vehicleUsageBalanceNotInCurrent": "Not included in the current balance",
+  "vehicleUsageBalanceCarriedForward": "Carried balance",
+  "vehicleUsageBalanceCarriedFreezeLabel": "Balance",
+  "vehicleUsageBalanceCarriedTransferSent": "Transfer sent",
+  "vehicleUsageBalanceCarriedTransferReceived": "Transfer received",
+  "vehicleUsageBalancePendingDecision": "Decision pending",
+  "vehicleUsageBalanceHistoricalTitle": "Balance of {date}",
+  "@vehicleUsageBalanceHistoricalTitle": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceBack": "Back",
+
   "vehiclePendingCorrectionsEmpty": "No pending corrections.",
   "vehiclePendingCorrectionDetailTitle": "Odometer correction",
   "vehicleCorrectReadingButton": "Correct entry from {date}",

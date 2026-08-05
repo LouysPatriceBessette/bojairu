@@ -12,16 +12,20 @@ class Vehicles extends Table {
   TextColumn get licensePlate => text().withDefault(const Constant(''))();
   TextColumn get vin => text().withDefault(const Constant(''))();
   RealColumn get fuelTankCapacityLiters => real().nullable()();
+
   /// `simple` or `detailed` — road fuel consumption estimation style.
   TextColumn get consumptionEstimationMode =>
       text().withDefault(const Constant('detailed'))();
+
   /// When owner uses detailed mode, optionally require borrowers to declare mix.
   BoolColumn get requireDetailedDrivingMixForBorrowers =>
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
   /// When set, the vehicle is deactivated (read-only). Null = active.
   DateTimeColumn get deactivatedAt => dateTime().nullable()();
+
   /// Sale-import undo still available (rename/consult only so far).
   BoolColumn get saleImportUndoAvailable =>
       boolean().withDefault(const Constant(false))();
@@ -40,16 +44,16 @@ class VehicleMeterReadings extends Table {
   TextColumn get recordedByContactId => text()();
   TextColumn get vehicleUseId => text().nullable()();
   TextColumn get readingRole => text()();
-  BoolColumn get isCorrection =>
-      boolean().withDefault(const Constant(false))();
-  TextColumn get correctionNote =>
-      text().withDefault(const Constant(''))();
+  BoolColumn get isCorrection => boolean().withDefault(const Constant(false))();
+  TextColumn get correctionNote => text().withDefault(const Constant(''))();
   BoolColumn get negativeGapAcknowledged =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get isFullTank => boolean().nullable()();
   IntColumn get tankFillFraction => integer().nullable()();
+
   /// Set when a gap-verification correction row is resolved by the owner.
   DateTimeColumn get resolvedAt => dateTime().nullable()();
+
   /// When set, this reading replaces [supersedesReadingId] for usage metrics;
   /// the superseded row stays in the journal unchanged.
   TextColumn get supersedesReadingId => text().nullable()();
@@ -67,13 +71,16 @@ class VehicleUses extends Table {
   TextColumn get startReadingId => text()();
   TextColumn get endReadingId => text().nullable()();
   IntColumn get usageAmount => integer().nullable()();
+
   /// Integer percent (0–100) of session distance on each driving condition.
   /// Set when a road-vehicle use session ends; null for legacy rows and boats.
   IntColumn get drivingRoutePercent => integer().nullable()();
   IntColumn get drivingCityPercent => integer().nullable()();
   IntColumn get drivingTrafficPercent => integer().nullable()();
+
   /// `simple` or `detailed` at session end; null on legacy rows.
   TextColumn get sessionConsumptionMode => text().nullable()();
+
   /// Emprunteur fuel catch-up (kind 23) ack for this open session.
   ///
   /// `null` = not awaiting (owner path / legacy). `false` = session start
@@ -188,18 +195,72 @@ class VehicleSharingLinks extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get acceptedAt => dateTime().nullable()();
   DateTimeColumn get revokedAt => dateTime().nullable()();
+
   /// Usage compensation rate in minor currency units per km (0 = free).
   IntColumn get ratePerKmMinor => integer().withDefault(const Constant(0))();
   TextColumn get rateCurrency => text().withDefault(const Constant(''))();
+
   /// Legacy date-range columns (unused; week grid supersedes).
   DateTimeColumn get availabilityStart => dateTime().nullable()();
   DateTimeColumn get availabilityEnd => dateTime().nullable()();
+
   /// Half-hour week grid JSON (same shape as housing quiet hours), or empty.
   TextColumn get availabilityWeekJson =>
       text().withDefault(const Constant(''))();
   TextColumn get ownerRulesText => text().withDefault(const Constant(''))();
+
   /// When the Emprunteur may no longer accept (UTC); null = no local deadline.
   DateTimeColumn get expiresAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Frozen usage-balance snapshot (pending until both peers agree + catch-up).
+class VehicleUsageBalanceFreezes extends Table {
+  TextColumn get id => text()();
+  TextColumn get sharingLinkId => text()();
+  TextColumn get vehicleId => text()();
+
+  /// `pending` | `acceptedAwaitingCatchUp` | `confirmed` | `rejected`
+  TextColumn get status => text()();
+
+  /// Local contact id of who proposed (owner self / borrower self / peer).
+  TextColumn get initiatedByContactId => text()();
+  DateTimeColumn get proposedAt => dateTime()();
+  DateTimeColumn get confirmedAt => dateTime().nullable()();
+  IntColumn get balanceMinor => integer()();
+  DateTimeColumn get windowStart => dateTime()();
+  DateTimeColumn get windowEnd => dateTime()();
+
+  /// Full [VehicleUsageBalanceBreakdown] JSON for historical display.
+  TextColumn get breakdownJson => text()();
+
+  /// Borrower's fuel-purchase cursor used by the owner catch-up response.
+  TextColumn get lastKnownPurchaseId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Declared transfer between Emprunteur and Propriétaire (pending until confirmed).
+class VehicleUsageTransfers extends Table {
+  TextColumn get id => text()();
+  TextColumn get sharingLinkId => text()();
+  TextColumn get vehicleId => text()();
+
+  /// Absolute amount (always ≥ 0). Direction is [initiatedByContactId]:
+  /// borrower-initiated → paid to owner; owner-initiated → paid to borrower.
+  IntColumn get amountMinor => integer()();
+
+  /// Local contact id of who proposed (owner self / borrower self / peer).
+  TextColumn get initiatedByContactId =>
+      text().withDefault(const Constant(''))();
+
+  /// `pending` | `confirmed` | `rejected`
+  TextColumn get status => text()();
+  DateTimeColumn get proposedAt => dateTime()();
+  DateTimeColumn get confirmedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

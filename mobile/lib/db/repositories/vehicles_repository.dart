@@ -22,10 +22,7 @@ const String kVehicleGapAttributionUnknown = 'unknown';
 bool vehicleIsActive(Vehicle vehicle) => vehicle.deactivatedAt == null;
 
 class VehicleGalleryPhotoDraft {
-  VehicleGalleryPhotoDraft({
-    required this.sourcePath,
-    this.description = '',
-  });
+  VehicleGalleryPhotoDraft({required this.sourcePath, this.description = ''});
 
   final String sourcePath;
   String description;
@@ -88,16 +85,18 @@ class VehiclesRepository {
   final AppDatabase _db;
 
   Future<List<Vehicle>> listOwnedVehicles() async {
-    final rows = await (_db.select(_db.vehicles)
-          ..where((t) => t.ownerContactId.equals(kVehicleOwnerSelfContactId)))
-        .get();
+    final rows = await (_db.select(
+      _db.vehicles,
+    )..where((t) => t.ownerContactId.equals(kVehicleOwnerSelfContactId))).get();
     rows.sort((a, b) {
       final aInactive = a.deactivatedAt != null;
       final bInactive = b.deactivatedAt != null;
       if (aInactive != bInactive) {
         return aInactive ? 1 : -1;
       }
-      return a.displayLabel.toLowerCase().compareTo(b.displayLabel.toLowerCase());
+      return a.displayLabel.toLowerCase().compareTo(
+        b.displayLabel.toLowerCase(),
+      );
     });
     return rows;
   }
@@ -108,26 +107,25 @@ class VehiclesRepository {
   }
 
   Future<int> countActiveOwnedVehicles() async {
-    final rows = await (_db.select(_db.vehicles)
-          ..where(
-            (t) =>
-                t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
-                t.deactivatedAt.isNull(),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicles)..where(
+              (t) =>
+                  t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+                  t.deactivatedAt.isNull(),
+            ))
+            .get();
     return rows.length;
   }
 
-  Future<Vehicle?> getVehicle(String id) =>
-      (_db.select(_db.vehicles)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<Vehicle?> getVehicle(String id) => (_db.select(
+    _db.vehicles,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<void> clearSaleImportUndoAvailable(String vehicleId) async {
-    await (_db.update(_db.vehicles)..where((t) => t.id.equals(vehicleId)))
-        .write(
-      VehiclesCompanion(
-        saleImportUndoAvailable: const drift.Value(false),
-      ),
+    await (_db.update(
+      _db.vehicles,
+    )..where((t) => t.id.equals(vehicleId))).write(
+      VehiclesCompanion(saleImportUndoAvailable: const drift.Value(false)),
     );
   }
 
@@ -158,8 +156,9 @@ class VehiclesRepository {
       throw VehicleHasOpenUseException(vehicleId);
     }
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.vehicles)..where((t) => t.id.equals(vehicleId)))
-        .write(
+    await (_db.update(
+      _db.vehicles,
+    )..where((t) => t.id.equals(vehicleId))).write(
       VehiclesCompanion(
         deactivatedAt: drift.Value(now),
         updatedAt: drift.Value(now),
@@ -193,7 +192,9 @@ class VehiclesRepository {
     }
     final now = DateTime.now().toUtc();
     final id = _newVehicleId('vehicle:');
-    await _db.into(_db.vehicles).insert(
+    await _db
+        .into(_db.vehicles)
+        .insert(
           VehiclesCompanion.insert(
             id: id,
             ownerContactId: kVehicleOwnerSelfContactId,
@@ -206,8 +207,9 @@ class VehiclesRepository {
             licensePlate: drift.Value(licensePlate.trim()),
             vin: drift.Value(vin.trim()),
             fuelTankCapacityLiters: drift.Value(fuelTankCapacityLiters),
-            consumptionEstimationMode:
-                drift.Value(consumptionEstimationMode.wire),
+            consumptionEstimationMode: drift.Value(
+              consumptionEstimationMode.wire,
+            ),
             requireDetailedDrivingMixForBorrowers: drift.Value(
               requireDetailedDrivingMixForBorrowers,
             ),
@@ -215,9 +217,13 @@ class VehiclesRepository {
             updatedAt: now,
           ),
         );
-    final preview = (oilChangeIntervalAmount ~/ 10)
-        .clamp(1, oilChangeIntervalAmount);
-    await _db.into(_db.vehicleMaintenanceRules).insert(
+    final preview = (oilChangeIntervalAmount ~/ 10).clamp(
+      1,
+      oilChangeIntervalAmount,
+    );
+    await _db
+        .into(_db.vehicleMaintenanceRules)
+        .insert(
           VehicleMaintenanceRulesCompanion.insert(
             id: '$id:rule:oil',
             vehicleId: id,
@@ -240,7 +246,8 @@ class VehiclesRepository {
       role: MeterReadingRole.standalone,
     );
     await _persistGalleryDrafts(id, galleries);
-    return (await getVehicle(id)) ?? (throw StateError('vehicle missing after insert'));
+    return (await getVehicle(id)) ??
+        (throw StateError('vehicle missing after insert'));
   }
 
   String meterUnitForKind(VehicleKind kind) {
@@ -260,7 +267,9 @@ class VehiclesRepository {
       );
       final galleryId = _newVehicleId('vgal:');
       final now = DateTime.now().toUtc();
-      await _db.into(_db.vehiclePhotoGalleries).insert(
+      await _db
+          .into(_db.vehiclePhotoGalleries)
+          .insert(
             VehiclePhotoGalleriesCompanion.insert(
               id: galleryId,
               vehicleId: vehicleId,
@@ -276,7 +285,9 @@ class VehiclesRepository {
           galleryIndex: nextIndex,
           sourcePath: photo.sourcePath,
         );
-        await _db.into(_db.vehicleGalleryPhotos).insert(
+        await _db
+            .into(_db.vehicleGalleryPhotos)
+            .insert(
               VehicleGalleryPhotosCompanion.insert(
                 id: _newVehicleId('vphoto:'),
                 galleryId: galleryId,
@@ -311,21 +322,23 @@ class VehiclesRepository {
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.vehicles)..where((t) => t.id.equals(vehicleId))).write(
-          VehiclesCompanion(
-            displayLabel: drift.Value(displayLabel.trim()),
-            color: drift.Value(color.trim()),
-            licensePlate: drift.Value(licensePlate.trim()),
-            consumptionEstimationMode: consumptionEstimationMode == null
-                ? const drift.Value.absent()
-                : drift.Value(consumptionEstimationMode.wire),
-            requireDetailedDrivingMixForBorrowers:
-                requireDetailedDrivingMixForBorrowers == null
-                    ? const drift.Value.absent()
-                    : drift.Value(requireDetailedDrivingMixForBorrowers),
-            updatedAt: drift.Value(now),
-          ),
-        );
+    await (_db.update(
+      _db.vehicles,
+    )..where((t) => t.id.equals(vehicleId))).write(
+      VehiclesCompanion(
+        displayLabel: drift.Value(displayLabel.trim()),
+        color: drift.Value(color.trim()),
+        licensePlate: drift.Value(licensePlate.trim()),
+        consumptionEstimationMode: consumptionEstimationMode == null
+            ? const drift.Value.absent()
+            : drift.Value(consumptionEstimationMode.wire),
+        requireDetailedDrivingMixForBorrowers:
+            requireDetailedDrivingMixForBorrowers == null
+            ? const drift.Value.absent()
+            : drift.Value(requireDetailedDrivingMixForBorrowers),
+        updatedAt: drift.Value(now),
+      ),
+    );
     await _upsertOilChangeInterval(
       vehicleId: vehicleId,
       intervalAmount: oilChangeIntervalAmount,
@@ -335,13 +348,13 @@ class VehiclesRepository {
   }
 
   Future<int?> oilChangeIntervalAmountForVehicle(String vehicleId) async {
-    final rule = await (_db.select(_db.vehicleMaintenanceRules)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.category.equals(VehicleMaintenanceCategoryWire.oil.wire),
-          ))
-        .getSingleOrNull();
+    final rule =
+        await (_db.select(_db.vehicleMaintenanceRules)..where(
+              (t) =>
+                  t.vehicleId.equals(vehicleId) &
+                  t.category.equals(VehicleMaintenanceCategoryWire.oil.wire),
+            ))
+            .getSingleOrNull();
     return rule?.intervalAmount;
   }
 
@@ -350,17 +363,17 @@ class VehiclesRepository {
     required int intervalAmount,
   }) async {
     final preview = (intervalAmount ~/ 10).clamp(1, intervalAmount);
-    final existing = await (_db.select(_db.vehicleMaintenanceRules)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.category.equals(VehicleMaintenanceCategoryWire.oil.wire),
-          ))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.vehicleMaintenanceRules)..where(
+              (t) =>
+                  t.vehicleId.equals(vehicleId) &
+                  t.category.equals(VehicleMaintenanceCategoryWire.oil.wire),
+            ))
+            .getSingleOrNull();
     if (existing != null) {
-      await (_db.update(_db.vehicleMaintenanceRules)
-            ..where((t) => t.id.equals(existing.id)))
-          .write(
+      await (_db.update(
+        _db.vehicleMaintenanceRules,
+      )..where((t) => t.id.equals(existing.id))).write(
         VehicleMaintenanceRulesCompanion(
           intervalAmount: drift.Value(intervalAmount),
           previewWindowAmount: drift.Value(preview),
@@ -368,7 +381,9 @@ class VehiclesRepository {
       );
       return;
     }
-    await _db.into(_db.vehicleMaintenanceRules).insert(
+    await _db
+        .into(_db.vehicleMaintenanceRules)
+        .insert(
           VehicleMaintenanceRulesCompanion.insert(
             id: '$vehicleId:rule:oil',
             vehicleId: vehicleId,
@@ -380,45 +395,46 @@ class VehiclesRepository {
   }
 
   Future<List<VehicleMeterReading>> listMeterReadings(String vehicleId) async {
-    final rows = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId)))
-        .get();
+    final rows = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.vehicleId.equals(vehicleId))).get();
     rows.sort(compareMeterReadingsNewestFirst);
     return rows;
   }
 
-  Future<VehicleMeterReading?> getMeterReading(String id) =>
-      (_db.select(_db.vehicleMeterReadings)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<VehicleMeterReading?> getMeterReading(String id) => (_db.select(
+    _db.vehicleMeterReadings,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Future<FuelPurchase?> getFuelPurchase(String id) =>
-      (_db.select(_db.fuelPurchases)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<FuelPurchase?> getFuelPurchase(String id) => (_db.select(
+    _db.fuelPurchases,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Future<MaintenanceEvent?> getMaintenanceEvent(String id) =>
-      (_db.select(_db.maintenanceEvents)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<MaintenanceEvent?> getMaintenanceEvent(String id) => (_db.select(
+    _db.maintenanceEvents,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Future<TrafficViolation?> getTrafficViolation(String id) =>
-      (_db.select(_db.trafficViolations)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<TrafficViolation?> getTrafficViolation(String id) => (_db.select(
+    _db.trafficViolations,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<int?> initialMeterBaseline(String vehicleId) async {
-    final rows = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId))
-          ..orderBy([
-            (t) => drift.OrderingTerm.asc(t.recordedAt),
-            (t) => drift.OrderingTerm.asc(t.id),
-          ])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleMeterReadings)
+              ..where((t) => t.vehicleId.equals(vehicleId))
+              ..orderBy([
+                (t) => drift.OrderingTerm.asc(t.recordedAt),
+                (t) => drift.OrderingTerm.asc(t.id),
+              ])
+              ..limit(1))
+            .get();
     return rows.firstOrNull?.value;
   }
 
   Future<int> _nextGalleryIndex(String vehicleId) async {
-    final rows = await (_db.select(_db.vehiclePhotoGalleries)
-          ..where((t) => t.vehicleId.equals(vehicleId)))
-        .get();
+    final rows = await (_db.select(
+      _db.vehiclePhotoGalleries,
+    )..where((t) => t.vehicleId.equals(vehicleId))).get();
     if (rows.isEmpty) return 1;
     return rows.map((r) => r.galleryIndex).reduce(max) + 1;
   }
@@ -444,7 +460,7 @@ class VehiclesRepository {
 
   /// Most recent meter value with an optional photo path from the same source.
   Future<({DateTime recordedAt, int value, String? photoPath})?>
-      latestMeterAnchorDetail(String vehicleId) async {
+  latestMeterAnchorDetail(String vehicleId) async {
     ({DateTime recordedAt, int value, String? photoPath})? best;
 
     void consider(DateTime recordedAt, int? value, String? photoPath) {
@@ -454,27 +470,29 @@ class VehiclesRepository {
       }
     }
 
-    final reading = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId))
-          ..orderBy([
-            (t) => drift.OrderingTerm.desc(t.recordedAt),
-            (t) => drift.OrderingTerm.desc(t.id),
-          ]))
-        .get();
+    final reading =
+        await (_db.select(_db.vehicleMeterReadings)
+              ..where((t) => t.vehicleId.equals(vehicleId))
+              ..orderBy([
+                (t) => drift.OrderingTerm.desc(t.recordedAt),
+                (t) => drift.OrderingTerm.desc(t.id),
+              ]))
+            .get();
     final effective = latestEffectiveMeterReading(reading);
     if (effective != null) {
       consider(effective.recordedAt, effective.value, effective.photoPath);
     }
 
-    final purchase = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.meterReadingValue.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final purchase =
+        await (_db.select(_db.fuelPurchases)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterReadingValue.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (purchase != null) {
       consider(
         purchase.purchasedAt,
@@ -483,14 +501,16 @@ class VehiclesRepository {
       );
     }
 
-    final maintenance = await (_db.select(_db.maintenanceEvents)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) & t.meterAtService.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.servicedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final maintenance =
+        await (_db.select(_db.maintenanceEvents)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterAtService.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.servicedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (maintenance != null) {
       consider(
         maintenance.servicedAt,
@@ -516,39 +536,43 @@ class VehiclesRepository {
       }
     }
 
-    final readings = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId))
-          ..orderBy([
-            (t) => drift.OrderingTerm.desc(t.recordedAt),
-            (t) => drift.OrderingTerm.desc(t.id),
-          ]))
-        .get();
+    final readings =
+        await (_db.select(_db.vehicleMeterReadings)
+              ..where((t) => t.vehicleId.equals(vehicleId))
+              ..orderBy([
+                (t) => drift.OrderingTerm.desc(t.recordedAt),
+                (t) => drift.OrderingTerm.desc(t.id),
+              ]))
+            .get();
     final effective = latestEffectiveMeterReading(readings);
     if (effective != null) {
       consider(effective.recordedAt, effective.value);
     }
 
-    final purchase = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.meterReadingValue.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final purchase =
+        await (_db.select(_db.fuelPurchases)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterReadingValue.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (purchase != null) {
       consider(purchase.purchasedAt, purchase.meterReadingValue);
     }
 
-    final maintenance = await (_db.select(_db.maintenanceEvents)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) & t.meterAtService.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.servicedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final maintenance =
+        await (_db.select(_db.maintenanceEvents)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterAtService.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.servicedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (maintenance != null) {
       consider(maintenance.servicedAt, maintenance.meterAtService);
     }
@@ -570,39 +594,43 @@ class VehiclesRepository {
       }
     }
 
-    final reading = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId))
-          ..orderBy([
-            (t) => drift.OrderingTerm.asc(t.recordedAt),
-            (t) => drift.OrderingTerm.asc(t.id),
-          ])
-          ..limit(1))
-        .getSingleOrNull();
+    final reading =
+        await (_db.select(_db.vehicleMeterReadings)
+              ..where((t) => t.vehicleId.equals(vehicleId))
+              ..orderBy([
+                (t) => drift.OrderingTerm.asc(t.recordedAt),
+                (t) => drift.OrderingTerm.asc(t.id),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
     if (reading != null) {
       consider(reading.recordedAt, reading.value);
     }
 
-    final purchase = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.meterReadingValue.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.asc(t.purchasedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final purchase =
+        await (_db.select(_db.fuelPurchases)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterReadingValue.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.asc(t.purchasedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (purchase != null) {
       consider(purchase.purchasedAt, purchase.meterReadingValue);
     }
 
-    final maintenance = await (_db.select(_db.maintenanceEvents)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) & t.meterAtService.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.asc(t.servicedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final maintenance =
+        await (_db.select(_db.maintenanceEvents)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterAtService.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.asc(t.servicedAt)])
+              ..limit(1))
+            .getSingleOrNull();
     if (maintenance != null) {
       consider(maintenance.servicedAt, maintenance.meterAtService);
     }
@@ -611,11 +639,12 @@ class VehiclesRepository {
   }
 
   Future<DateTime> _nextMeterRecordedAt(String vehicleId) async {
-    final rows = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.vehicleId.equals(vehicleId))
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.recordedAt)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleMeterReadings)
+              ..where((t) => t.vehicleId.equals(vehicleId))
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.recordedAt)])
+              ..limit(1))
+            .get();
     final now = DateTime.now().toUtc();
     final latest = rows.firstOrNull?.recordedAt;
     if (latest == null || now.isAfter(latest)) return now;
@@ -646,7 +675,9 @@ class VehiclesRepository {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('meter:');
     final now = recordedAt ?? await _nextMeterRecordedAt(vehicleId);
-    await _db.into(_db.vehicleMeterReadings).insert(
+    await _db
+        .into(_db.vehicleMeterReadings)
+        .insert(
           VehicleMeterReadingsCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -666,9 +697,9 @@ class VehiclesRepository {
             ),
           ),
         );
-    return (await (_db.select(_db.vehicleMeterReadings)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   Future<VehicleMeterReading> saveGapCorrectionReading({
@@ -714,7 +745,9 @@ class VehiclesRepository {
     final id = _newVehicleId('gap:');
     final now = DateTime.now().toUtc();
     final gap = startAfter - latestBefore;
-    await _db.into(_db.vehicleOdometerGaps).insert(
+    await _db
+        .into(_db.vehicleOdometerGaps)
+        .insert(
           VehicleOdometerGapsCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -730,9 +763,9 @@ class VehiclesRepository {
             triggerReadingId: drift.Value(triggerReadingId),
           ),
         );
-    return (await (_db.select(_db.vehicleOdometerGaps)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.vehicleOdometerGaps,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   Future<VehicleMeterReading?> latestNonCorrectionMeterReading(
@@ -772,7 +805,9 @@ class VehiclesRepository {
     await ensureVehicleActiveForWrite(superseded.vehicleId);
     final id = _newVehicleId('meter:');
     final note = encodeMeterReadingReplacementNote(kind: kind);
-    await _db.into(_db.vehicleMeterReadings).insert(
+    await _db
+        .into(_db.vehicleMeterReadings)
+        .insert(
           VehicleMeterReadingsCompanion.insert(
             id: id,
             vehicleId: superseded.vehicleId,
@@ -806,19 +841,22 @@ class VehiclesRepository {
     required String oldReadingId,
     required String newReadingId,
   }) async {
-    final startUses = await (_db.select(_db.vehicleUses)
-          ..where((t) => t.startReadingId.equals(oldReadingId)))
-        .get();
+    final startUses = await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.startReadingId.equals(oldReadingId))).get();
     for (final use in startUses) {
-      await (_db.update(_db.vehicleUses)..where((t) => t.id.equals(use.id)))
-          .write(VehicleUsesCompanion(startReadingId: drift.Value(newReadingId)));
+      await (_db.update(
+        _db.vehicleUses,
+      )..where((t) => t.id.equals(use.id))).write(
+        VehicleUsesCompanion(startReadingId: drift.Value(newReadingId)),
+      );
       if (use.endReadingId != null) {
         await _recomputeUseSessionAmount(use.id);
       }
     }
-    final endUses = await (_db.select(_db.vehicleUses)
-          ..where((t) => t.endReadingId.equals(oldReadingId)))
-        .get();
+    final endUses = await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.endReadingId.equals(oldReadingId))).get();
     for (final use in endUses) {
       await (_db.update(_db.vehicleUses)..where((t) => t.id.equals(use.id)))
           .write(VehicleUsesCompanion(endReadingId: drift.Value(newReadingId)));
@@ -843,8 +881,9 @@ class VehiclesRepository {
     required String previousReadingId,
     required String triggerReadingId,
   }) async {
-    await (_db.update(_db.vehicleOdometerGaps)..where((t) => t.id.equals(gapId)))
-        .write(
+    await (_db.update(
+      _db.vehicleOdometerGaps,
+    )..where((t) => t.id.equals(gapId))).write(
       VehicleOdometerGapsCompanion(
         correctionReadingId: drift.Value(correctionReadingId),
         previousReadingId: drift.Value(previousReadingId),
@@ -854,9 +893,9 @@ class VehiclesRepository {
   }
 
   Future<void> deleteOdometerGap(String gapId) async {
-    await (_db.delete(_db.vehicleOdometerGaps)
-          ..where((t) => t.id.equals(gapId)))
-        .go();
+    await (_db.delete(
+      _db.vehicleOdometerGaps,
+    )..where((t) => t.id.equals(gapId))).go();
   }
 
   Future<void> markGapVerificationResolved(String correctionReadingId) async {
@@ -895,7 +934,9 @@ class VehiclesRepository {
     );
   }
 
-  Future<List<String>> listVehicleParticipantContactIds(String vehicleId) async {
+  Future<List<String>> listVehicleParticipantContactIds(
+    String vehicleId,
+  ) async {
     final out = <String>[kVehicleOwnerSelfContactId];
     final links = await listSharingLinksForVehicle(vehicleId);
     for (final link in links) {
@@ -907,19 +948,21 @@ class VehiclesRepository {
     return out;
   }
 
-  Future<({int route, int city, int traffic})?> averageDetailedDrivingMixForContact({
+  Future<({int route, int city, int traffic})?>
+  averageDetailedDrivingMixForContact({
     required String vehicleId,
     required String contactId,
   }) async {
-    final uses = await (_db.select(_db.vehicleUses)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.attributedContactId.equals(contactId) &
-                t.endedAt.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.endedAt)]))
-        .get();
+    final uses =
+        await (_db.select(_db.vehicleUses)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.attributedContactId.equals(contactId) &
+                    t.endedAt.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.endedAt)]))
+            .get();
     var routeSum = 0;
     var citySum = 0;
     var trafficSum = 0;
@@ -964,11 +1007,13 @@ class VehiclesRepository {
     if (existing != null) {
       return existing;
     }
-    final reading = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.id.equals(startReadingId)))
-        .getSingle();
+    final reading = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(startReadingId))).getSingle();
     final id = _newVehicleId('use:');
-    await _db.into(_db.vehicleUses).insert(
+    await _db
+        .into(_db.vehicleUses)
+        .insert(
           VehicleUsesCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -977,32 +1022,32 @@ class VehiclesRepository {
             startReadingId: startReadingId,
           ),
         );
-    return (await (_db.select(_db.vehicleUses)..where((t) => t.id.equals(id)))
-        .getSingle());
+    return (await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
-  Future<VehicleUse?> getVehicleUse(String id) =>
-      (_db.select(_db.vehicleUses)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<VehicleUse?> getVehicleUse(String id) => (_db.select(
+    _db.vehicleUses,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<VehicleUse?> openUseForVehicle(String vehicleId) async {
-    final rows = await (_db.select(_db.vehicleUses)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) & t.endedAt.isNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.startedAt)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleUses)
+              ..where((t) => t.vehicleId.equals(vehicleId) & t.endedAt.isNull())
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.startedAt)])
+              ..limit(1))
+            .get();
     return rows.firstOrNull;
   }
 
   Future<VehicleUse?> findAnyOpenUse() async {
-    final rows = await (_db.select(_db.vehicleUses)
-          ..where((t) => t.endedAt.isNull())
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.startedAt)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleUses)
+              ..where((t) => t.endedAt.isNull())
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.startedAt)])
+              ..limit(1))
+            .get();
     return rows.firstOrNull;
   }
 
@@ -1014,15 +1059,15 @@ class VehiclesRepository {
     int? drivingTrafficPercent,
     VehicleConsumptionEstimationMode? sessionConsumptionMode,
   }) async {
-    final use = await (_db.select(_db.vehicleUses)
-          ..where((t) => t.id.equals(useId)))
-        .getSingle();
-    final start = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.id.equals(use.startReadingId)))
-        .getSingle();
-    final end = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.id.equals(endReadingId)))
-        .getSingle();
+    final use = await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.id.equals(useId))).getSingle();
+    final start = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(use.startReadingId))).getSingle();
+    final end = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(endReadingId))).getSingle();
     final amount = end.value - start.value;
     await (_db.update(_db.vehicleUses)..where((t) => t.id.equals(useId))).write(
       VehicleUsesCompanion(
@@ -1035,8 +1080,9 @@ class VehiclesRepository {
         sessionConsumptionMode: drift.Value(sessionConsumptionMode?.wire),
       ),
     );
-    return (await (_db.select(_db.vehicleUses)..where((t) => t.id.equals(useId)))
-        .getSingle());
+    return (await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.id.equals(useId))).getSingle());
   }
 
   /// Emprunteur: mark open session as awaiting Propriétaire fuel catch-up (kind 23).
@@ -1050,18 +1096,17 @@ class VehiclesRepository {
 
   /// Emprunteur: Propriétaire catch-up received (empty or not) for [vehicleId].
   Future<void> markFuelCatchUpResponseReceived(String vehicleId) async {
-    await (_db.update(_db.vehicleUses)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.endedAt.isNull() &
-                t.fuelCatchUpResponseReceived.equals(false),
-          ))
+    await (_db.update(_db.vehicleUses)..where(
+          (t) =>
+              t.vehicleId.equals(vehicleId) &
+              t.endedAt.isNull() &
+              t.fuelCatchUpResponseReceived.equals(false),
+        ))
         .write(
-      const VehicleUsesCompanion(
-        fuelCatchUpResponseReceived: drift.Value(true),
-      ),
-    );
+          const VehicleUsesCompanion(
+            fuelCatchUpResponseReceived: drift.Value(true),
+          ),
+        );
   }
 
   /// Inserts a fully closed use session (gap resolution retroactive entry).
@@ -1078,14 +1123,16 @@ class VehiclesRepository {
     VehicleConsumptionEstimationMode? sessionConsumptionMode,
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
-    final start = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.id.equals(startReadingId)))
-        .getSingle();
-    final end = await (_db.select(_db.vehicleMeterReadings)
-          ..where((t) => t.id.equals(endReadingId)))
-        .getSingle();
+    final start = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(startReadingId))).getSingle();
+    final end = await (_db.select(
+      _db.vehicleMeterReadings,
+    )..where((t) => t.id.equals(endReadingId))).getSingle();
     final id = _newVehicleId('use:');
-    await _db.into(_db.vehicleUses).insert(
+    await _db
+        .into(_db.vehicleUses)
+        .insert(
           VehicleUsesCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -1101,8 +1148,9 @@ class VehiclesRepository {
             sessionConsumptionMode: drift.Value(sessionConsumptionMode?.wire),
           ),
         );
-    return (await (_db.select(_db.vehicleUses)..where((t) => t.id.equals(id)))
-        .getSingle());
+    return (await (_db.select(
+      _db.vehicleUses,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   Future<FuelPurchase> saveFuelPurchase({
@@ -1116,6 +1164,7 @@ class VehiclesRepository {
     int? meterReadingValue,
     String? meterPhotoPath,
     int? tankFillFraction,
+
     /// Stable creator id for cross-device sync; when null a new local id is
     /// allocated. When set and a row already exists, returns that row (no-op).
     String? id,
@@ -1128,7 +1177,9 @@ class VehiclesRepository {
     if (existing != null) {
       return existing;
     }
-    await _db.into(_db.fuelPurchases).insert(
+    await _db
+        .into(_db.fuelPurchases)
+        .insert(
           FuelPurchasesCompanion.insert(
             id: resolvedId,
             vehicleId: vehicleId,
@@ -1140,14 +1191,12 @@ class VehiclesRepository {
             volumeLiters: drift.Value(volumeLiters),
             meterReadingValue: drift.Value(meterReadingValue),
             meterPhotoPath: drift.Value(meterPhotoPath),
-            tankFillFraction: drift.Value(
-              isFullTank ? null : tankFillFraction,
-            ),
+            tankFillFraction: drift.Value(isFullTank ? null : tankFillFraction),
           ),
         );
-    return (await (_db.select(_db.fuelPurchases)
-              ..where((t) => t.id.equals(resolvedId)))
-            .getSingle());
+    return (await (_db.select(
+      _db.fuelPurchases,
+    )..where((t) => t.id.equals(resolvedId))).getSingle());
   }
 
   Future<MaintenanceEvent> saveMaintenanceEvent({
@@ -1163,7 +1212,9 @@ class VehiclesRepository {
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('maint:');
-    await _db.into(_db.maintenanceEvents).insert(
+    await _db
+        .into(_db.maintenanceEvents)
+        .insert(
           MaintenanceEventsCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -1196,9 +1247,9 @@ class VehiclesRepository {
         );
       }
     }
-    return (await (_db.select(_db.maintenanceEvents)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.maintenanceEvents,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   Future<TrafficViolation> saveTrafficViolation({
@@ -1213,7 +1264,9 @@ class VehiclesRepository {
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('violation:');
-    await _db.into(_db.trafficViolations).insert(
+    await _db
+        .into(_db.trafficViolations)
+        .insert(
           TrafficViolationsCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -1226,9 +1279,9 @@ class VehiclesRepository {
             notes: drift.Value(notes),
           ),
         );
-    return (await (_db.select(_db.trafficViolations)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.trafficViolations,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   Future<List<FuelPurchase>> listFuelPurchases(String vehicleId) {
@@ -1268,8 +1321,7 @@ class VehiclesRepository {
     final rows = await listFuelPurchases(vehicleId);
     final selected = rows
         .where(
-          (p) =>
-              p.id == anchor.id || _fuelPurchaseIsStrictlyAfter(p, anchor),
+          (p) => p.id == anchor.id || _fuelPurchaseIsStrictlyAfter(p, anchor),
         )
         .toList();
     selected.sort(_compareFuelPurchasesOldestFirst);
@@ -1322,13 +1374,13 @@ class VehiclesRepository {
 
   /// Sum of [FuelPurchase.volumeLiters] recorded since [use.startedAt].
   Future<double> fuelLitersPurchasedDuringOpenUse(VehicleUse use) async {
-    final rows = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(use.vehicleId) &
-                t.purchasedAt.isBiggerOrEqualValue(use.startedAt),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.fuelPurchases)..where(
+              (t) =>
+                  t.vehicleId.equals(use.vehicleId) &
+                  t.purchasedAt.isBiggerOrEqualValue(use.startedAt),
+            ))
+            .get();
     var total = 0.0;
     for (final purchase in rows) {
       final volume = purchase.volumeLiters;
@@ -1341,16 +1393,17 @@ class VehiclesRepository {
 
   /// Newest full-tank purchase that has a meter reading, or `null`.
   Future<FuelPurchase?> latestFullTankFuelPurchase(String vehicleId) async {
-    final rows = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.isFullTank.equals(true) &
-                t.meterReadingValue.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.fuelPurchases)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.isFullTank.equals(true) &
+                    t.meterReadingValue.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
+              ..limit(1))
+            .get();
     return rows.firstOrNull;
   }
 
@@ -1360,13 +1413,13 @@ class VehiclesRepository {
     String vehicleId, {
     required DateTime afterPurchasedAt,
   }) async {
-    final rows = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.purchasedAt.isBiggerThanValue(afterPurchasedAt),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.fuelPurchases)..where(
+              (t) =>
+                  t.vehicleId.equals(vehicleId) &
+                  t.purchasedAt.isBiggerThanValue(afterPurchasedAt),
+            ))
+            .get();
     var total = 0.0;
     for (final purchase in rows) {
       final volume = purchase.volumeLiters;
@@ -1383,15 +1436,16 @@ class VehiclesRepository {
     String vehicleId, {
     required int currentMeterTenths,
   }) async {
-    final rows = await (_db.select(_db.fuelPurchases)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.meterReadingValue.isNotNull(),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
-          ..limit(1))
-        .get();
+    final rows =
+        await (_db.select(_db.fuelPurchases)
+              ..where(
+                (t) =>
+                    t.vehicleId.equals(vehicleId) &
+                    t.meterReadingValue.isNotNull(),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.purchasedAt)])
+              ..limit(1))
+            .get();
     final anchor = rows.firstOrNull?.meterReadingValue;
     if (anchor == null) return null;
     final delta = currentMeterTenths - anchor;
@@ -1441,7 +1495,9 @@ class VehiclesRepository {
     await ensureVehicleActiveForWrite(vehicleId);
     final id = _newVehicleId('vshare:');
     final now = DateTime.now().toUtc();
-    await _db.into(_db.vehicleSharingLinks).insert(
+    await _db
+        .into(_db.vehicleSharingLinks)
+        .insert(
           VehicleSharingLinksCompanion.insert(
             id: id,
             vehicleId: vehicleId,
@@ -1456,28 +1512,28 @@ class VehiclesRepository {
             expiresAt: drift.Value(expiresAt?.toUtc()),
           ),
         );
-    return (await (_db.select(_db.vehicleSharingLinks)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (_db.select(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   /// Marks pending offers past [expiresAt] as expired (local wall-clock only).
   /// Appends one activity-log row per newly expired link (both devices).
   Future<void> expirePendingOffersPastDeadline({DateTime? nowUtc}) async {
     final now = (nowUtc ?? DateTime.now()).toUtc();
-    final pending = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),
-          ))
-        .get();
+    final pending =
+        await (_db.select(_db.vehicleSharingLinks)..where(
+              (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),
+            ))
+            .get();
     final log = RelayActivityLogService(_db);
     for (final link in pending) {
       final expires = link.expiresAt;
       if (expires == null) continue;
       if (!expires.toUtc().isAfter(now)) {
-        await (_db.update(_db.vehicleSharingLinks)
-              ..where((t) => t.id.equals(link.id)))
-            .write(
+        await (_db.update(
+          _db.vehicleSharingLinks,
+        )..where((t) => t.id.equals(link.id))).write(
           VehicleSharingLinksCompanion(
             status: drift.Value(VehicleSharingLinkStatus.expired.wire),
           ),
@@ -1485,10 +1541,7 @@ class VehiclesRepository {
         await log.append(
           kind: RelayActivityLogKinds.vehicleSharingOfferExpired,
           initiatorKind: RelayActivityLogService.initiatorSystem,
-          details: {
-            'linkId': link.id,
-            'vehicleId': link.vehicleId,
-          },
+          details: {'linkId': link.id, 'vehicleId': link.vehicleId},
           occurredAt: now,
         );
       }
@@ -1497,9 +1550,9 @@ class VehiclesRepository {
 
   Future<void> acceptSharingLink(String linkId) async {
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.vehicleSharingLinks)
-          ..where((t) => t.id.equals(linkId)))
-        .write(
+    await (_db.update(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).write(
       VehicleSharingLinksCompanion(
         status: drift.Value(VehicleSharingLinkStatus.active.wire),
         acceptedAt: drift.Value(now),
@@ -1508,9 +1561,9 @@ class VehiclesRepository {
   }
 
   Future<VehicleSharingLink?> getSharingLink(String linkId) {
-    return (_db.select(_db.vehicleSharingLinks)
-          ..where((t) => t.id.equals(linkId)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).getSingleOrNull();
   }
 
   /// Upserts a peer-owned vehicle snapshot received with a sharing offer.
@@ -1534,8 +1587,9 @@ class VehiclesRepository {
       if (existing.ownerContactId == kVehicleOwnerSelfContactId) {
         throw StateError('cannot overwrite locally owned vehicle $vehicleId');
       }
-      await (_db.update(_db.vehicles)..where((t) => t.id.equals(vehicleId)))
-          .write(
+      await (_db.update(
+        _db.vehicles,
+      )..where((t) => t.id.equals(vehicleId))).write(
         VehiclesCompanion(
           ownerContactId: drift.Value(ownerContactId),
           vehicleKind: drift.Value(vehicleKind),
@@ -1555,7 +1609,9 @@ class VehiclesRepository {
       );
       return;
     }
-    await _db.into(_db.vehicles).insert(
+    await _db
+        .into(_db.vehicles)
+        .insert(
           VehiclesCompanion.insert(
             id: vehicleId,
             ownerContactId: ownerContactId,
@@ -1602,9 +1658,9 @@ class VehiclesRepository {
           existing.status == VehicleSharingLinkStatus.revoked.wire) {
         return existing;
       }
-      await (_db.update(_db.vehicleSharingLinks)
-            ..where((t) => t.id.equals(linkId)))
-          .write(
+      await (_db.update(
+        _db.vehicleSharingLinks,
+      )..where((t) => t.id.equals(linkId))).write(
         VehicleSharingLinksCompanion(
           vehicleId: drift.Value(vehicleId),
           ownerContactId: drift.Value(ownerContactId),
@@ -1619,7 +1675,9 @@ class VehiclesRepository {
       );
       return (await getSharingLink(linkId))!;
     }
-    await _db.into(_db.vehicleSharingLinks).insert(
+    await _db
+        .into(_db.vehicleSharingLinks)
+        .insert(
           VehicleSharingLinksCompanion.insert(
             id: linkId,
             vehicleId: vehicleId,
@@ -1641,14 +1699,14 @@ class VehiclesRepository {
     required String ownerContactId,
     required String exceptLinkId,
   }) async {
-    final others = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) =>
-                t.ownerContactId.equals(ownerContactId) &
-                t.status.equals(VehicleSharingLinkStatus.pending.wire) &
-                t.id.equals(exceptLinkId).not(),
-          ))
-        .get();
+    final others =
+        await (_db.select(_db.vehicleSharingLinks)..where(
+              (t) =>
+                  t.ownerContactId.equals(ownerContactId) &
+                  t.status.equals(VehicleSharingLinkStatus.pending.wire) &
+                  t.id.equals(exceptLinkId).not(),
+            ))
+            .get();
     for (final row in others) {
       await revokeSharingLink(row.id);
     }
@@ -1664,9 +1722,9 @@ class VehiclesRepository {
     if (existing.status == VehicleSharingLinkStatus.active.wire) return true;
     if (existing.status != VehicleSharingLinkStatus.pending.wire) return false;
     final at = (acceptedAt ?? DateTime.now()).toUtc();
-    await (_db.update(_db.vehicleSharingLinks)
-          ..where((t) => t.id.equals(linkId)))
-        .write(
+    await (_db.update(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).write(
       VehicleSharingLinksCompanion(
         status: drift.Value(VehicleSharingLinkStatus.active.wire),
         acceptedAt: drift.Value(at),
@@ -1677,9 +1735,9 @@ class VehiclesRepository {
 
   Future<void> revokeSharingLink(String linkId) async {
     final now = DateTime.now().toUtc();
-    await (_db.update(_db.vehicleSharingLinks)
-          ..where((t) => t.id.equals(linkId)))
-        .write(
+    await (_db.update(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).write(
       VehicleSharingLinksCompanion(
         status: drift.Value(VehicleSharingLinkStatus.revoked.wire),
         revokedAt: drift.Value(now),
@@ -1718,15 +1776,15 @@ class VehiclesRepository {
     String vehicleId,
   ) async {
     await expirePendingOffersPastDeadline();
-    final rows = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) =>
-                t.vehicleId.equals(vehicleId) &
-                t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
-                (t.status.equals(VehicleSharingLinkStatus.active.wire) |
-                    t.status.equals(VehicleSharingLinkStatus.pending.wire)),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)..where(
+              (t) =>
+                  t.vehicleId.equals(vehicleId) &
+                  t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+                  (t.status.equals(VehicleSharingLinkStatus.active.wire) |
+                      t.status.equals(VehicleSharingLinkStatus.pending.wire)),
+            ))
+            .get();
     return {for (final r in rows) r.borrowerContactId};
   }
 
@@ -1734,50 +1792,52 @@ class VehiclesRepository {
     String borrowerContactId,
   ) async {
     await expirePendingOffersPastDeadline();
-    final rows = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) =>
-                t.borrowerContactId.equals(borrowerContactId) &
-                t.status.equals(VehicleSharingLinkStatus.pending.wire),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)
+              ..where(
+                (t) =>
+                    t.borrowerContactId.equals(borrowerContactId) &
+                    t.status.equals(VehicleSharingLinkStatus.pending.wire),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+            .get();
     return _linksOnExternalOwnedVehicles(rows);
   }
 
   Future<List<VehicleSharingLink>> listPendingBorrowerOffers() async {
     await expirePendingOffersPastDeadline();
-    final rows = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
-        .get();
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)
+              ..where(
+                (t) => t.status.equals(VehicleSharingLinkStatus.pending.wire),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+            .get();
     return _linksOnExternalOwnedVehicles(rows);
   }
 
   Future<List<VehicleSharingLink>> listActiveLinksAsBorrower(
     String borrowerContactId,
   ) {
-    return (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) =>
-                t.borrowerContactId.equals(borrowerContactId) &
-                t.status.equals(VehicleSharingLinkStatus.active.wire),
-          ))
+    return (_db.select(_db.vehicleSharingLinks)..where(
+          (t) =>
+              t.borrowerContactId.equals(borrowerContactId) &
+              t.status.equals(VehicleSharingLinkStatus.active.wire),
+        ))
         .get();
   }
 
   /// Active sharing links on vehicles **not** owned on this device (Emprunteur
   /// accessible vehicles — typically synced from another owner's instance).
   Future<List<({Vehicle vehicle, VehicleSharingLink link})>>
-      listBorrowerAccessibleEntries() async {
-    final rows = await (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) => t.status.equals(VehicleSharingLinkStatus.active.wire),
-          )
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
-        .get();
+  listBorrowerAccessibleEntries() async {
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)
+              ..where(
+                (t) => t.status.equals(VehicleSharingLinkStatus.active.wire),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+            .get();
     final out = <({Vehicle vehicle, VehicleSharingLink link})>[];
     for (final link in rows) {
       final v = await getVehicle(link.vehicleId);
@@ -1816,12 +1876,11 @@ class VehiclesRepository {
   }
 
   Future<List<VehicleSharingLink>> listActiveLinksAsOwner() {
-    return (_db.select(_db.vehicleSharingLinks)
-          ..where(
-            (t) =>
-                t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
-                t.status.equals(VehicleSharingLinkStatus.active.wire),
-          ))
+    return (_db.select(_db.vehicleSharingLinks)..where(
+          (t) =>
+              t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+              t.status.equals(VehicleSharingLinkStatus.active.wire),
+        ))
         .get();
   }
 
@@ -1829,4 +1888,170 @@ class VehiclesRepository {
     final kind = VehicleKind.fromWire(vehicle.vehicleKind);
     return meterUnitForKind(kind ?? VehicleKind.car);
   }
+
+  // --- Usage balance freeze / transfer ---
+
+  Future<DateTime?> latestConfirmedFreezeAt(String sharingLinkId) async {
+    final row =
+        await (_db.select(_db.vehicleUsageBalanceFreezes)
+              ..where(
+                (t) =>
+                    t.sharingLinkId.equals(sharingLinkId) &
+                    t.status.equals('confirmed'),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.confirmedAt)]))
+            .getSingleOrNull();
+    return row?.confirmedAt?.toUtc();
+  }
+
+  Future<VehicleUsageBalanceFreeze?> getUsageBalanceFreeze(String id) {
+    return (_db.select(
+      _db.vehicleUsageBalanceFreezes,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<List<VehicleUsageBalanceFreeze>> listUsageBalanceFreezesForLink(
+    String sharingLinkId,
+  ) {
+    return (_db.select(_db.vehicleUsageBalanceFreezes)
+          ..where((t) => t.sharingLinkId.equals(sharingLinkId))
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.proposedAt)]))
+        .get();
+  }
+
+  Future<VehicleUsageBalanceFreeze?> pendingUsageBalanceFreezeForLink(
+    String sharingLinkId,
+  ) {
+    return (_db.select(_db.vehicleUsageBalanceFreezes)..where(
+          (t) =>
+              t.sharingLinkId.equals(sharingLinkId) &
+              (t.status.equals('pending') |
+                  t.status.equals('acceptedAwaitingCatchUp')),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertUsageBalanceFreeze({
+    required String id,
+    required String sharingLinkId,
+    required String vehicleId,
+    required String status,
+    required String initiatedByContactId,
+    required DateTime proposedAt,
+    DateTime? confirmedAt,
+    required int balanceMinor,
+    required DateTime windowStart,
+    required DateTime windowEnd,
+    required String breakdownJson,
+    String? lastKnownPurchaseId,
+  }) {
+    return _db
+        .into(_db.vehicleUsageBalanceFreezes)
+        .insertOnConflictUpdate(
+          VehicleUsageBalanceFreezesCompanion.insert(
+            id: id,
+            sharingLinkId: sharingLinkId,
+            vehicleId: vehicleId,
+            status: status,
+            initiatedByContactId: initiatedByContactId,
+            proposedAt: proposedAt.toUtc(),
+            confirmedAt: drift.Value(confirmedAt?.toUtc()),
+            balanceMinor: balanceMinor,
+            windowStart: windowStart.toUtc(),
+            windowEnd: windowEnd.toUtc(),
+            breakdownJson: breakdownJson,
+            lastKnownPurchaseId: drift.Value(lastKnownPurchaseId),
+          ),
+        );
+  }
+
+  Future<void> updateUsageBalanceFreezeStatus({
+    required String id,
+    required String status,
+    DateTime? confirmedAt,
+  }) {
+    return (_db.update(
+      _db.vehicleUsageBalanceFreezes,
+    )..where((t) => t.id.equals(id))).write(
+      VehicleUsageBalanceFreezesCompanion(
+        status: drift.Value(status),
+        confirmedAt: confirmedAt == null
+            ? const drift.Value.absent()
+            : drift.Value(confirmedAt.toUtc()),
+      ),
+    );
+  }
+
+  Future<VehicleUsageTransfer?> getUsageTransfer(String id) {
+    return (_db.select(
+      _db.vehicleUsageTransfers,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<List<VehicleUsageTransfer>> listUsageTransfersForLink(
+    String sharingLinkId,
+  ) {
+    return (_db.select(_db.vehicleUsageTransfers)
+          ..where((t) => t.sharingLinkId.equals(sharingLinkId))
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.proposedAt)]))
+        .get();
+  }
+
+  Future<VehicleUsageTransfer?> pendingUsageTransferForLink(
+    String sharingLinkId,
+  ) {
+    return (_db.select(_db.vehicleUsageTransfers)..where(
+          (t) =>
+              t.sharingLinkId.equals(sharingLinkId) &
+              t.status.equals('pending'),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertUsageTransfer({
+    required String id,
+    required String sharingLinkId,
+    required String vehicleId,
+    required int amountMinor,
+    required String initiatedByContactId,
+    required String status,
+    required DateTime proposedAt,
+    DateTime? confirmedAt,
+  }) {
+    return _db
+        .into(_db.vehicleUsageTransfers)
+        .insertOnConflictUpdate(
+          VehicleUsageTransfersCompanion.insert(
+            id: id,
+            sharingLinkId: sharingLinkId,
+            vehicleId: vehicleId,
+            amountMinor: amountMinor,
+            initiatedByContactId: drift.Value(initiatedByContactId),
+            status: status,
+            proposedAt: proposedAt.toUtc(),
+            confirmedAt: drift.Value(confirmedAt?.toUtc()),
+          ),
+        );
+  }
+
+  Future<void> updateUsageTransferStatus({
+    required String id,
+    required String status,
+    DateTime? confirmedAt,
+  }) {
+    return (_db.update(
+      _db.vehicleUsageTransfers,
+    )..where((t) => t.id.equals(id))).write(
+      VehicleUsageTransfersCompanion(
+        status: drift.Value(status),
+        confirmedAt: confirmedAt == null
+            ? const drift.Value.absent()
+            : drift.Value(confirmedAt.toUtc()),
+      ),
+    );
+  }
+
+  String newUsageBalanceFreezeId() => _newVehicleId('ubfreeze:');
+
+  String newUsageTransferId() => _newVehicleId('ubxfer:');
 }

@@ -21212,6 +21212,1320 @@ class VehicleSharingLinksCompanion extends UpdateCompanion<VehicleSharingLink> {
   }
 }
 
+class $VehicleUsageBalanceFreezesTable extends VehicleUsageBalanceFreezes
+    with
+        TableInfo<$VehicleUsageBalanceFreezesTable, VehicleUsageBalanceFreeze> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehicleUsageBalanceFreezesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sharingLinkIdMeta = const VerificationMeta(
+    'sharingLinkId',
+  );
+  @override
+  late final GeneratedColumn<String> sharingLinkId = GeneratedColumn<String>(
+    'sharing_link_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vehicleIdMeta = const VerificationMeta(
+    'vehicleId',
+  );
+  @override
+  late final GeneratedColumn<String> vehicleId = GeneratedColumn<String>(
+    'vehicle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _initiatedByContactIdMeta =
+      const VerificationMeta('initiatedByContactId');
+  @override
+  late final GeneratedColumn<String> initiatedByContactId =
+      GeneratedColumn<String>(
+        'initiated_by_contact_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _proposedAtMeta = const VerificationMeta(
+    'proposedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> proposedAt = GeneratedColumn<DateTime>(
+    'proposed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmedAtMeta = const VerificationMeta(
+    'confirmedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAt = GeneratedColumn<DateTime>(
+    'confirmed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _balanceMinorMeta = const VerificationMeta(
+    'balanceMinor',
+  );
+  @override
+  late final GeneratedColumn<int> balanceMinor = GeneratedColumn<int>(
+    'balance_minor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _windowStartMeta = const VerificationMeta(
+    'windowStart',
+  );
+  @override
+  late final GeneratedColumn<DateTime> windowStart = GeneratedColumn<DateTime>(
+    'window_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _windowEndMeta = const VerificationMeta(
+    'windowEnd',
+  );
+  @override
+  late final GeneratedColumn<DateTime> windowEnd = GeneratedColumn<DateTime>(
+    'window_end',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _breakdownJsonMeta = const VerificationMeta(
+    'breakdownJson',
+  );
+  @override
+  late final GeneratedColumn<String> breakdownJson = GeneratedColumn<String>(
+    'breakdown_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastKnownPurchaseIdMeta =
+      const VerificationMeta('lastKnownPurchaseId');
+  @override
+  late final GeneratedColumn<String> lastKnownPurchaseId =
+      GeneratedColumn<String>(
+        'last_known_purchase_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sharingLinkId,
+    vehicleId,
+    status,
+    initiatedByContactId,
+    proposedAt,
+    confirmedAt,
+    balanceMinor,
+    windowStart,
+    windowEnd,
+    breakdownJson,
+    lastKnownPurchaseId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehicle_usage_balance_freezes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehicleUsageBalanceFreeze> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('sharing_link_id')) {
+      context.handle(
+        _sharingLinkIdMeta,
+        sharingLinkId.isAcceptableOrUnknown(
+          data['sharing_link_id']!,
+          _sharingLinkIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sharingLinkIdMeta);
+    }
+    if (data.containsKey('vehicle_id')) {
+      context.handle(
+        _vehicleIdMeta,
+        vehicleId.isAcceptableOrUnknown(data['vehicle_id']!, _vehicleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vehicleIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('initiated_by_contact_id')) {
+      context.handle(
+        _initiatedByContactIdMeta,
+        initiatedByContactId.isAcceptableOrUnknown(
+          data['initiated_by_contact_id']!,
+          _initiatedByContactIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_initiatedByContactIdMeta);
+    }
+    if (data.containsKey('proposed_at')) {
+      context.handle(
+        _proposedAtMeta,
+        proposedAt.isAcceptableOrUnknown(data['proposed_at']!, _proposedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_proposedAtMeta);
+    }
+    if (data.containsKey('confirmed_at')) {
+      context.handle(
+        _confirmedAtMeta,
+        confirmedAt.isAcceptableOrUnknown(
+          data['confirmed_at']!,
+          _confirmedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('balance_minor')) {
+      context.handle(
+        _balanceMinorMeta,
+        balanceMinor.isAcceptableOrUnknown(
+          data['balance_minor']!,
+          _balanceMinorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_balanceMinorMeta);
+    }
+    if (data.containsKey('window_start')) {
+      context.handle(
+        _windowStartMeta,
+        windowStart.isAcceptableOrUnknown(
+          data['window_start']!,
+          _windowStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_windowStartMeta);
+    }
+    if (data.containsKey('window_end')) {
+      context.handle(
+        _windowEndMeta,
+        windowEnd.isAcceptableOrUnknown(data['window_end']!, _windowEndMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_windowEndMeta);
+    }
+    if (data.containsKey('breakdown_json')) {
+      context.handle(
+        _breakdownJsonMeta,
+        breakdownJson.isAcceptableOrUnknown(
+          data['breakdown_json']!,
+          _breakdownJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_breakdownJsonMeta);
+    }
+    if (data.containsKey('last_known_purchase_id')) {
+      context.handle(
+        _lastKnownPurchaseIdMeta,
+        lastKnownPurchaseId.isAcceptableOrUnknown(
+          data['last_known_purchase_id']!,
+          _lastKnownPurchaseIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VehicleUsageBalanceFreeze map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehicleUsageBalanceFreeze(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sharingLinkId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sharing_link_id'],
+      )!,
+      vehicleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vehicle_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      initiatedByContactId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}initiated_by_contact_id'],
+      )!,
+      proposedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}proposed_at'],
+      )!,
+      confirmedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at'],
+      ),
+      balanceMinor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}balance_minor'],
+      )!,
+      windowStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}window_start'],
+      )!,
+      windowEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}window_end'],
+      )!,
+      breakdownJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}breakdown_json'],
+      )!,
+      lastKnownPurchaseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_known_purchase_id'],
+      ),
+    );
+  }
+
+  @override
+  $VehicleUsageBalanceFreezesTable createAlias(String alias) {
+    return $VehicleUsageBalanceFreezesTable(attachedDatabase, alias);
+  }
+}
+
+class VehicleUsageBalanceFreeze extends DataClass
+    implements Insertable<VehicleUsageBalanceFreeze> {
+  final String id;
+  final String sharingLinkId;
+  final String vehicleId;
+
+  /// `pending` | `acceptedAwaitingCatchUp` | `confirmed` | `rejected`
+  final String status;
+
+  /// Local contact id of who proposed (owner self / borrower self / peer).
+  final String initiatedByContactId;
+  final DateTime proposedAt;
+  final DateTime? confirmedAt;
+  final int balanceMinor;
+  final DateTime windowStart;
+  final DateTime windowEnd;
+
+  /// Full [VehicleUsageBalanceBreakdown] JSON for historical display.
+  final String breakdownJson;
+
+  /// Borrower's fuel-purchase cursor used by the owner catch-up response.
+  final String? lastKnownPurchaseId;
+  const VehicleUsageBalanceFreeze({
+    required this.id,
+    required this.sharingLinkId,
+    required this.vehicleId,
+    required this.status,
+    required this.initiatedByContactId,
+    required this.proposedAt,
+    this.confirmedAt,
+    required this.balanceMinor,
+    required this.windowStart,
+    required this.windowEnd,
+    required this.breakdownJson,
+    this.lastKnownPurchaseId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['sharing_link_id'] = Variable<String>(sharingLinkId);
+    map['vehicle_id'] = Variable<String>(vehicleId);
+    map['status'] = Variable<String>(status);
+    map['initiated_by_contact_id'] = Variable<String>(initiatedByContactId);
+    map['proposed_at'] = Variable<DateTime>(proposedAt);
+    if (!nullToAbsent || confirmedAt != null) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt);
+    }
+    map['balance_minor'] = Variable<int>(balanceMinor);
+    map['window_start'] = Variable<DateTime>(windowStart);
+    map['window_end'] = Variable<DateTime>(windowEnd);
+    map['breakdown_json'] = Variable<String>(breakdownJson);
+    if (!nullToAbsent || lastKnownPurchaseId != null) {
+      map['last_known_purchase_id'] = Variable<String>(lastKnownPurchaseId);
+    }
+    return map;
+  }
+
+  VehicleUsageBalanceFreezesCompanion toCompanion(bool nullToAbsent) {
+    return VehicleUsageBalanceFreezesCompanion(
+      id: Value(id),
+      sharingLinkId: Value(sharingLinkId),
+      vehicleId: Value(vehicleId),
+      status: Value(status),
+      initiatedByContactId: Value(initiatedByContactId),
+      proposedAt: Value(proposedAt),
+      confirmedAt: confirmedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAt),
+      balanceMinor: Value(balanceMinor),
+      windowStart: Value(windowStart),
+      windowEnd: Value(windowEnd),
+      breakdownJson: Value(breakdownJson),
+      lastKnownPurchaseId: lastKnownPurchaseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastKnownPurchaseId),
+    );
+  }
+
+  factory VehicleUsageBalanceFreeze.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehicleUsageBalanceFreeze(
+      id: serializer.fromJson<String>(json['id']),
+      sharingLinkId: serializer.fromJson<String>(json['sharingLinkId']),
+      vehicleId: serializer.fromJson<String>(json['vehicleId']),
+      status: serializer.fromJson<String>(json['status']),
+      initiatedByContactId: serializer.fromJson<String>(
+        json['initiatedByContactId'],
+      ),
+      proposedAt: serializer.fromJson<DateTime>(json['proposedAt']),
+      confirmedAt: serializer.fromJson<DateTime?>(json['confirmedAt']),
+      balanceMinor: serializer.fromJson<int>(json['balanceMinor']),
+      windowStart: serializer.fromJson<DateTime>(json['windowStart']),
+      windowEnd: serializer.fromJson<DateTime>(json['windowEnd']),
+      breakdownJson: serializer.fromJson<String>(json['breakdownJson']),
+      lastKnownPurchaseId: serializer.fromJson<String?>(
+        json['lastKnownPurchaseId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sharingLinkId': serializer.toJson<String>(sharingLinkId),
+      'vehicleId': serializer.toJson<String>(vehicleId),
+      'status': serializer.toJson<String>(status),
+      'initiatedByContactId': serializer.toJson<String>(initiatedByContactId),
+      'proposedAt': serializer.toJson<DateTime>(proposedAt),
+      'confirmedAt': serializer.toJson<DateTime?>(confirmedAt),
+      'balanceMinor': serializer.toJson<int>(balanceMinor),
+      'windowStart': serializer.toJson<DateTime>(windowStart),
+      'windowEnd': serializer.toJson<DateTime>(windowEnd),
+      'breakdownJson': serializer.toJson<String>(breakdownJson),
+      'lastKnownPurchaseId': serializer.toJson<String?>(lastKnownPurchaseId),
+    };
+  }
+
+  VehicleUsageBalanceFreeze copyWith({
+    String? id,
+    String? sharingLinkId,
+    String? vehicleId,
+    String? status,
+    String? initiatedByContactId,
+    DateTime? proposedAt,
+    Value<DateTime?> confirmedAt = const Value.absent(),
+    int? balanceMinor,
+    DateTime? windowStart,
+    DateTime? windowEnd,
+    String? breakdownJson,
+    Value<String?> lastKnownPurchaseId = const Value.absent(),
+  }) => VehicleUsageBalanceFreeze(
+    id: id ?? this.id,
+    sharingLinkId: sharingLinkId ?? this.sharingLinkId,
+    vehicleId: vehicleId ?? this.vehicleId,
+    status: status ?? this.status,
+    initiatedByContactId: initiatedByContactId ?? this.initiatedByContactId,
+    proposedAt: proposedAt ?? this.proposedAt,
+    confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
+    balanceMinor: balanceMinor ?? this.balanceMinor,
+    windowStart: windowStart ?? this.windowStart,
+    windowEnd: windowEnd ?? this.windowEnd,
+    breakdownJson: breakdownJson ?? this.breakdownJson,
+    lastKnownPurchaseId: lastKnownPurchaseId.present
+        ? lastKnownPurchaseId.value
+        : this.lastKnownPurchaseId,
+  );
+  VehicleUsageBalanceFreeze copyWithCompanion(
+    VehicleUsageBalanceFreezesCompanion data,
+  ) {
+    return VehicleUsageBalanceFreeze(
+      id: data.id.present ? data.id.value : this.id,
+      sharingLinkId: data.sharingLinkId.present
+          ? data.sharingLinkId.value
+          : this.sharingLinkId,
+      vehicleId: data.vehicleId.present ? data.vehicleId.value : this.vehicleId,
+      status: data.status.present ? data.status.value : this.status,
+      initiatedByContactId: data.initiatedByContactId.present
+          ? data.initiatedByContactId.value
+          : this.initiatedByContactId,
+      proposedAt: data.proposedAt.present
+          ? data.proposedAt.value
+          : this.proposedAt,
+      confirmedAt: data.confirmedAt.present
+          ? data.confirmedAt.value
+          : this.confirmedAt,
+      balanceMinor: data.balanceMinor.present
+          ? data.balanceMinor.value
+          : this.balanceMinor,
+      windowStart: data.windowStart.present
+          ? data.windowStart.value
+          : this.windowStart,
+      windowEnd: data.windowEnd.present ? data.windowEnd.value : this.windowEnd,
+      breakdownJson: data.breakdownJson.present
+          ? data.breakdownJson.value
+          : this.breakdownJson,
+      lastKnownPurchaseId: data.lastKnownPurchaseId.present
+          ? data.lastKnownPurchaseId.value
+          : this.lastKnownPurchaseId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehicleUsageBalanceFreeze(')
+          ..write('id: $id, ')
+          ..write('sharingLinkId: $sharingLinkId, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('status: $status, ')
+          ..write('initiatedByContactId: $initiatedByContactId, ')
+          ..write('proposedAt: $proposedAt, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('balanceMinor: $balanceMinor, ')
+          ..write('windowStart: $windowStart, ')
+          ..write('windowEnd: $windowEnd, ')
+          ..write('breakdownJson: $breakdownJson, ')
+          ..write('lastKnownPurchaseId: $lastKnownPurchaseId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sharingLinkId,
+    vehicleId,
+    status,
+    initiatedByContactId,
+    proposedAt,
+    confirmedAt,
+    balanceMinor,
+    windowStart,
+    windowEnd,
+    breakdownJson,
+    lastKnownPurchaseId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehicleUsageBalanceFreeze &&
+          other.id == this.id &&
+          other.sharingLinkId == this.sharingLinkId &&
+          other.vehicleId == this.vehicleId &&
+          other.status == this.status &&
+          other.initiatedByContactId == this.initiatedByContactId &&
+          other.proposedAt == this.proposedAt &&
+          other.confirmedAt == this.confirmedAt &&
+          other.balanceMinor == this.balanceMinor &&
+          other.windowStart == this.windowStart &&
+          other.windowEnd == this.windowEnd &&
+          other.breakdownJson == this.breakdownJson &&
+          other.lastKnownPurchaseId == this.lastKnownPurchaseId);
+}
+
+class VehicleUsageBalanceFreezesCompanion
+    extends UpdateCompanion<VehicleUsageBalanceFreeze> {
+  final Value<String> id;
+  final Value<String> sharingLinkId;
+  final Value<String> vehicleId;
+  final Value<String> status;
+  final Value<String> initiatedByContactId;
+  final Value<DateTime> proposedAt;
+  final Value<DateTime?> confirmedAt;
+  final Value<int> balanceMinor;
+  final Value<DateTime> windowStart;
+  final Value<DateTime> windowEnd;
+  final Value<String> breakdownJson;
+  final Value<String?> lastKnownPurchaseId;
+  final Value<int> rowid;
+  const VehicleUsageBalanceFreezesCompanion({
+    this.id = const Value.absent(),
+    this.sharingLinkId = const Value.absent(),
+    this.vehicleId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.initiatedByContactId = const Value.absent(),
+    this.proposedAt = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.balanceMinor = const Value.absent(),
+    this.windowStart = const Value.absent(),
+    this.windowEnd = const Value.absent(),
+    this.breakdownJson = const Value.absent(),
+    this.lastKnownPurchaseId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehicleUsageBalanceFreezesCompanion.insert({
+    required String id,
+    required String sharingLinkId,
+    required String vehicleId,
+    required String status,
+    required String initiatedByContactId,
+    required DateTime proposedAt,
+    this.confirmedAt = const Value.absent(),
+    required int balanceMinor,
+    required DateTime windowStart,
+    required DateTime windowEnd,
+    required String breakdownJson,
+    this.lastKnownPurchaseId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sharingLinkId = Value(sharingLinkId),
+       vehicleId = Value(vehicleId),
+       status = Value(status),
+       initiatedByContactId = Value(initiatedByContactId),
+       proposedAt = Value(proposedAt),
+       balanceMinor = Value(balanceMinor),
+       windowStart = Value(windowStart),
+       windowEnd = Value(windowEnd),
+       breakdownJson = Value(breakdownJson);
+  static Insertable<VehicleUsageBalanceFreeze> custom({
+    Expression<String>? id,
+    Expression<String>? sharingLinkId,
+    Expression<String>? vehicleId,
+    Expression<String>? status,
+    Expression<String>? initiatedByContactId,
+    Expression<DateTime>? proposedAt,
+    Expression<DateTime>? confirmedAt,
+    Expression<int>? balanceMinor,
+    Expression<DateTime>? windowStart,
+    Expression<DateTime>? windowEnd,
+    Expression<String>? breakdownJson,
+    Expression<String>? lastKnownPurchaseId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sharingLinkId != null) 'sharing_link_id': sharingLinkId,
+      if (vehicleId != null) 'vehicle_id': vehicleId,
+      if (status != null) 'status': status,
+      if (initiatedByContactId != null)
+        'initiated_by_contact_id': initiatedByContactId,
+      if (proposedAt != null) 'proposed_at': proposedAt,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (balanceMinor != null) 'balance_minor': balanceMinor,
+      if (windowStart != null) 'window_start': windowStart,
+      if (windowEnd != null) 'window_end': windowEnd,
+      if (breakdownJson != null) 'breakdown_json': breakdownJson,
+      if (lastKnownPurchaseId != null)
+        'last_known_purchase_id': lastKnownPurchaseId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehicleUsageBalanceFreezesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sharingLinkId,
+    Value<String>? vehicleId,
+    Value<String>? status,
+    Value<String>? initiatedByContactId,
+    Value<DateTime>? proposedAt,
+    Value<DateTime?>? confirmedAt,
+    Value<int>? balanceMinor,
+    Value<DateTime>? windowStart,
+    Value<DateTime>? windowEnd,
+    Value<String>? breakdownJson,
+    Value<String?>? lastKnownPurchaseId,
+    Value<int>? rowid,
+  }) {
+    return VehicleUsageBalanceFreezesCompanion(
+      id: id ?? this.id,
+      sharingLinkId: sharingLinkId ?? this.sharingLinkId,
+      vehicleId: vehicleId ?? this.vehicleId,
+      status: status ?? this.status,
+      initiatedByContactId: initiatedByContactId ?? this.initiatedByContactId,
+      proposedAt: proposedAt ?? this.proposedAt,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      balanceMinor: balanceMinor ?? this.balanceMinor,
+      windowStart: windowStart ?? this.windowStart,
+      windowEnd: windowEnd ?? this.windowEnd,
+      breakdownJson: breakdownJson ?? this.breakdownJson,
+      lastKnownPurchaseId: lastKnownPurchaseId ?? this.lastKnownPurchaseId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sharingLinkId.present) {
+      map['sharing_link_id'] = Variable<String>(sharingLinkId.value);
+    }
+    if (vehicleId.present) {
+      map['vehicle_id'] = Variable<String>(vehicleId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (initiatedByContactId.present) {
+      map['initiated_by_contact_id'] = Variable<String>(
+        initiatedByContactId.value,
+      );
+    }
+    if (proposedAt.present) {
+      map['proposed_at'] = Variable<DateTime>(proposedAt.value);
+    }
+    if (confirmedAt.present) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
+    }
+    if (balanceMinor.present) {
+      map['balance_minor'] = Variable<int>(balanceMinor.value);
+    }
+    if (windowStart.present) {
+      map['window_start'] = Variable<DateTime>(windowStart.value);
+    }
+    if (windowEnd.present) {
+      map['window_end'] = Variable<DateTime>(windowEnd.value);
+    }
+    if (breakdownJson.present) {
+      map['breakdown_json'] = Variable<String>(breakdownJson.value);
+    }
+    if (lastKnownPurchaseId.present) {
+      map['last_known_purchase_id'] = Variable<String>(
+        lastKnownPurchaseId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehicleUsageBalanceFreezesCompanion(')
+          ..write('id: $id, ')
+          ..write('sharingLinkId: $sharingLinkId, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('status: $status, ')
+          ..write('initiatedByContactId: $initiatedByContactId, ')
+          ..write('proposedAt: $proposedAt, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('balanceMinor: $balanceMinor, ')
+          ..write('windowStart: $windowStart, ')
+          ..write('windowEnd: $windowEnd, ')
+          ..write('breakdownJson: $breakdownJson, ')
+          ..write('lastKnownPurchaseId: $lastKnownPurchaseId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VehicleUsageTransfersTable extends VehicleUsageTransfers
+    with TableInfo<$VehicleUsageTransfersTable, VehicleUsageTransfer> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VehicleUsageTransfersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sharingLinkIdMeta = const VerificationMeta(
+    'sharingLinkId',
+  );
+  @override
+  late final GeneratedColumn<String> sharingLinkId = GeneratedColumn<String>(
+    'sharing_link_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vehicleIdMeta = const VerificationMeta(
+    'vehicleId',
+  );
+  @override
+  late final GeneratedColumn<String> vehicleId = GeneratedColumn<String>(
+    'vehicle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMinorMeta = const VerificationMeta(
+    'amountMinor',
+  );
+  @override
+  late final GeneratedColumn<int> amountMinor = GeneratedColumn<int>(
+    'amount_minor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _initiatedByContactIdMeta =
+      const VerificationMeta('initiatedByContactId');
+  @override
+  late final GeneratedColumn<String> initiatedByContactId =
+      GeneratedColumn<String>(
+        'initiated_by_contact_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _proposedAtMeta = const VerificationMeta(
+    'proposedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> proposedAt = GeneratedColumn<DateTime>(
+    'proposed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmedAtMeta = const VerificationMeta(
+    'confirmedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAt = GeneratedColumn<DateTime>(
+    'confirmed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sharingLinkId,
+    vehicleId,
+    amountMinor,
+    initiatedByContactId,
+    status,
+    proposedAt,
+    confirmedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vehicle_usage_transfers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VehicleUsageTransfer> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('sharing_link_id')) {
+      context.handle(
+        _sharingLinkIdMeta,
+        sharingLinkId.isAcceptableOrUnknown(
+          data['sharing_link_id']!,
+          _sharingLinkIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sharingLinkIdMeta);
+    }
+    if (data.containsKey('vehicle_id')) {
+      context.handle(
+        _vehicleIdMeta,
+        vehicleId.isAcceptableOrUnknown(data['vehicle_id']!, _vehicleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vehicleIdMeta);
+    }
+    if (data.containsKey('amount_minor')) {
+      context.handle(
+        _amountMinorMeta,
+        amountMinor.isAcceptableOrUnknown(
+          data['amount_minor']!,
+          _amountMinorMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMinorMeta);
+    }
+    if (data.containsKey('initiated_by_contact_id')) {
+      context.handle(
+        _initiatedByContactIdMeta,
+        initiatedByContactId.isAcceptableOrUnknown(
+          data['initiated_by_contact_id']!,
+          _initiatedByContactIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('proposed_at')) {
+      context.handle(
+        _proposedAtMeta,
+        proposedAt.isAcceptableOrUnknown(data['proposed_at']!, _proposedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_proposedAtMeta);
+    }
+    if (data.containsKey('confirmed_at')) {
+      context.handle(
+        _confirmedAtMeta,
+        confirmedAt.isAcceptableOrUnknown(
+          data['confirmed_at']!,
+          _confirmedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VehicleUsageTransfer map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VehicleUsageTransfer(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sharingLinkId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sharing_link_id'],
+      )!,
+      vehicleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vehicle_id'],
+      )!,
+      amountMinor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount_minor'],
+      )!,
+      initiatedByContactId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}initiated_by_contact_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      proposedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}proposed_at'],
+      )!,
+      confirmedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at'],
+      ),
+    );
+  }
+
+  @override
+  $VehicleUsageTransfersTable createAlias(String alias) {
+    return $VehicleUsageTransfersTable(attachedDatabase, alias);
+  }
+}
+
+class VehicleUsageTransfer extends DataClass
+    implements Insertable<VehicleUsageTransfer> {
+  final String id;
+  final String sharingLinkId;
+  final String vehicleId;
+
+  /// Absolute amount (always ≥ 0). Direction is [initiatedByContactId]:
+  /// borrower-initiated → paid to owner; owner-initiated → paid to borrower.
+  final int amountMinor;
+
+  /// Local contact id of who proposed (owner self / borrower self / peer).
+  final String initiatedByContactId;
+
+  /// `pending` | `confirmed` | `rejected`
+  final String status;
+  final DateTime proposedAt;
+  final DateTime? confirmedAt;
+  const VehicleUsageTransfer({
+    required this.id,
+    required this.sharingLinkId,
+    required this.vehicleId,
+    required this.amountMinor,
+    required this.initiatedByContactId,
+    required this.status,
+    required this.proposedAt,
+    this.confirmedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['sharing_link_id'] = Variable<String>(sharingLinkId);
+    map['vehicle_id'] = Variable<String>(vehicleId);
+    map['amount_minor'] = Variable<int>(amountMinor);
+    map['initiated_by_contact_id'] = Variable<String>(initiatedByContactId);
+    map['status'] = Variable<String>(status);
+    map['proposed_at'] = Variable<DateTime>(proposedAt);
+    if (!nullToAbsent || confirmedAt != null) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt);
+    }
+    return map;
+  }
+
+  VehicleUsageTransfersCompanion toCompanion(bool nullToAbsent) {
+    return VehicleUsageTransfersCompanion(
+      id: Value(id),
+      sharingLinkId: Value(sharingLinkId),
+      vehicleId: Value(vehicleId),
+      amountMinor: Value(amountMinor),
+      initiatedByContactId: Value(initiatedByContactId),
+      status: Value(status),
+      proposedAt: Value(proposedAt),
+      confirmedAt: confirmedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAt),
+    );
+  }
+
+  factory VehicleUsageTransfer.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VehicleUsageTransfer(
+      id: serializer.fromJson<String>(json['id']),
+      sharingLinkId: serializer.fromJson<String>(json['sharingLinkId']),
+      vehicleId: serializer.fromJson<String>(json['vehicleId']),
+      amountMinor: serializer.fromJson<int>(json['amountMinor']),
+      initiatedByContactId: serializer.fromJson<String>(
+        json['initiatedByContactId'],
+      ),
+      status: serializer.fromJson<String>(json['status']),
+      proposedAt: serializer.fromJson<DateTime>(json['proposedAt']),
+      confirmedAt: serializer.fromJson<DateTime?>(json['confirmedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sharingLinkId': serializer.toJson<String>(sharingLinkId),
+      'vehicleId': serializer.toJson<String>(vehicleId),
+      'amountMinor': serializer.toJson<int>(amountMinor),
+      'initiatedByContactId': serializer.toJson<String>(initiatedByContactId),
+      'status': serializer.toJson<String>(status),
+      'proposedAt': serializer.toJson<DateTime>(proposedAt),
+      'confirmedAt': serializer.toJson<DateTime?>(confirmedAt),
+    };
+  }
+
+  VehicleUsageTransfer copyWith({
+    String? id,
+    String? sharingLinkId,
+    String? vehicleId,
+    int? amountMinor,
+    String? initiatedByContactId,
+    String? status,
+    DateTime? proposedAt,
+    Value<DateTime?> confirmedAt = const Value.absent(),
+  }) => VehicleUsageTransfer(
+    id: id ?? this.id,
+    sharingLinkId: sharingLinkId ?? this.sharingLinkId,
+    vehicleId: vehicleId ?? this.vehicleId,
+    amountMinor: amountMinor ?? this.amountMinor,
+    initiatedByContactId: initiatedByContactId ?? this.initiatedByContactId,
+    status: status ?? this.status,
+    proposedAt: proposedAt ?? this.proposedAt,
+    confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
+  );
+  VehicleUsageTransfer copyWithCompanion(VehicleUsageTransfersCompanion data) {
+    return VehicleUsageTransfer(
+      id: data.id.present ? data.id.value : this.id,
+      sharingLinkId: data.sharingLinkId.present
+          ? data.sharingLinkId.value
+          : this.sharingLinkId,
+      vehicleId: data.vehicleId.present ? data.vehicleId.value : this.vehicleId,
+      amountMinor: data.amountMinor.present
+          ? data.amountMinor.value
+          : this.amountMinor,
+      initiatedByContactId: data.initiatedByContactId.present
+          ? data.initiatedByContactId.value
+          : this.initiatedByContactId,
+      status: data.status.present ? data.status.value : this.status,
+      proposedAt: data.proposedAt.present
+          ? data.proposedAt.value
+          : this.proposedAt,
+      confirmedAt: data.confirmedAt.present
+          ? data.confirmedAt.value
+          : this.confirmedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehicleUsageTransfer(')
+          ..write('id: $id, ')
+          ..write('sharingLinkId: $sharingLinkId, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('amountMinor: $amountMinor, ')
+          ..write('initiatedByContactId: $initiatedByContactId, ')
+          ..write('status: $status, ')
+          ..write('proposedAt: $proposedAt, ')
+          ..write('confirmedAt: $confirmedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sharingLinkId,
+    vehicleId,
+    amountMinor,
+    initiatedByContactId,
+    status,
+    proposedAt,
+    confirmedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VehicleUsageTransfer &&
+          other.id == this.id &&
+          other.sharingLinkId == this.sharingLinkId &&
+          other.vehicleId == this.vehicleId &&
+          other.amountMinor == this.amountMinor &&
+          other.initiatedByContactId == this.initiatedByContactId &&
+          other.status == this.status &&
+          other.proposedAt == this.proposedAt &&
+          other.confirmedAt == this.confirmedAt);
+}
+
+class VehicleUsageTransfersCompanion
+    extends UpdateCompanion<VehicleUsageTransfer> {
+  final Value<String> id;
+  final Value<String> sharingLinkId;
+  final Value<String> vehicleId;
+  final Value<int> amountMinor;
+  final Value<String> initiatedByContactId;
+  final Value<String> status;
+  final Value<DateTime> proposedAt;
+  final Value<DateTime?> confirmedAt;
+  final Value<int> rowid;
+  const VehicleUsageTransfersCompanion({
+    this.id = const Value.absent(),
+    this.sharingLinkId = const Value.absent(),
+    this.vehicleId = const Value.absent(),
+    this.amountMinor = const Value.absent(),
+    this.initiatedByContactId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.proposedAt = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VehicleUsageTransfersCompanion.insert({
+    required String id,
+    required String sharingLinkId,
+    required String vehicleId,
+    required int amountMinor,
+    this.initiatedByContactId = const Value.absent(),
+    required String status,
+    required DateTime proposedAt,
+    this.confirmedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sharingLinkId = Value(sharingLinkId),
+       vehicleId = Value(vehicleId),
+       amountMinor = Value(amountMinor),
+       status = Value(status),
+       proposedAt = Value(proposedAt);
+  static Insertable<VehicleUsageTransfer> custom({
+    Expression<String>? id,
+    Expression<String>? sharingLinkId,
+    Expression<String>? vehicleId,
+    Expression<int>? amountMinor,
+    Expression<String>? initiatedByContactId,
+    Expression<String>? status,
+    Expression<DateTime>? proposedAt,
+    Expression<DateTime>? confirmedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sharingLinkId != null) 'sharing_link_id': sharingLinkId,
+      if (vehicleId != null) 'vehicle_id': vehicleId,
+      if (amountMinor != null) 'amount_minor': amountMinor,
+      if (initiatedByContactId != null)
+        'initiated_by_contact_id': initiatedByContactId,
+      if (status != null) 'status': status,
+      if (proposedAt != null) 'proposed_at': proposedAt,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VehicleUsageTransfersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sharingLinkId,
+    Value<String>? vehicleId,
+    Value<int>? amountMinor,
+    Value<String>? initiatedByContactId,
+    Value<String>? status,
+    Value<DateTime>? proposedAt,
+    Value<DateTime?>? confirmedAt,
+    Value<int>? rowid,
+  }) {
+    return VehicleUsageTransfersCompanion(
+      id: id ?? this.id,
+      sharingLinkId: sharingLinkId ?? this.sharingLinkId,
+      vehicleId: vehicleId ?? this.vehicleId,
+      amountMinor: amountMinor ?? this.amountMinor,
+      initiatedByContactId: initiatedByContactId ?? this.initiatedByContactId,
+      status: status ?? this.status,
+      proposedAt: proposedAt ?? this.proposedAt,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sharingLinkId.present) {
+      map['sharing_link_id'] = Variable<String>(sharingLinkId.value);
+    }
+    if (vehicleId.present) {
+      map['vehicle_id'] = Variable<String>(vehicleId.value);
+    }
+    if (amountMinor.present) {
+      map['amount_minor'] = Variable<int>(amountMinor.value);
+    }
+    if (initiatedByContactId.present) {
+      map['initiated_by_contact_id'] = Variable<String>(
+        initiatedByContactId.value,
+      );
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (proposedAt.present) {
+      map['proposed_at'] = Variable<DateTime>(proposedAt.value);
+    }
+    if (confirmedAt.present) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VehicleUsageTransfersCompanion(')
+          ..write('id: $id, ')
+          ..write('sharingLinkId: $sharingLinkId, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('amountMinor: $amountMinor, ')
+          ..write('initiatedByContactId: $initiatedByContactId, ')
+          ..write('status: $status, ')
+          ..write('proposedAt: $proposedAt, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $VehiclePhotoGalleriesTable extends VehiclePhotoGalleries
     with TableInfo<$VehiclePhotoGalleriesTable, VehiclePhotoGallery> {
   @override
@@ -22080,6 +23394,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TrafficViolationsTable(this);
   late final $VehicleSharingLinksTable vehicleSharingLinks =
       $VehicleSharingLinksTable(this);
+  late final $VehicleUsageBalanceFreezesTable vehicleUsageBalanceFreezes =
+      $VehicleUsageBalanceFreezesTable(this);
+  late final $VehicleUsageTransfersTable vehicleUsageTransfers =
+      $VehicleUsageTransfersTable(this);
   late final $VehiclePhotoGalleriesTable vehiclePhotoGalleries =
       $VehiclePhotoGalleriesTable(this);
   late final $VehicleGalleryPhotosTable vehicleGalleryPhotos =
@@ -22123,6 +23441,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     vehicleMaintenanceRules,
     trafficViolations,
     vehicleSharingLinks,
+    vehicleUsageBalanceFreezes,
+    vehicleUsageTransfers,
     vehiclePhotoGalleries,
     vehicleGalleryPhotos,
   ];
@@ -32494,6 +33814,660 @@ typedef $$VehicleSharingLinksTableProcessedTableManager =
       VehicleSharingLink,
       PrefetchHooks Function()
     >;
+typedef $$VehicleUsageBalanceFreezesTableCreateCompanionBuilder =
+    VehicleUsageBalanceFreezesCompanion Function({
+      required String id,
+      required String sharingLinkId,
+      required String vehicleId,
+      required String status,
+      required String initiatedByContactId,
+      required DateTime proposedAt,
+      Value<DateTime?> confirmedAt,
+      required int balanceMinor,
+      required DateTime windowStart,
+      required DateTime windowEnd,
+      required String breakdownJson,
+      Value<String?> lastKnownPurchaseId,
+      Value<int> rowid,
+    });
+typedef $$VehicleUsageBalanceFreezesTableUpdateCompanionBuilder =
+    VehicleUsageBalanceFreezesCompanion Function({
+      Value<String> id,
+      Value<String> sharingLinkId,
+      Value<String> vehicleId,
+      Value<String> status,
+      Value<String> initiatedByContactId,
+      Value<DateTime> proposedAt,
+      Value<DateTime?> confirmedAt,
+      Value<int> balanceMinor,
+      Value<DateTime> windowStart,
+      Value<DateTime> windowEnd,
+      Value<String> breakdownJson,
+      Value<String?> lastKnownPurchaseId,
+      Value<int> rowid,
+    });
+
+class $$VehicleUsageBalanceFreezesTableFilterComposer
+    extends Composer<_$AppDatabase, $VehicleUsageBalanceFreezesTable> {
+  $$VehicleUsageBalanceFreezesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vehicleId => $composableBuilder(
+    column: $table.vehicleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get balanceMinor => $composableBuilder(
+    column: $table.balanceMinor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get windowStart => $composableBuilder(
+    column: $table.windowStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get windowEnd => $composableBuilder(
+    column: $table.windowEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get breakdownJson => $composableBuilder(
+    column: $table.breakdownJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastKnownPurchaseId => $composableBuilder(
+    column: $table.lastKnownPurchaseId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VehicleUsageBalanceFreezesTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehicleUsageBalanceFreezesTable> {
+  $$VehicleUsageBalanceFreezesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vehicleId => $composableBuilder(
+    column: $table.vehicleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get balanceMinor => $composableBuilder(
+    column: $table.balanceMinor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get windowStart => $composableBuilder(
+    column: $table.windowStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get windowEnd => $composableBuilder(
+    column: $table.windowEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get breakdownJson => $composableBuilder(
+    column: $table.breakdownJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastKnownPurchaseId => $composableBuilder(
+    column: $table.lastKnownPurchaseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VehicleUsageBalanceFreezesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehicleUsageBalanceFreezesTable> {
+  $$VehicleUsageBalanceFreezesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get vehicleId =>
+      $composableBuilder(column: $table.vehicleId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get balanceMinor => $composableBuilder(
+    column: $table.balanceMinor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get windowStart => $composableBuilder(
+    column: $table.windowStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get windowEnd =>
+      $composableBuilder(column: $table.windowEnd, builder: (column) => column);
+
+  GeneratedColumn<String> get breakdownJson => $composableBuilder(
+    column: $table.breakdownJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastKnownPurchaseId => $composableBuilder(
+    column: $table.lastKnownPurchaseId,
+    builder: (column) => column,
+  );
+}
+
+class $$VehicleUsageBalanceFreezesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehicleUsageBalanceFreezesTable,
+          VehicleUsageBalanceFreeze,
+          $$VehicleUsageBalanceFreezesTableFilterComposer,
+          $$VehicleUsageBalanceFreezesTableOrderingComposer,
+          $$VehicleUsageBalanceFreezesTableAnnotationComposer,
+          $$VehicleUsageBalanceFreezesTableCreateCompanionBuilder,
+          $$VehicleUsageBalanceFreezesTableUpdateCompanionBuilder,
+          (
+            VehicleUsageBalanceFreeze,
+            BaseReferences<
+              _$AppDatabase,
+              $VehicleUsageBalanceFreezesTable,
+              VehicleUsageBalanceFreeze
+            >,
+          ),
+          VehicleUsageBalanceFreeze,
+          PrefetchHooks Function()
+        > {
+  $$VehicleUsageBalanceFreezesTableTableManager(
+    _$AppDatabase db,
+    $VehicleUsageBalanceFreezesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VehicleUsageBalanceFreezesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$VehicleUsageBalanceFreezesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$VehicleUsageBalanceFreezesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sharingLinkId = const Value.absent(),
+                Value<String> vehicleId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> initiatedByContactId = const Value.absent(),
+                Value<DateTime> proposedAt = const Value.absent(),
+                Value<DateTime?> confirmedAt = const Value.absent(),
+                Value<int> balanceMinor = const Value.absent(),
+                Value<DateTime> windowStart = const Value.absent(),
+                Value<DateTime> windowEnd = const Value.absent(),
+                Value<String> breakdownJson = const Value.absent(),
+                Value<String?> lastKnownPurchaseId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehicleUsageBalanceFreezesCompanion(
+                id: id,
+                sharingLinkId: sharingLinkId,
+                vehicleId: vehicleId,
+                status: status,
+                initiatedByContactId: initiatedByContactId,
+                proposedAt: proposedAt,
+                confirmedAt: confirmedAt,
+                balanceMinor: balanceMinor,
+                windowStart: windowStart,
+                windowEnd: windowEnd,
+                breakdownJson: breakdownJson,
+                lastKnownPurchaseId: lastKnownPurchaseId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sharingLinkId,
+                required String vehicleId,
+                required String status,
+                required String initiatedByContactId,
+                required DateTime proposedAt,
+                Value<DateTime?> confirmedAt = const Value.absent(),
+                required int balanceMinor,
+                required DateTime windowStart,
+                required DateTime windowEnd,
+                required String breakdownJson,
+                Value<String?> lastKnownPurchaseId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehicleUsageBalanceFreezesCompanion.insert(
+                id: id,
+                sharingLinkId: sharingLinkId,
+                vehicleId: vehicleId,
+                status: status,
+                initiatedByContactId: initiatedByContactId,
+                proposedAt: proposedAt,
+                confirmedAt: confirmedAt,
+                balanceMinor: balanceMinor,
+                windowStart: windowStart,
+                windowEnd: windowEnd,
+                breakdownJson: breakdownJson,
+                lastKnownPurchaseId: lastKnownPurchaseId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VehicleUsageBalanceFreezesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehicleUsageBalanceFreezesTable,
+      VehicleUsageBalanceFreeze,
+      $$VehicleUsageBalanceFreezesTableFilterComposer,
+      $$VehicleUsageBalanceFreezesTableOrderingComposer,
+      $$VehicleUsageBalanceFreezesTableAnnotationComposer,
+      $$VehicleUsageBalanceFreezesTableCreateCompanionBuilder,
+      $$VehicleUsageBalanceFreezesTableUpdateCompanionBuilder,
+      (
+        VehicleUsageBalanceFreeze,
+        BaseReferences<
+          _$AppDatabase,
+          $VehicleUsageBalanceFreezesTable,
+          VehicleUsageBalanceFreeze
+        >,
+      ),
+      VehicleUsageBalanceFreeze,
+      PrefetchHooks Function()
+    >;
+typedef $$VehicleUsageTransfersTableCreateCompanionBuilder =
+    VehicleUsageTransfersCompanion Function({
+      required String id,
+      required String sharingLinkId,
+      required String vehicleId,
+      required int amountMinor,
+      Value<String> initiatedByContactId,
+      required String status,
+      required DateTime proposedAt,
+      Value<DateTime?> confirmedAt,
+      Value<int> rowid,
+    });
+typedef $$VehicleUsageTransfersTableUpdateCompanionBuilder =
+    VehicleUsageTransfersCompanion Function({
+      Value<String> id,
+      Value<String> sharingLinkId,
+      Value<String> vehicleId,
+      Value<int> amountMinor,
+      Value<String> initiatedByContactId,
+      Value<String> status,
+      Value<DateTime> proposedAt,
+      Value<DateTime?> confirmedAt,
+      Value<int> rowid,
+    });
+
+class $$VehicleUsageTransfersTableFilterComposer
+    extends Composer<_$AppDatabase, $VehicleUsageTransfersTable> {
+  $$VehicleUsageTransfersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vehicleId => $composableBuilder(
+    column: $table.vehicleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amountMinor => $composableBuilder(
+    column: $table.amountMinor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VehicleUsageTransfersTableOrderingComposer
+    extends Composer<_$AppDatabase, $VehicleUsageTransfersTable> {
+  $$VehicleUsageTransfersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vehicleId => $composableBuilder(
+    column: $table.vehicleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amountMinor => $composableBuilder(
+    column: $table.amountMinor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VehicleUsageTransfersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VehicleUsageTransfersTable> {
+  $$VehicleUsageTransfersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sharingLinkId => $composableBuilder(
+    column: $table.sharingLinkId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get vehicleId =>
+      $composableBuilder(column: $table.vehicleId, builder: (column) => column);
+
+  GeneratedColumn<int> get amountMinor => $composableBuilder(
+    column: $table.amountMinor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get initiatedByContactId => $composableBuilder(
+    column: $table.initiatedByContactId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get proposedAt => $composableBuilder(
+    column: $table.proposedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$VehicleUsageTransfersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VehicleUsageTransfersTable,
+          VehicleUsageTransfer,
+          $$VehicleUsageTransfersTableFilterComposer,
+          $$VehicleUsageTransfersTableOrderingComposer,
+          $$VehicleUsageTransfersTableAnnotationComposer,
+          $$VehicleUsageTransfersTableCreateCompanionBuilder,
+          $$VehicleUsageTransfersTableUpdateCompanionBuilder,
+          (
+            VehicleUsageTransfer,
+            BaseReferences<
+              _$AppDatabase,
+              $VehicleUsageTransfersTable,
+              VehicleUsageTransfer
+            >,
+          ),
+          VehicleUsageTransfer,
+          PrefetchHooks Function()
+        > {
+  $$VehicleUsageTransfersTableTableManager(
+    _$AppDatabase db,
+    $VehicleUsageTransfersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VehicleUsageTransfersTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$VehicleUsageTransfersTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$VehicleUsageTransfersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sharingLinkId = const Value.absent(),
+                Value<String> vehicleId = const Value.absent(),
+                Value<int> amountMinor = const Value.absent(),
+                Value<String> initiatedByContactId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> proposedAt = const Value.absent(),
+                Value<DateTime?> confirmedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehicleUsageTransfersCompanion(
+                id: id,
+                sharingLinkId: sharingLinkId,
+                vehicleId: vehicleId,
+                amountMinor: amountMinor,
+                initiatedByContactId: initiatedByContactId,
+                status: status,
+                proposedAt: proposedAt,
+                confirmedAt: confirmedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sharingLinkId,
+                required String vehicleId,
+                required int amountMinor,
+                Value<String> initiatedByContactId = const Value.absent(),
+                required String status,
+                required DateTime proposedAt,
+                Value<DateTime?> confirmedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VehicleUsageTransfersCompanion.insert(
+                id: id,
+                sharingLinkId: sharingLinkId,
+                vehicleId: vehicleId,
+                amountMinor: amountMinor,
+                initiatedByContactId: initiatedByContactId,
+                status: status,
+                proposedAt: proposedAt,
+                confirmedAt: confirmedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VehicleUsageTransfersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VehicleUsageTransfersTable,
+      VehicleUsageTransfer,
+      $$VehicleUsageTransfersTableFilterComposer,
+      $$VehicleUsageTransfersTableOrderingComposer,
+      $$VehicleUsageTransfersTableAnnotationComposer,
+      $$VehicleUsageTransfersTableCreateCompanionBuilder,
+      $$VehicleUsageTransfersTableUpdateCompanionBuilder,
+      (
+        VehicleUsageTransfer,
+        BaseReferences<
+          _$AppDatabase,
+          $VehicleUsageTransfersTable,
+          VehicleUsageTransfer
+        >,
+      ),
+      VehicleUsageTransfer,
+      PrefetchHooks Function()
+    >;
 typedef $$VehiclePhotoGalleriesTableCreateCompanionBuilder =
     VehiclePhotoGalleriesCompanion Function({
       required String id,
@@ -33073,6 +35047,14 @@ class $AppDatabaseManager {
       $$TrafficViolationsTableTableManager(_db, _db.trafficViolations);
   $$VehicleSharingLinksTableTableManager get vehicleSharingLinks =>
       $$VehicleSharingLinksTableTableManager(_db, _db.vehicleSharingLinks);
+  $$VehicleUsageBalanceFreezesTableTableManager
+  get vehicleUsageBalanceFreezes =>
+      $$VehicleUsageBalanceFreezesTableTableManager(
+        _db,
+        _db.vehicleUsageBalanceFreezes,
+      );
+  $$VehicleUsageTransfersTableTableManager get vehicleUsageTransfers =>
+      $$VehicleUsageTransfersTableTableManager(_db, _db.vehicleUsageTransfers);
   $$VehiclePhotoGalleriesTableTableManager get vehiclePhotoGalleries =>
       $$VehiclePhotoGalleriesTableTableManager(_db, _db.vehiclePhotoGalleries);
   $$VehicleGalleryPhotosTableTableManager get vehicleGalleryPhotos =>

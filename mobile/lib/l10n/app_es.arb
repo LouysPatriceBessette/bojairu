@@ -851,6 +851,48 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationUsageBalanceFreezeProposeTitle": "Fijar el saldo",
+  "pushNotificationUsageBalanceFreezeProposeBody": "{name} pide fijar el saldo de uso.",
+  "@pushNotificationUsageBalanceFreezeProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeAcceptedTitle": "Saldo fijado",
+  "pushNotificationUsageBalanceFreezeAcceptedBody": "{name} aceptó fijar el saldo de uso.",
+  "@pushNotificationUsageBalanceFreezeAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeRejectedTitle": "Fijación rechazada",
+  "pushNotificationUsageBalanceFreezeRejectedBody": "{name} rechazó fijar el saldo de uso.",
+  "@pushNotificationUsageBalanceFreezeRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferProposeTitle": "Transferencia declarada",
+  "pushNotificationUsageBalanceTransferProposeBody": "{name} declaró una transferencia para el saldo de uso.",
+  "@pushNotificationUsageBalanceTransferProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferAcceptedTitle": "Transferencia aceptada",
+  "pushNotificationUsageBalanceTransferAcceptedBody": "{name} confirmó la recepción de la transferencia.",
+  "@pushNotificationUsageBalanceTransferAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferRejectedTitle": "Transferencia rechazada",
+  "pushNotificationUsageBalanceTransferRejectedBody": "{name} rechazó la declaración de transferencia.",
+  "@pushNotificationUsageBalanceTransferRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.",
   "vehicleSharingAcceptRelayFailed": "Aceptación guardada aquí, pero el envío al propietario falló. Inténtelo más tarde.",
   "pushNotificationHousingAgreementActivatedTitle": "Acuerdo unánime",
@@ -1679,6 +1721,40 @@
   "vehicleDistanceUnitKilometre": "kilómetro",
   "vehicleDistanceUnitMile": "milla",
   "vehicleUsageBalanceRevokedSuffix": " (revocado)",
+  "vehicleUsageBalanceFreezeButton": "Fijar este saldo",
+  "vehicleUsageBalanceTransferButton": "Transferencia",
+  "vehicleUsageBalanceFreezeProposeBody": "Se enviará una solicitud de acuerdo para fijar este saldo.",
+  "vehicleUsageBalanceTransferProposeBody": "Importe transferido al propietario:",
+  "vehicleUsageBalanceTransferProposeBodyToBorrower": "Importe transferido al prestatario:",
+  "vehicleUsageBalanceFreezeConfirmTitle": "¿Fijar el saldo?",
+  "vehicleUsageBalanceFreezeConfirmBody": "{name} pide fijar {amount}.\n\n{when}",
+  "@vehicleUsageBalanceFreezeConfirmBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "amount": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceTransferConfirmTitle": "Confirmar la recepción de una transferencia",
+  "vehicleUsageBalanceDecisionLater": "Más tarde",
+  "vehicleUsageBalanceDecisionReject": "Rechazar",
+  "vehicleUsageBalanceDecisionConfirm": "Confirmar",
+  "vehicleUsageBalanceCancel": "Cancelar",
+  "vehicleUsageBalanceSubmit": "Enviar",
+  "vehicleUsageBalanceNotInCurrent": "No incluido en el saldo actual",
+  "vehicleUsageBalanceCarriedForward": "Saldo diferido",
+  "vehicleUsageBalanceCarriedFreezeLabel": "Saldo",
+  "vehicleUsageBalanceCarriedTransferSent": "Transferencia enviada",
+  "vehicleUsageBalanceCarriedTransferReceived": "Transferencia recibida",
+  "vehicleUsageBalancePendingDecision": "Decisión pendiente",
+  "vehicleUsageBalanceHistoricalTitle": "Saldo del {date}",
+  "@vehicleUsageBalanceHistoricalTitle": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceBack": "Volver",
+
   "vehiclePendingCorrectionsEmpty": "No hay correcciones pendientes.",
   "vehiclePendingCorrectionDetailTitle": "Corrección de odómetro",
   "vehicleCorrectReadingButton": "Corregir la entrada del {date}",

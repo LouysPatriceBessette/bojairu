@@ -2214,6 +2214,58 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationUsageBalanceFreezeProposeTitle => 'Fijar el saldo';
+
+  @override
+  String pushNotificationUsageBalanceFreezeProposeBody(String name) {
+    return '$name pide fijar el saldo de uso.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceFreezeAcceptedTitle => 'Saldo fijado';
+
+  @override
+  String pushNotificationUsageBalanceFreezeAcceptedBody(String name) {
+    return '$name aceptó fijar el saldo de uso.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceFreezeRejectedTitle =>
+      'Fijación rechazada';
+
+  @override
+  String pushNotificationUsageBalanceFreezeRejectedBody(String name) {
+    return '$name rechazó fijar el saldo de uso.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferProposeTitle =>
+      'Transferencia declarada';
+
+  @override
+  String pushNotificationUsageBalanceTransferProposeBody(String name) {
+    return '$name declaró una transferencia para el saldo de uso.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferAcceptedTitle =>
+      'Transferencia aceptada';
+
+  @override
+  String pushNotificationUsageBalanceTransferAcceptedBody(String name) {
+    return '$name confirmó la recepción de la transferencia.';
+  }
+
+  @override
+  String get pushNotificationUsageBalanceTransferRejectedTitle =>
+      'Transferencia rechazada';
+
+  @override
+  String pushNotificationUsageBalanceTransferRejectedBody(String name) {
+    return '$name rechazó la declaración de transferencia.';
+  }
+
+  @override
   String get vehicleSharingOfferRelayFailed =>
       'Oferta guardada aquí, pero el envío al contacto falló. Inténtelo más tarde.';
 
@@ -4076,6 +4128,83 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vehicleUsageBalanceRevokedSuffix => ' (revocado)';
+
+  @override
+  String get vehicleUsageBalanceFreezeButton => 'Fijar este saldo';
+
+  @override
+  String get vehicleUsageBalanceTransferButton => 'Transferencia';
+
+  @override
+  String get vehicleUsageBalanceFreezeProposeBody =>
+      'Se enviará una solicitud de acuerdo para fijar este saldo.';
+
+  @override
+  String get vehicleUsageBalanceTransferProposeBody =>
+      'Importe transferido al propietario:';
+
+  @override
+  String get vehicleUsageBalanceTransferProposeBodyToBorrower =>
+      'Importe transferido al prestatario:';
+
+  @override
+  String get vehicleUsageBalanceFreezeConfirmTitle => '¿Fijar el saldo?';
+
+  @override
+  String vehicleUsageBalanceFreezeConfirmBody(
+    String name,
+    String amount,
+    String when,
+  ) {
+    return '$name pide fijar $amount.\n\n$when';
+  }
+
+  @override
+  String get vehicleUsageBalanceTransferConfirmTitle =>
+      'Confirmar la recepción de una transferencia';
+
+  @override
+  String get vehicleUsageBalanceDecisionLater => 'Más tarde';
+
+  @override
+  String get vehicleUsageBalanceDecisionReject => 'Rechazar';
+
+  @override
+  String get vehicleUsageBalanceDecisionConfirm => 'Confirmar';
+
+  @override
+  String get vehicleUsageBalanceCancel => 'Cancelar';
+
+  @override
+  String get vehicleUsageBalanceSubmit => 'Enviar';
+
+  @override
+  String get vehicleUsageBalanceNotInCurrent =>
+      'No incluido en el saldo actual';
+
+  @override
+  String get vehicleUsageBalanceCarriedForward => 'Saldo diferido';
+
+  @override
+  String get vehicleUsageBalanceCarriedFreezeLabel => 'Saldo';
+
+  @override
+  String get vehicleUsageBalanceCarriedTransferSent => 'Transferencia enviada';
+
+  @override
+  String get vehicleUsageBalanceCarriedTransferReceived =>
+      'Transferencia recibida';
+
+  @override
+  String get vehicleUsageBalancePendingDecision => 'Decisión pendiente';
+
+  @override
+  String vehicleUsageBalanceHistoricalTitle(String date) {
+    return 'Saldo del $date';
+  }
+
+  @override
+  String get vehicleUsageBalanceBack => 'Volver';
 
   @override
   String get vehiclePendingCorrectionsEmpty =>

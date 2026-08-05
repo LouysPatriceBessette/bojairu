@@ -28,7 +28,9 @@ class RelayActivityLogService {
   }) async {
     final at = (occurredAt ?? DateTime.now()).toUtc();
     final id = 'log:${at.microsecondsSinceEpoch}';
-    await _db.into(_db.relayActivityLogEntries).insert(
+    await _db
+        .into(_db.relayActivityLogEntries)
+        .insert(
           RelayActivityLogEntriesCompanion.insert(
             id: id,
             occurredAt: at,
@@ -110,8 +112,12 @@ class RelayActivityLogService {
     }
 
     final sortedContacts = contactsById.entries.toList()
-      ..sort((a, b) => _emitterLabel(a.value, a.key)
-          .compareTo(_emitterLabel(b.value, b.key)));
+      ..sort(
+        (a, b) => _emitterLabel(
+          a.value,
+          a.key,
+        ).compareTo(_emitterLabel(b.value, b.key)),
+      );
     for (final entry in sortedContacts) {
       options.add(
         ActivityLogEmitterFilterOption(
@@ -149,8 +155,7 @@ class RelayActivityLogService {
       emitterFilterSystem => row.initiatorKind == initiatorSystem,
       emitterFilterSelf => row.initiatorKind == initiatorSelf,
       final key when key.startsWith('emitter:contact:') =>
-        row.initiatorContactId ==
-            key.substring('emitter:contact:'.length),
+        row.initiatorContactId == key.substring('emitter:contact:'.length),
       final key when key.startsWith('emitter:name:') =>
         row.initiatorDisplayName.trim().toLowerCase() ==
             key.substring('emitter:name:'.length),
@@ -168,13 +173,15 @@ class RelayActivityLogService {
       ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)])
       ..limit(limit);
     final rows = await q.get();
-    return rows.where((row) {
-      if (RelayActivityLogKinds.isVehicleRelated(row.kind)) return false;
-      if (fromUtc != null && row.occurredAt.isBefore(fromUtc)) return false;
-      if (toUtc != null && row.occurredAt.isAfter(toUtc)) return false;
-      if (!matchesEmitterFilter(row, emitterFilterKey)) return false;
-      return true;
-    }).toList(growable: false);
+    return rows
+        .where((row) {
+          if (RelayActivityLogKinds.isVehicleRelated(row.kind)) return false;
+          if (fromUtc != null && row.occurredAt.isBefore(fromUtc)) return false;
+          if (toUtc != null && row.occurredAt.isAfter(toUtc)) return false;
+          if (!matchesEmitterFilter(row, emitterFilterKey)) return false;
+          return true;
+        })
+        .toList(growable: false);
   }
 
   /// Offer + session events for a vehicle's « Sessions de partage » journal.
@@ -216,9 +223,9 @@ class RelayActivityLogService {
 
     final linkId = (details['linkId'] as String?)?.trim() ?? '';
     if (linkId.isEmpty) return null;
-    final link = await (_db.select(_db.vehicleSharingLinks)
-          ..where((t) => t.id.equals(linkId)))
-        .getSingleOrNull();
+    final link = await (_db.select(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).getSingleOrNull();
     return link?.vehicleId;
   }
 }
@@ -259,13 +266,34 @@ abstract final class RelayActivityLogKinds {
   static const vehicleUseSessionStartReceived =
       'vehicle_use_session_start_received';
   static const vehicleUseSessionEndSent = 'vehicle_use_session_end_sent';
-  static const vehicleUseSessionEndReceived = 'vehicle_use_session_end_received';
+  static const vehicleUseSessionEndReceived =
+      'vehicle_use_session_end_received';
   static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
   static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
   static const vehicleFuelPurchaseCatchUpSent =
       'vehicle_fuel_purchase_catch_up_sent';
   static const vehicleFuelPurchaseCatchUpReceived =
       'vehicle_fuel_purchase_catch_up_received';
+  static const vehicleUsageBalanceFreezeProposeSent =
+      'vehicle_usage_balance_freeze_propose_sent';
+  static const vehicleUsageBalanceFreezeProposeReceived =
+      'vehicle_usage_balance_freeze_propose_received';
+  static const vehicleUsageBalanceFreezeDecisionSent =
+      'vehicle_usage_balance_freeze_decision_sent';
+  static const vehicleUsageBalanceFreezeDecisionReceived =
+      'vehicle_usage_balance_freeze_decision_received';
+  static const vehicleUsageBalanceFreezeCatchUpSent =
+      'vehicle_usage_balance_freeze_catch_up_sent';
+  static const vehicleUsageBalanceFreezeCatchUpReceived =
+      'vehicle_usage_balance_freeze_catch_up_received';
+  static const vehicleUsageTransferProposeSent =
+      'vehicle_usage_transfer_propose_sent';
+  static const vehicleUsageTransferProposeReceived =
+      'vehicle_usage_transfer_propose_received';
+  static const vehicleUsageTransferDecisionSent =
+      'vehicle_usage_transfer_decision_sent';
+  static const vehicleUsageTransferDecisionReceived =
+      'vehicle_usage_transfer_decision_received';
   static const vehicleMaintenanceSent = 'vehicle_maintenance_sent';
   static const vehicleMaintenanceReceived = 'vehicle_maintenance_received';
   static const vehicleTrafficViolationSent = 'vehicle_traffic_violation_sent';
@@ -286,6 +314,16 @@ abstract final class RelayActivityLogKinds {
     vehicleFuelPurchaseReceived,
     vehicleFuelPurchaseCatchUpSent,
     vehicleFuelPurchaseCatchUpReceived,
+    vehicleUsageBalanceFreezeProposeSent,
+    vehicleUsageBalanceFreezeProposeReceived,
+    vehicleUsageBalanceFreezeDecisionSent,
+    vehicleUsageBalanceFreezeDecisionReceived,
+    vehicleUsageBalanceFreezeCatchUpSent,
+    vehicleUsageBalanceFreezeCatchUpReceived,
+    vehicleUsageTransferProposeSent,
+    vehicleUsageTransferProposeReceived,
+    vehicleUsageTransferDecisionSent,
+    vehicleUsageTransferDecisionReceived,
     vehicleMaintenanceSent,
     vehicleMaintenanceReceived,
     vehicleTrafficViolationSent,

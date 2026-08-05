@@ -329,7 +329,8 @@ class PendingHandshakes extends Table {
   TextColumn get peerAvatarId => text().withDefault(const Constant(''))();
 
   /// Device-binding hash from the peer's hello or ack.
-  TextColumn get peerDeviceBindingId => text().withDefault(const Constant(''))();
+  TextColumn get peerDeviceBindingId =>
+      text().withDefault(const Constant(''))();
 
   /// Last error code captured by the orchestrator (for diagnostics).
   /// Empty string when no error.
@@ -395,7 +396,8 @@ class RelayActivityLogEntries extends Table {
   TextColumn get kind => text()();
   TextColumn get initiatorKind => text()();
   TextColumn get initiatorContactId => text().nullable()();
-  TextColumn get initiatorDisplayName => text().withDefault(const Constant(''))();
+  TextColumn get initiatorDisplayName =>
+      text().withDefault(const Constant(''))();
   TextColumn get planId => text().nullable()();
   TextColumn get packageId => text().nullable()();
   TextColumn get revisionId => text().nullable()();
@@ -621,6 +623,8 @@ class PlanPeerEstablishments extends Table {
     VehicleMaintenanceRules,
     TrafficViolations,
     VehicleSharingLinks,
+    VehicleUsageBalanceFreezes,
+    VehicleUsageTransfers,
     VehiclePhotoGalleries,
     VehicleGalleryPhotos,
   ],
@@ -724,7 +728,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -902,7 +906,11 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(realizedExpenseAcceptances);
       }
       if (from < 18) {
-        await _migrateAddColumn(m, realizedExpenses, realizedExpenses.description);
+        await _migrateAddColumn(
+          m,
+          realizedExpenses,
+          realizedExpenses.description,
+        );
       }
       if (from < 19) {
         await _migrateAddColumn(
@@ -957,7 +965,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 26) {
         await _migrateAddColumn(m, vehicles, vehicles.fuelTankCapacityLiters);
-        await _migrateAddColumn(m, fuelPurchases, fuelPurchases.tankFillFraction);
+        await _migrateAddColumn(
+          m,
+          fuelPurchases,
+          fuelPurchases.tankFillFraction,
+        );
         await customStatement('''
               UPDATE vehicle_meter_readings
               SET value = value * 10
@@ -1012,11 +1024,7 @@ class AppDatabase extends _$AppDatabase {
           vehicleUses,
           vehicleUses.drivingRoutePercent,
         );
-        await _migrateAddColumn(
-          m,
-          vehicleUses,
-          vehicleUses.drivingCityPercent,
-        );
+        await _migrateAddColumn(m, vehicleUses, vehicleUses.drivingCityPercent);
         await _migrateAddColumn(
           m,
           vehicleUses,
@@ -1091,11 +1099,7 @@ class AppDatabase extends _$AppDatabase {
         await _migrateAddColumn(m, vehicles, vehicles.deactivatedAt);
       }
       if (from < 36) {
-        await _migrateAddColumn(
-          m,
-          vehicles,
-          vehicles.saleImportUndoAvailable,
-        );
+        await _migrateAddColumn(m, vehicles, vehicles.saleImportUndoAvailable);
       }
       if (from < 37) {
         await _migrateAddColumn(
@@ -1143,6 +1147,24 @@ class AppDatabase extends _$AppDatabase {
           m,
           vehicleUses,
           vehicleUses.fuelCatchUpResponseReceived,
+        );
+      }
+      if (from < 41) {
+        await m.createTable(vehicleUsageBalanceFreezes);
+        await m.createTable(vehicleUsageTransfers);
+      }
+      if (from < 42) {
+        await _migrateAddColumn(
+          m,
+          vehicleUsageBalanceFreezes,
+          vehicleUsageBalanceFreezes.lastKnownPurchaseId,
+        );
+      }
+      if (from < 43) {
+        await _migrateAddColumn(
+          m,
+          vehicleUsageTransfers,
+          vehicleUsageTransfers.initiatedByContactId,
         );
       }
     },
@@ -1280,8 +1302,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertArchivedPlanLineSnapshot(
     ArchivedPlanLineSnapshotsCompanion row,
-  ) =>
-      into(archivedPlanLineSnapshots).insertOnConflictUpdate(row);
+  ) => into(archivedPlanLineSnapshots).insertOnConflictUpdate(row);
 
   Future<ArchivedPlanLineSnapshot?> getArchivedPlanLineSnapshot({
     required String planId,
@@ -1328,9 +1349,9 @@ class AppDatabase extends _$AppDatabase {
         )..where((t) => t.id.equals(pkg.id))).go();
       }
       await (delete(planRatios)..where((t) => t.planId.equals(planId))).go();
-      await (delete(planRatioTemplates)
-            ..where((t) => t.planId.equals(planId)))
-          .go();
+      await (delete(
+        planRatioTemplates,
+      )..where((t) => t.planId.equals(planId))).go();
       await (delete(planLines)..where((t) => t.planId.equals(planId))).go();
       await (delete(agreements)..where((t) => t.planId.equals(planId))).go();
       await (delete(planGroups)..where((t) => t.planId.equals(planId))).go();
@@ -1434,15 +1455,16 @@ class AppDatabase extends _$AppDatabase {
     PlanPeerEstablishmentsCompanion row,
   ) => into(planPeerEstablishments).insertOnConflictUpdate(row);
 
-  Future<PlanPeerEstablishment?> getPlanPeerEstablishment(String id) =>
-      (select(planPeerEstablishments)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+  Future<PlanPeerEstablishment?> getPlanPeerEstablishment(String id) => (select(
+    planPeerEstablishments,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<PlanPeerEstablishment?> getPlanPeerEstablishmentByPeer(
     String peerPublicMaterialB64,
   ) =>
-      (select(planPeerEstablishments)
-            ..where((t) => t.peerPublicMaterialB64.equals(peerPublicMaterialB64)))
+      (select(planPeerEstablishments)..where(
+            (t) => t.peerPublicMaterialB64.equals(peerPublicMaterialB64),
+          ))
           .getSingleOrNull();
 
   Future<List<PlanPeerEstablishment>> listPlanPeerEstablishmentsForPlan(
@@ -1454,18 +1476,18 @@ class AppDatabase extends _$AppDatabase {
           .get();
 
   Future<List<PlanPeerEstablishment>> listAllPlanPeerEstablishments() =>
-      (select(planPeerEstablishments)
-            ..orderBy([(t) => OrderingTerm.asc(t.planId)]))
-          .get();
+      (select(
+        planPeerEstablishments,
+      )..orderBy([(t) => OrderingTerm.asc(t.planId)])).get();
 
   Future<void> deletePlanPeerEstablishment(String id) async {
     await (delete(planPeerEstablishments)..where((t) => t.id.equals(id))).go();
   }
 
   Future<void> deletePlanPeerEstablishmentsForPlan(String planId) async {
-    await (delete(planPeerEstablishments)
-          ..where((t) => t.planId.equals(planId)))
-        .go();
+    await (delete(
+      planPeerEstablishments,
+    )..where((t) => t.planId.equals(planId))).go();
   }
 
   /// Mirrors every existing `participants` row into a `contacts` row and

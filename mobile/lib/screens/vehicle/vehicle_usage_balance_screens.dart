@@ -8,6 +8,7 @@ import '../../db/repositories/vehicles_repository.dart';
 import '../../debug/qa_vehicle_semantics.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../relay/handshake_orchestrator.dart';
 import '../../util/display_date.dart';
 import '../../util/display_units.dart';
 import '../../util/format_money.dart';
@@ -15,6 +16,7 @@ import '../../vehicle/sharing/vehicle_usage_balance.dart';
 import '../../vehicle/sharing/vehicle_usage_balance_service.dart';
 import '../../vehicle/vehicle_owner_contact.dart';
 import '../../widgets/screen_body_padding.dart';
+import 'vehicle_usage_balance_reconciliation_ui.dart';
 
 /// Shared breakdown (or unavailable explanation) for owner and borrower.
 class VehicleUsageBalanceDetailBody extends StatefulWidget {
@@ -22,10 +24,14 @@ class VehicleUsageBalanceDetailBody extends StatefulWidget {
     super.key,
     required this.link,
     required this.prefs,
+    this.historicalFreezeId,
   });
 
   final VehicleSharingLink link;
   final AppPreferences prefs;
+
+  /// When set, shows a frozen snapshot (no actions / carried section).
+  final String? historicalFreezeId;
 
   @override
   State<VehicleUsageBalanceDetailBody> createState() =>
@@ -35,32 +41,70 @@ class VehicleUsageBalanceDetailBody extends StatefulWidget {
 class _VehicleUsageBalanceDetailBodyState
     extends State<VehicleUsageBalanceDetailBody> {
   VehicleUsageBalanceResult? _result;
+  VehicleUsageBalanceBreakdown? _historical;
   bool _loading = true;
   _UsageBalanceSection? _expandedSection;
+  HandshakeOrchestrator? _steadyInboxOrchestrator;
+
+  bool get _isHistorical =>
+      widget.historicalFreezeId != null &&
+      widget.historicalFreezeId!.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _steadyInboxOrchestrator = HandshakeOrchestrator.maybeInstance;
+    _steadyInboxOrchestrator?.steadyStateInboxTick.addListener(
+      _onSteadyInboxTick,
+    );
     _load();
+  }
+
+  @override
+  void dispose() {
+    _steadyInboxOrchestrator?.steadyStateInboxTick.removeListener(
+      _onSteadyInboxTick,
+    );
+    super.dispose();
+  }
+
+  void _onSteadyInboxTick() {
+    if (!mounted || _isHistorical) return;
+    _load(showSpinner: false);
   }
 
   @override
   void didUpdateWidget(covariant VehicleUsageBalanceDetailBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.link.id != widget.link.id) {
+    if (oldWidget.link.id != widget.link.id ||
+        oldWidget.historicalFreezeId != widget.historicalFreezeId) {
       _expandedSection = null;
       _load();
     }
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _load({bool showSpinner = true}) async {
+    if (showSpinner && mounted) {
+      setState(() => _loading = true);
+    }
+    if (_isHistorical) {
+      final frozen =
+          await loadFrozenUsageBalanceBreakdown(widget.historicalFreezeId!);
+      if (!mounted) return;
+      setState(() {
+        _historical = frozen;
+        _result = null;
+        _loading = false;
+      });
+      return;
+    }
     final result = await VehicleUsageBalanceService(
       VehiclesRepository(AppDatabase.processScope),
     ).computeForLink(link: widget.link);
     if (!mounted) return;
     setState(() {
       _result = result;
+      _historical = null;
       _loading = false;
     });
   }
@@ -78,8 +122,18 @@ class _VehicleUsageBalanceDetailBodyState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (_loading || _result == null) {
+    if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_isHistorical) {
+      final b = _historical;
+      if (b == null) {
+        return ListView(
+          padding: screenBodyScrollPadding(context),
+          children: const [Text('—')],
+        );
+      }
+      return _buildAvailableBody(context, l10n, b, showReconciliation: false);
     }
     final result = _result!;
     if (!result.isAvailable) {
@@ -93,8 +147,20 @@ class _VehicleUsageBalanceDetailBodyState
         children: [Text(message)],
       );
     }
+    return _buildAvailableBody(
+      context,
+      l10n,
+      result.breakdown!,
+      showReconciliation: true,
+    );
+  }
 
-    final b = result.breakdown!;
+  Widget _buildAvailableBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    VehicleUsageBalanceBreakdown b, {
+    required bool showReconciliation,
+  }) {
     final currency = widget.prefs.currency;
     final localeName = Localizations.localeOf(context).toString();
     final dateFmt = effectiveDateFormat(widget.prefs);
@@ -159,6 +225,16 @@ class _VehicleUsageBalanceDetailBodyState
     return ListView(
       padding: screenBodyScrollPadding(context),
       children: [
+        if (showReconciliation) ...[
+          VehicleUsageBalanceReconciliationPanel(
+            link: widget.link,
+            prefs: widget.prefs,
+            breakdown: b,
+            onChanged: _load,
+            placement: VehicleUsageBalanceReconciliationPlacement.actions,
+          ),
+          const SizedBox(height: 16),
+        ],
         Text(
           l10n.vehicleUsageBalanceNetLabel,
           style: Theme.of(context).textTheme.titleMedium,
@@ -367,6 +443,16 @@ class _VehicleUsageBalanceDetailBodyState
             ],
           ),
         ),
+        if (showReconciliation) ...[
+          const SizedBox(height: 16),
+          VehicleUsageBalanceReconciliationPanel(
+            link: widget.link,
+            prefs: widget.prefs,
+            breakdown: b,
+            onChanged: _load,
+            placement: VehicleUsageBalanceReconciliationPlacement.carried,
+          ),
+        ],
       ],
     );
   }
@@ -712,11 +798,13 @@ class VehicleUsageBalanceScreen extends StatefulWidget {
     required this.vehicleId,
     required this.linkId,
     required this.prefs,
+    this.historicalFreezeId,
   });
 
   final String vehicleId;
   final String linkId;
   final AppPreferences prefs;
+  final String? historicalFreezeId;
 
   @override
   State<VehicleUsageBalanceScreen> createState() =>
@@ -725,7 +813,12 @@ class VehicleUsageBalanceScreen extends StatefulWidget {
 
 class _VehicleUsageBalanceScreenState extends State<VehicleUsageBalanceScreen> {
   VehicleSharingLink? _link;
+  VehicleUsageBalanceFreeze? _freeze;
   bool _loading = true;
+
+  bool get _isHistorical =>
+      widget.historicalFreezeId != null &&
+      widget.historicalFreezeId!.isNotEmpty;
 
   @override
   void initState() {
@@ -734,11 +827,16 @@ class _VehicleUsageBalanceScreenState extends State<VehicleUsageBalanceScreen> {
   }
 
   Future<void> _load() async {
-    final link = await VehiclesRepository(AppDatabase.processScope)
-        .getSharingLink(widget.linkId);
+    final repo = VehiclesRepository(AppDatabase.processScope);
+    final link = await repo.getSharingLink(widget.linkId);
+    VehicleUsageBalanceFreeze? freeze;
+    if (_isHistorical) {
+      freeze = await repo.getUsageBalanceFreeze(widget.historicalFreezeId!);
+    }
     if (!mounted) return;
     setState(() {
       _link = link;
+      _freeze = freeze;
       _loading = false;
     });
   }
@@ -746,8 +844,19 @@ class _VehicleUsageBalanceScreenState extends State<VehicleUsageBalanceScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(widget.prefs);
+    final title = _isHistorical && _freeze != null
+        ? l10n.vehicleUsageBalanceHistoricalTitle(
+            formatPreferenceDate(
+              _freeze!.confirmedAt ?? _freeze!.proposedAt,
+              dateFmt,
+            ),
+          )
+        : l10n.vehicleUsageBalanceTitle;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.vehicleUsageBalanceTitle)),
+      appBar: AppBar(
+        title: Text(title),
+      ),
       body: qaVehicleSemantics(
         identifier: kQaVehicleUsageBalanceScreen,
         child: _loading
@@ -757,6 +866,7 @@ class _VehicleUsageBalanceScreenState extends State<VehicleUsageBalanceScreen> {
                 : VehicleUsageBalanceDetailBody(
                     link: _link!,
                     prefs: widget.prefs,
+                    historicalFreezeId: widget.historicalFreezeId,
                   ),
       ),
     );
@@ -770,11 +880,13 @@ class VehicleBorrowerUsageBalanceScreen extends StatefulWidget {
     required this.vehicleId,
     required this.borrowerContactId,
     required this.prefs,
+    this.historicalFreezeId,
   });
 
   final String vehicleId;
   final String borrowerContactId;
   final AppPreferences prefs;
+  final String? historicalFreezeId;
 
   @override
   State<VehicleBorrowerUsageBalanceScreen> createState() =>
@@ -784,7 +896,12 @@ class VehicleBorrowerUsageBalanceScreen extends StatefulWidget {
 class _VehicleBorrowerUsageBalanceScreenState
     extends State<VehicleBorrowerUsageBalanceScreen> {
   VehicleSharingLink? _link;
+  VehicleUsageBalanceFreeze? _freeze;
   bool _loading = true;
+
+  bool get _isHistorical =>
+      widget.historicalFreezeId != null &&
+      widget.historicalFreezeId!.isNotEmpty;
 
   @override
   void initState() {
@@ -793,8 +910,8 @@ class _VehicleBorrowerUsageBalanceScreenState
   }
 
   Future<void> _load() async {
-    final links = await VehiclesRepository(AppDatabase.processScope)
-        .listSharingLinksForVehicle(widget.vehicleId);
+    final repo = VehiclesRepository(AppDatabase.processScope);
+    final links = await repo.listSharingLinksForVehicle(widget.vehicleId);
     VehicleSharingLink? match;
     for (final link in links) {
       if (link.borrowerContactId != widget.borrowerContactId) continue;
@@ -806,9 +923,14 @@ class _VehicleBorrowerUsageBalanceScreenState
         break;
       }
     }
+    VehicleUsageBalanceFreeze? freeze;
+    if (_isHistorical) {
+      freeze = await repo.getUsageBalanceFreeze(widget.historicalFreezeId!);
+    }
     if (!mounted) return;
     setState(() {
       _link = match;
+      _freeze = freeze;
       _loading = false;
     });
   }
@@ -816,8 +938,19 @@ class _VehicleBorrowerUsageBalanceScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final dateFmt = effectiveDateFormat(widget.prefs);
+    final title = _isHistorical && _freeze != null
+        ? l10n.vehicleUsageBalanceHistoricalTitle(
+            formatPreferenceDate(
+              _freeze!.confirmedAt ?? _freeze!.proposedAt,
+              dateFmt,
+            ),
+          )
+        : l10n.vehicleUsageBalanceTitle;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.vehicleUsageBalanceTitle)),
+      appBar: AppBar(
+        title: Text(title),
+      ),
       body: qaVehicleSemantics(
         identifier: kQaVehicleUsageBalanceScreen,
         child: _loading
@@ -830,6 +963,7 @@ class _VehicleBorrowerUsageBalanceScreenState
                 : VehicleUsageBalanceDetailBody(
                     link: _link!,
                     prefs: widget.prefs,
+                    historicalFreezeId: widget.historicalFreezeId,
                   ),
       ),
     );

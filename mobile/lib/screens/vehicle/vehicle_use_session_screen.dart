@@ -136,12 +136,15 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
   bool get _photoRequired {
     if (QaE2eFlags.meterPhotoOptional) return false;
     if (!_startingSession) return true;
+    // Emprunteur must always attach a photo at session start.
+    if (widget.usageContext.isBorrower) return true;
     return _meterChangedFromBaseline;
   }
 
   bool get _photoPickEnabled {
     if (_photoPath != null && _photoPath!.isNotEmpty) return false;
     if (!_startingSession) return true;
+    if (widget.usageContext.isBorrower) return true;
     return _meterChangedFromBaseline;
   }
 
@@ -217,8 +220,10 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     int? baselineMeter;
     VehicleTankFillLevel tankLevel = VehicleTankFillLevel.defaultChoice;
     var fullTank = !endingSession;
-    // Emprunteur: never pre-fill odometer or tank from last known state at
-    // session start — they must enter both explicitly.
+    // Propriétaire: pre-fill meter/tank from last known state; photo optional
+    // only when the meter is left unchanged (known-unchanged sentinel).
+    // Emprunteur: never pre-fill; always require an explicit meter + photo
+    // (catch-up arrives only after start is submitted; owner may be offline).
     final prefillFromKnownState =
         denial == null && v != null && !endingSession && widget.usageContext.isOwner;
     if (prefillFromKnownState) {
@@ -248,9 +253,6 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         }
       }
     } else if (denial == null && v != null && !endingSession) {
-      // Keep silent baseline for gap checks; leave form fields empty.
-      final anchor = await repo.latestMeterAnchorDetail(v.id);
-      baselineMeter = anchor?.value;
       _reading.clear();
     }
     if (!mounted) return;
@@ -340,7 +342,9 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
       String photoPath;
       if (_photoPath != null && _photoPath!.isNotEmpty) {
         photoPath = _photoPath!;
-      } else if (_startingSession && !_meterChangedFromBaseline) {
+      } else if (_startingSession &&
+          widget.usageContext.isOwner &&
+          !_meterChangedFromBaseline) {
         photoPath = kVehicleMeterPhotoKnownUnchangedSentinel;
       } else {
         final qaPath = qaE2eEffectiveMeterPhotoPath(_photoPath);

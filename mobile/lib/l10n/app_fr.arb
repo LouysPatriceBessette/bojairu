@@ -868,6 +868,48 @@
       "vehicle": { "type": "String" }
     }
   },
+  "pushNotificationUsageBalanceFreezeProposeTitle": "Figer le solde",
+  "pushNotificationUsageBalanceFreezeProposeBody": "{name} demande de figer le solde d'utilisation.",
+  "@pushNotificationUsageBalanceFreezeProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeAcceptedTitle": "Solde figé",
+  "pushNotificationUsageBalanceFreezeAcceptedBody": "{name} a accepté de figer le solde d'utilisation.",
+  "@pushNotificationUsageBalanceFreezeAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceFreezeRejectedTitle": "Figeage refusé",
+  "pushNotificationUsageBalanceFreezeRejectedBody": "{name} a refusé de figer le solde d'utilisation.",
+  "@pushNotificationUsageBalanceFreezeRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferProposeTitle": "Virement déclaré",
+  "pushNotificationUsageBalanceTransferProposeBody": "{name} a déclaré un virement pour le solde d'utilisation.",
+  "@pushNotificationUsageBalanceTransferProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferAcceptedTitle": "Virement accepté",
+  "pushNotificationUsageBalanceTransferAcceptedBody": "{name} a confirmé la réception du virement.",
+  "@pushNotificationUsageBalanceTransferAcceptedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "pushNotificationUsageBalanceTransferRejectedTitle": "Virement refusé",
+  "pushNotificationUsageBalanceTransferRejectedBody": "{name} a refusé la déclaration de virement.",
+  "@pushNotificationUsageBalanceTransferRejectedBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "vehicleSharingOfferRelayFailed": "Offre enregistrée ici, mais l'envoi au contact a échoué. Réessayez plus tard.",
   "vehicleSharingAcceptRelayFailed": "Acceptation enregistrée ici, mais l'envoi au propriétaire a échoué. Réessayez plus tard.",
   "pushNotificationHousingAgreementActivatedTitle": "Entente unanime",
@@ -1696,6 +1738,39 @@
   "vehicleDistanceUnitKilometre": "kilomètre",
   "vehicleDistanceUnitMile": "mile",
   "vehicleUsageBalanceRevokedSuffix": " (révoqué)",
+  "vehicleUsageBalanceFreezeButton": "Figer ce solde",
+  "vehicleUsageBalanceTransferButton": "Virement",
+  "vehicleUsageBalanceFreezeProposeBody": "Une demande d'accord pour figer ce solde sera envoyée.",
+  "vehicleUsageBalanceTransferProposeBody": "Montant qui a été viré au propriétaire :",
+  "vehicleUsageBalanceTransferProposeBodyToBorrower": "Montant qui a été viré à l'emprunteur :",
+  "vehicleUsageBalanceFreezeConfirmTitle": "Figer le solde ?",
+  "vehicleUsageBalanceFreezeConfirmBody": "{name} demande de figer de {amount}.\n\n{when}",
+  "@vehicleUsageBalanceFreezeConfirmBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "amount": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceTransferConfirmTitle": "Confirmer la réception d'un virement",
+  "vehicleUsageBalanceDecisionLater": "Plus tard",
+  "vehicleUsageBalanceDecisionReject": "Rejeter",
+  "vehicleUsageBalanceDecisionConfirm": "Confirmer",
+  "vehicleUsageBalanceCancel": "Annuler",
+  "vehicleUsageBalanceSubmit": "Soumettre",
+  "vehicleUsageBalanceNotInCurrent": "Non inclus dans le solde actuel",
+  "vehicleUsageBalanceCarriedForward": "Solde reporté",
+  "vehicleUsageBalanceCarriedFreezeLabel": "Solde",
+  "vehicleUsageBalanceCarriedTransferSent": "Virement envoyé",
+  "vehicleUsageBalanceCarriedTransferReceived": "Virement reçu",
+  "vehicleUsageBalancePendingDecision": "Décision en attente",
+  "vehicleUsageBalanceHistoricalTitle": "Solde du {date}",
+  "@vehicleUsageBalanceHistoricalTitle": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "vehicleUsageBalanceBack": "Retour",
   "vehiclePendingCorrectionsEmpty": "Aucune correction en attente.",
   "vehiclePendingCorrectionDetailTitle": "Correction d'odomètre",
   "vehicleCorrectReadingButton": "Corriger l'entrée du {date}",

@@ -546,6 +546,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                       vehicleId: state.pathParameters['vehicleId']!,
                       linkId: state.pathParameters['linkId']!,
                       prefs: prefs,
+                      historicalFreezeId: state.uri.queryParameters['freeze'],
                     ),
                   ),
                 ],
@@ -718,6 +719,7 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                 vehicleId: state.pathParameters['vehicleId']!,
                 borrowerContactId: borrower,
                 prefs: prefs,
+                historicalFreezeId: state.uri.queryParameters['freeze'],
               );
             },
           ),

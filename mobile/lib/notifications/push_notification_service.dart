@@ -8,12 +8,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import '../navigation/app_navigation.dart';
 import '../db/app_database.dart';
+import '../db/repositories/vehicles_repository.dart';
 import '../housing/amendment/housing_amendment_summary.dart';
 import '../housing/housing_navigation_intent.dart';
 import '../housing/reminders/payment_reminder_journal_id.dart';
 import '../firebase_options.dart';
 import '../prefs/app_preferences.dart';
 import '../relay/handshake_orchestrator.dart';
+import '../vehicle/vehicle_owner_contact.dart';
 import 'closed_app_push_registration_service.dart';
 import 'notification_localizations.dart';
 import 'notification_qa_prefix.dart';
@@ -88,6 +90,7 @@ class PushNotificationService {
   static const String _vehicleMaintenanceTapPrefix = 'vehicle_maintenance|';
   static const String _vehicleTrafficViolationTapPrefix =
       'vehicle_traffic_violation|';
+  static const String _vehicleUsageBalanceTapPrefix = 'vehicle_usage_balance|';
 
   static const List<String> _housingKinds = <String>[
     'housing_proposal',
@@ -250,6 +253,23 @@ class PushNotificationService {
       final vehicleId = payload.substring(_vehicleDetailTapPrefix.length).trim();
       if (vehicleId.isNotEmpty) {
         _navigateToVehicleDetail(vehicleId);
+      } else {
+        _navigateToVehicleSharing();
+      }
+      return;
+    }
+    if (payload.startsWith(_vehicleUsageBalanceTapPrefix)) {
+      final rest = payload.substring(_vehicleUsageBalanceTapPrefix.length);
+      final parts = rest.split('|');
+      final vehicleId = parts.isNotEmpty ? parts[0].trim() : '';
+      final linkId = parts.length >= 2 ? parts[1].trim() : '';
+      if (vehicleId.isNotEmpty && linkId.isNotEmpty) {
+        unawaited(
+          _navigateToVehicleUsageBalance(
+            vehicleId: vehicleId,
+            linkId: linkId,
+          ),
+        );
       } else {
         _navigateToVehicleSharing();
       }
@@ -1320,6 +1340,58 @@ class PushNotificationService {
     pushFromNotificationTapWhenReady('/vehicle/$vehicleId');
   }
 
+  @visibleForTesting
+  static String vehicleUsageBalanceTapPayload({
+    required String vehicleId,
+    required String linkId,
+  }) =>
+      '$_vehicleUsageBalanceTapPrefix$vehicleId|$linkId';
+
+  static Future<void> _refreshUsageBalanceUiAfterNotificationTap(
+    BuildContext context,
+  ) async {
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return;
+    // Runs even when skipPush keeps the user on the already-open Solde page.
+    orch.steadyStateInboxTick.value = orch.steadyStateInboxTick.value + 1;
+  }
+
+  static Future<void> _navigateToVehicleUsageBalance({
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    try {
+      final link = await VehiclesRepository(AppDatabase.processScope)
+          .getSharingLink(linkId);
+      if (link == null || link.vehicleId != vehicleId) {
+        _navigateToVehicleSharing();
+        return;
+      }
+      if (link.ownerContactId == kVehicleOwnerSelfContactId) {
+        final dest = '/vehicle/$vehicleId/borrower-balances/$linkId';
+        pushFromNotificationTapWhenReady(
+          dest,
+          // Avoid stacking identical Solde pages on each transfer/freeze tap.
+          skipPushWhenAlreadyAt: (location) =>
+              location == dest || location.startsWith('$dest/'),
+          beforeNavigate: _refreshUsageBalanceUiAfterNotificationTap,
+        );
+      } else {
+        final borrower = Uri.encodeQueryComponent(link.borrowerContactId);
+        final path = '/vehicle-sharing/$vehicleId/usage-balance';
+        pushFromNotificationTapWhenReady(
+          '$path?borrower=$borrower',
+          skipPushWhenAlreadyAt: (location) =>
+              location == path || location.startsWith('$path/'),
+          beforeNavigate: _refreshUsageBalanceUiAfterNotificationTap,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('usage balance notification tap failed: $e\n$st');
+      _navigateToVehicleSharing();
+    }
+  }
+
   /// Payload / route for owner tap on borrower maintenance notification.
   @visibleForTesting
   static String vehicleMaintenanceTapPayload({
@@ -1523,6 +1595,122 @@ class PushNotificationService {
       ),
     );
     debugPrint('vehicle_traffic_violation notification shown');
+  }
+
+  /// Usage-balance freeze / transfer alerts (tap opens Solde d'utilisation).
+  static Future<void> showLocalVehicleUsageBalanceNotification({
+    required String title,
+    required String body,
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    if (kIsWeb) {
+      return;
+    }
+
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: vehicleUsageBalanceTapPayload(
+        vehicleId: vehicleId,
+        linkId: linkId,
+      ),
+    );
+    debugPrint('vehicle_usage_balance notification shown');
+  }
+
+  static Future<void> showLocalUsageBalanceFreezeProposeNotification({
+    required String peerDisplayName,
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = peerDisplayName.trim().isEmpty ? '—' : peerDisplayName.trim();
+    await showLocalVehicleUsageBalanceNotification(
+      title: l10n.pushNotificationUsageBalanceFreezeProposeTitle,
+      body: l10n.pushNotificationUsageBalanceFreezeProposeBody(name),
+      vehicleId: vehicleId,
+      linkId: linkId,
+    );
+  }
+
+  static Future<void> showLocalUsageBalanceFreezeDecisionNotification({
+    required String peerDisplayName,
+    required bool accepted,
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = peerDisplayName.trim().isEmpty ? '—' : peerDisplayName.trim();
+    await showLocalVehicleUsageBalanceNotification(
+      title: accepted
+          ? l10n.pushNotificationUsageBalanceFreezeAcceptedTitle
+          : l10n.pushNotificationUsageBalanceFreezeRejectedTitle,
+      body: accepted
+          ? l10n.pushNotificationUsageBalanceFreezeAcceptedBody(name)
+          : l10n.pushNotificationUsageBalanceFreezeRejectedBody(name),
+      vehicleId: vehicleId,
+      linkId: linkId,
+    );
+  }
+
+  static Future<void> showLocalUsageBalanceTransferProposeNotification({
+    required String peerDisplayName,
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = peerDisplayName.trim().isEmpty ? '—' : peerDisplayName.trim();
+    await showLocalVehicleUsageBalanceNotification(
+      title: l10n.pushNotificationUsageBalanceTransferProposeTitle,
+      body: l10n.pushNotificationUsageBalanceTransferProposeBody(name),
+      vehicleId: vehicleId,
+      linkId: linkId,
+    );
+  }
+
+  static Future<void> showLocalUsageBalanceTransferDecisionNotification({
+    required String peerDisplayName,
+    required bool accepted,
+    required String vehicleId,
+    required String linkId,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = peerDisplayName.trim().isEmpty ? '—' : peerDisplayName.trim();
+    await showLocalVehicleUsageBalanceNotification(
+      title: accepted
+          ? l10n.pushNotificationUsageBalanceTransferAcceptedTitle
+          : l10n.pushNotificationUsageBalanceTransferRejectedTitle,
+      body: accepted
+          ? l10n.pushNotificationUsageBalanceTransferAcceptedBody(name)
+          : l10n.pushNotificationUsageBalanceTransferRejectedBody(name),
+      vehicleId: vehicleId,
+      linkId: linkId,
+    );
   }
 
   /// Notification tap: open housing module, then proposal screen above it.
