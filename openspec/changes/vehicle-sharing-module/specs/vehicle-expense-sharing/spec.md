@@ -1,56 +1,37 @@
-## ADDED Requirements
+## Product scope (2026-08-07)
+
+**Out of product for the shipping “thin” sharing cut.** Category-based expense allocation with housing-style **ratios** (Fuel / Maintenance / Payments / Violations propose-and-accept) is **not** part of Bojairũ vehicle sharing.
+
+The **only** cost reconciliation between Propriétaire and Emprunteur is the **usage balance** in `vehicle-sharing-usage-metrics`: rate × attributed distance, fuel anchors already in that model, maintenance **compensation** already provided there, freeze + bilateral transfers. There is **no** second reconciliation mechanism.
+
+| Topic | Product rule |
+| --- | --- |
+| Maintenance spend | **100% Propriétaire** (not split by ratio). Emprunteur may report maintenance performed; cost sharing is via usage-balance compensation, not category ratios. |
+| Fuel | Covered by full-tank anchors + usage-balance formula — **not** by configurable fuel-sharing ratios. |
+| Violations / traffic tickets | **Informational** journal / reports only. The app does **not** allocate ticket cost or run responsibility propose/accept. |
+| Payments (lease, etc.) | **Not** allocated via sharing ratios in this product. |
+
+Former ADDED requirements below are **superseded** by this scope note. Do not implement them for the current release.
+
+## SUPERSEDED Requirements (do not implement)
 
 ### Requirement: Vehicle expenses use fixed categories
-The system SHALL classify each shared vehicle expense into exactly one of:
-- Fuel
-- Maintenance
-- Violations
-- Payments
-
-#### Scenario: User must choose one category
-- **WHEN** a user creates a shared vehicle expense in an allocation context
-- **THEN** the system requires exactly one of the fixed categories
+~~The system SHALL classify each shared vehicle expense into exactly one of Fuel, Maintenance, Violations, Payments.~~ **Superseded — out of product.**
 
 ### Requirement: Fuel category shows observed usage as informational input
-For Fuel expenses, the system SHALL display observed usage ratios for the selected window but MUST NOT automatically change agreed fuel-sharing ratios without explicit acceptance.
-
-#### Scenario: Observed usage does not change ratios silently
-- **WHEN** a user views Fuel sharing for a window with computed usage ratios
-- **THEN** observed ratios are displayed
-- **THEN** configured ratios change only after an accepted proposal
+~~Fuel sharing ratios with propose/accept.~~ **Superseded — out of product.**
 
 ### Requirement: Maintenance category uses a single agreed ratio
-For Maintenance expenses, the system SHALL apply one configured maintenance-sharing ratio across maintenance expenses for the shared vehicle.
-
-#### Scenario: Maintenance ratio applies uniformly
-- **WHEN** a maintenance-sharing ratio is configured for a vehicle
-- **THEN** all Maintenance expenses in allocations use that ratio
+~~Configured maintenance-sharing ratio.~~ **Superseded — out of product.** Maintenance cost stays with the Propriétaire.
 
 ### Requirement: Payments category uses a configured ratio
-For Payments expenses (e.g., leasing), the system SHALL apply a configured payments-sharing ratio.
-
-#### Scenario: Lease payment uses payments ratio
-- **WHEN** a Payments expense is included in an allocation window
-- **THEN** the expense is allocated using the configured payments ratio
+~~Payments-sharing ratio.~~ **Superseded — out of product.**
 
 ### Requirement: Violations require one responsible participant or unknown
-For Violations, the system MUST record either one responsible participant or responsible = unknown.
-
-#### Scenario: Unknown responsibility requires evidence
-- **WHEN** a user saves a violation with responsible = unknown and zero attachments
-- **THEN** the save is rejected until evidence is attached
+~~Violation responsibility with evidence gates for unknown.~~ **Superseded — out of product.** Violations remain informational records only.
 
 ### Requirement: Ratio and responsibility changes require acceptance
-Changes to Fuel, Maintenance, or Payments ratios and violation responsibility attribution SHALL follow propose-and-accept semantics among affected participants.
-
-#### Scenario: Pending ratio proposal
-- **WHEN** a participant proposes a new fuel-sharing ratio
-- **THEN** the proposal is pending until accepted
-- **THEN** the prior ratio remains in effect until acceptance
+~~Propose-and-accept for ratios and violation responsibility.~~ **Superseded — out of product.**
 
 ### Requirement: Allocations are explainable
-Allocation results MUST show included expenses by category, active ratios, violation responsibility state, and pending proposals relevant to the window.
-
-#### Scenario: User reviews allocation breakdown
-- **WHEN** a user opens an allocation result
-- **THEN** the system displays expenses, rules applied, and responsibility states used
+~~Category allocation breakdown UI.~~ **Superseded — out of product.** Use the usage-balance breakdown in `vehicle-sharing-usage-metrics` instead.

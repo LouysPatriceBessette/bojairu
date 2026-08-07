@@ -1,6 +1,6 @@
-## Implementation status (2026-07-14)
+## Implementation status (2026-08-07)
 
-**`vehicle-sharing`**: hub shell, invite/accept APIs, borrower-path UI with owner-path guards per `vehicle-usage-role-separation`. **Relay sync not shipped** — cross-installation sharing is incomplete until §5.2 lands. **2026-07-14:** owner-module defers Emprunteur→Propriétaire gap-notify (**11.2a**) into this change’s Emprunteur delivery (see §2.2).
+**`vehicle-sharing` thin cut:** invite/accept, usage sessions, fuel catch-up, informative usage balance + freeze/transfers, revoke/reactivate, Emprunteur caps, gap flow via pending corrections. **Category expense ratios (`vehicle-expense-sharing`) are out of product.** Gap product behavior is **owner-notified + Unknown until Propriétaire resolves** (see `vehicle-odometer-gap-attribution`); task 2.2 no longer tracks the obsolete “attribute at save + notify attributed party” design.
 
 ## 1. Sharing domain
 
@@ -16,22 +16,24 @@
 ## 2. Borrower usage
 
 - [x] 2.1 Borrower use session UI on shared vehicles (start/end readings)
-- [ ] 2.2 Gap attribution notifications to attributed Emprunteur/Propriétaire (`vehicle-odometer-gap-attribution`) — not wired (`vehicleGapOwnerNotified` l10n only); relay/push deferred. **Includes 11.2 Emprunteur→Propriétaire notify path** deferred from owner-module (2026-07-14 decision); implement with Emprunteur delivery, not current `vehicle` owner scope.
+- [x] 2.2 Odometer gap product flow (`vehicle-odometer-gap-attribution`): positive gaps stored as **Unknown** until Propriétaire resolves (correct reading or assign / add sessions via pending corrections); Propriétaire notified on Emprunteur session-start gap/conflict; Unknown distance excluded from Emprunteur owed inputs. **Obsolete:** prompt “who is the gap attributable to?” at save time + notify the attributed peer — not product.
 - [ ] 2.3 Borrower-path quick actions (odometer, fuel, maintenance report, damage/violation) per `vehicle-quick-actions-ui` and `vehicle-usage-role-separation` — UI + guards shipped; **relay forward** deferred (§5.2)
 - [x] 2.4 Emprunteur hub does not show Propriétaire-only alert tiles or lifetime owner metrics
 
 ## 3. Metrics & reconciliation
 
 - [x] 3.1 Borrower-scoped distance and fuel statistics — **informative running usage balance** (formula + shared detail UI); broader stats charts still open
-- [x] 3.2 Reconciliation window per borrower — running window from `acceptedAt` until future confirmed usage payment (payment flow not shipped)
-- [ ] 3.3 Owner aggregate view across all sharers — owner **per-Emprunteur balance list** shipped; usage-ratio aggregate allocation still open (`vehicle-expense-sharing`)
+- [x] 3.2 Reconciliation window per borrower — running window from `acceptedAt` until freeze/transfer settlement on the usage balance
+- [x] 3.3 Owner per-Emprunteur usage-balance list shipped. **Cancelled:** usage-ratio aggregate allocation via `vehicle-expense-sharing` (out of product — thin cut uses usage balance only)
 
 ## 4. Expense sharing
 
-- [ ] 4.1 Category model (Fuel, Maintenance, Violations, Payments)
-- [ ] 4.2 Ratio configuration with propose/accept
-- [ ] 4.3 Violation responsibility proposals
-- [ ] 4.4 Explainable allocation breakdown UI
+**Out of product (2026-08-07).** No housing-style category ratios; maintenance cost stays with Propriétaire; fuel covered by usage-balance anchors; violations informational only. See `vehicle-expense-sharing` scope note.
+
+- [x] 4.1 ~~Category model~~ — **cancelled / out of product**
+- [x] 4.2 ~~Ratio configuration with propose/accept~~ — **cancelled / out of product**
+- [x] 4.3 ~~Violation responsibility proposals~~ — **cancelled / out of product**
+- [x] 4.4 ~~Explainable allocation breakdown UI~~ — **cancelled / out of product** (usage-balance breakdown is the product UI)
 
 ## 5. Integration
 

@@ -14,14 +14,14 @@ When PP settlement preview is implemented, owned vehicles MAY appear in **separa
 
 For each Emprunteur-accessible vehicle, the card SHOULD surface at minimum:
 
-- **Amount owed or credit** (settlement position from `vehicle-expense-sharing` with detail level TBD in implementation — summary amount on card, breakdown on drill-down is acceptable for first pass)
+- **Amount owed or credit** (usage-balance position from `vehicle-sharing-usage-metrics` — summary on card, breakdown on drill-down is acceptable)
 - Vehicle label and **Propriétaire** identity when the viewer is Emprunteur
 
 Cards SHALL NOT show Propriétaire-only lifetime consumption or maintenance alert tiles.
 
 #### Scenario: Borrower sees shared vehicle balance
 - **WHEN** an Emprunteur on installation B has an active link on A's car (A is another installation)
-- **THEN** the car appears under **Accessible vehicles** with owed/credit summary when allocation data exists
+- **THEN** the car appears under **Accessible vehicles** with owed/credit summary when usage-balance data is available
 
 #### Scenario: Locally owned vehicles never listed as Emprunteur accessible
 - **WHEN** the local user opens the Vehicle sharing hub and owns car V on this installation
@@ -32,8 +32,8 @@ Cards SHALL NOT show Propriétaire-only lifetime consumption or maintenance aler
 The hub SHALL include **Statistics** scoped to **accessible vehicles** and **Emprunteur windows** (per `vehicle-sharing-usage-metrics`):
 
 - **My mileage** (attributed uses only)
-- **My expenses**: fuel, violations, insurance, permits (maintenance MAY appear when forwarded events affect the user's reconciliation window — registration grouping optional on first pass)
-- **Compensation paid** (amounts the user paid to others through sharing settlements)
+- **My expenses**: fuel and related Emprunteur-recorded costs in their windows (violations remain informational; not cost-allocated)
+- **Compensation paid** (amounts settled through usage-balance freeze/transfer on sharing links)
 
 #### Scenario: Borrower statistics exclude others' usage
 - **WHEN** an Emprunteur opens **Statistics** on the Vehicle sharing hub

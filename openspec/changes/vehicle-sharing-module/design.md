@@ -18,14 +18,16 @@ See `vehicle-sharing-licensing-and-delinquency` for EV/PP/PE delinquency rules a
 - Exactly two parties per link; Propriétaire deemed to have accepted their own offer.
 - Emprunteur writes usage facts on the Propriétaire's canonical vehicle record; no session-scoped fuel entry.
 - Both parties may record **full-tank anchors**.
-- Scoped visibility: Emprunteur metrics and reconciliation **only for their usage windows**.
-- Fair expense allocation with explainable category rules.
+- Scoped visibility: Emprunteur metrics and usage-balance reconciliation **only for their usage windows**.
+- Single reconciliation surface: **usage balance** (not housing-style category ratios).
 
 **Non-Goals:**
 
 - Advance reservations (wish list).
 - Emprunteur maintenance reminders or lifetime owner metrics.
 - Automatic ownership transfer on sale (sale export strips sharing metadata — see `vehicle-data-portability`).
+- Category expense ratios / propose-accept allocation for Fuel, Maintenance, Payments, or Violations (`vehicle-expense-sharing` out of product).
+- At-save gap attribution picker notifying the attributed peer (gaps stay Unknown until Propriétaire pending-corrections resolution).
 
 ## Decisions
 

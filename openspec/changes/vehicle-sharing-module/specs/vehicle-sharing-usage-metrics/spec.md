@@ -26,9 +26,9 @@ Where:
 
 Sign: **SOLDE > 0** means amount owed to the Propriétaire; **SOLDE < 0** means a credit for the Emprunteur.
 
-The **same** formula and breakdown SHALL be shown on the Propriétaire path (per Emprunteur) and on the Emprunteur path (self). This balance is **informational**; it does **not** record payments. Propose/accept category ratios (`vehicle-expense-sharing`) remain a separate capability.
+The **same** formula and breakdown SHALL be shown on the Propriétaire path (per Emprunteur) and on the Emprunteur path (self). This balance is **informational** until freeze / transfer settlement on the same surface; it is the **only** cost reconciliation between Propriétaire and Emprunteur. Category propose/accept ratios (`vehicle-expense-sharing`) are **out of product**.
 
-Violations and lease/payment expenses MUST NOT enter this formula.
+Violations and lease/payment expenses MUST NOT enter this formula. Maintenance **spend** stays with the Propriétaire; term **E** only subtracts maintenance **costs the Emprunteur recorded** in the window (as already defined), and per-km **compensation T** is the product mechanism for owner cost recovery—not housing-style maintenance ratios.
 
 #### Scenario: Positive balance owed to owner
 - **WHEN** estimated fuel cost plus compensation exceeds the Emprunteur's fuel and maintenance payments in the window
@@ -71,10 +71,10 @@ Both roles SHALL see the same unavailable state with an explanation. Entry tiles
 - **THEN** the usage balance is unavailable
 
 ### Requirement: Unknown-attributed gaps excluded from borrower owed inputs
-Distance from gap records attributed to **Unknown** MUST NOT be included when computing an Emprunteur's attributed usage or owed share for reconciliation. The Propriétaire effectively carries Unknown usage in allocation math until they revise attribution to a named participant (see `vehicle-odometer-gap-attribution`).
+Distance from gap records attributed to **Unknown** MUST NOT be included when computing an Emprunteur's attributed usage or owed share for the usage balance. The Propriétaire effectively carries Unknown usage until they resolve the gap via pending corrections (see `vehicle-odometer-gap-attribution`).
 
 #### Scenario: Borrower reconciliation ignores Unknown gaps
-- **WHEN** borrower B opens reconciliation for a window containing an Unknown-attributed gap
+- **WHEN** borrower B opens the usage balance for a window containing an Unknown-attributed gap
 - **THEN** that gap distance is excluded from B's attributed totals
 - **THEN** the breakdown explains that Unknown gaps are Propriétaire-side until revised
 
@@ -92,10 +92,10 @@ The system MUST handle insufficient borrower-scoped data without showing mislead
 - **WHEN** a borrower has zero attributed distance in the running window but C and P are available
 - **THEN** the balance MAY still be shown (D = 0) using A, E, and the formula
 
-### Requirement: Calendar-window ratio allocation (deferred relative to informative balance)
-Category ratio allocation and calendar-month reconciliation UI from earlier drafts (`vehicle-expense-sharing`) remain specified separately and are **not** required for the informative running balance above.
+### Requirement: No category-ratio allocation product
+Calendar-window category ratio allocation and housing-style expense-sharing UI (`vehicle-expense-sharing`) are **out of product**. Do not treat them as deferred deliverables for the thin sharing cut.
 
-#### Scenario: Borrower opens reconciliation for a month (deferred)
-- **WHEN** borrower B opens a future calendar-window allocation view
-- **THEN** included uses and fuel facts are limited to B's attributed sessions intersecting that window
-- **THEN** the breakdown is sufficient to compute B's share per active ratios
+#### Scenario: Borrower opens usage balance (product path)
+- **WHEN** borrower B opens usage-balance reconciliation for their link
+- **THEN** the breakdown uses the locked SOLDE formula only
+- **THEN** the app does not present Fuel/Maintenance/Payments ratio configuration

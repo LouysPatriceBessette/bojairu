@@ -16,7 +16,7 @@ Owner-side **`vehicle`** module: **substantially implemented** on-device (local 
 - **5.3 Undo import** (full DB + public media revert; confirm dialog on detail) — `./tool/melosw run qa:run-vehicle-sale-export-import-undo` (`Scenario PASSED | vehicle_sale_export_import_undo`, artifacts `20260715T021251Z`).
 
 **Active cap + deactivation (2026-07-14):** at most three **active** owned vehicles; irreversible deactivate frees a slot; FAB hidden at cap; same cap for QA seeds.
-See `vehicle-sharing-module` for collaboration, relay sync, borrower metrics, expense sharing, and **`vehicle-usage-role-separation`** (owner vs borrower path; forbid self-borrow).
+See `vehicle-sharing-module` for collaboration, relay sync, borrower metrics, usage-balance reconciliation (category expense ratios are **out of product**), and **`vehicle-usage-role-separation`** (owner vs borrower path; forbid self-borrow).
 
 ## 1. Domain model & storage
 
@@ -102,7 +102,7 @@ See `vehicle-sharing-module` for collaboration, relay sync, borrower metrics, ex
 ## 11. Vehicle notifications (deferred)
 
 - [ ] 11.1 **Suspicious session-end tank (borrower)**: when an Emprunteur ends a session with the highest declared tank level after high mileage since the last fuel purchase and confirms the declaration anyway, notify the Propriétaire (relay/push when vehicle notification infrastructure ships). Tracked with Emprunteur / sharing work.
-- [ ] 11.2a **Negative-gap maintained — Emprunteur path**: when an Emprunteur confirms a lower odometer reading, notify the **Propriétaire** (photos / investigate). **Out of current `vehicle` owner-module scope (2026-07-14)** — implement when working the **Emprunteur** path in `vehicle-sharing-module` (see tasks sharing §2.2 / gap attribution notifs).
+- [ ] 11.2a **Negative-gap maintained — Emprunteur path**: when an Emprunteur confirms a lower odometer reading, notify the **Propriétaire** (photos / investigate). **Out of current `vehicle` owner-module scope (2026-07-14)** — follow `vehicle-odometer-gap-attribution` (pending-corrections attention model). Positive session-start gaps from Emprunteurs already notify the Propriétaire via sharing session-gap notification (`vehicle-sharing-module` task 2.2 product flow).
 - [x] 11.2b **Negative-gap maintained — Propriétaire path (current release)**: when the Propriétaire chooses **Maintain reading, investigate later**, persist the reading with negative-gap acknowledgment and the existing **journal entry**. **No dedicated in-app/push reminder** in the current release — reminder **deferred to a future release (2026-07-14)**; journal alone is acceptable.
 
 ## 12. Session-end distance plausibility guard

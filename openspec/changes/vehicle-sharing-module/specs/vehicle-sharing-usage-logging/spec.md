@@ -30,7 +30,7 @@ The system MUST NOT provide a flow for Emprunteurs to log fuel purchases tied to
 #### Scenario: No borrower fuel entry on use completion
 - **WHEN** an Emprunteur completes a vehicle use
 - **THEN** the completion flow does not prompt for liters consumed on that session
-- **THEN** fuel allocation relies on anchors and shared ratios per `vehicle-expense-sharing`
+- **THEN** fuel cost sharing uses full-tank anchors and the usage-balance formula in `vehicle-sharing-usage-metrics` (not category ratios)
 
 ### Requirement: Session-start fuel catch-up from Propriétaire
 When an Emprunteur starts a use session, the session-start envelope SHALL include the stable id of the Emprunteur's newest local fuel purchase when one exists (`lastKnownPurchaseId`). After the Propriétaire imports that session start, the Propriétaire SHALL reply with a **fuel purchase catch-up** envelope (dedicated kind) containing:
@@ -57,12 +57,13 @@ for any recorder. The catch-up envelope MUST NOT be sent when the selected set i
 - **WHEN** catch-up is received (empty or not)
 - **THEN** the guard applies again for that session
 
-### Requirement: Shared vehicles use gap attribution for unlogged meter increases
-On a shared vehicle, when a session **start** reading exceeds the latest stored reading, gap attribution per `vehicle-odometer-gap-attribution` SHALL offer the Propriétaire and active Emprunteurs as attribution targets. Attributed participants MUST receive **informational** notifications when another participant assigns them the gap. **Unknown** attributions MUST notify the Propriétaire (unless self). **Negative** gaps MUST notify the Propriétaire for photo verification (unless self). Only the **Propriétaire** MAY revise a stored gap attribution; the app MUST NOT implement an in-app contestation workflow.
+### Requirement: Shared vehicles use Unknown-first gap handling for unlogged meter increases
+On a shared vehicle, when a session **start** reading exceeds the latest stored reading, gap handling SHALL follow `vehicle-odometer-gap-attribution`: confirm the divergence, persist the gap as **Unknown**, notify the **Propriétaire** when an Emprunteur session-start creates the pending correction, and allow only the **Propriétaire** to resolve (correct a reading or assign missing sessions). The app MUST NOT implement an in-app contestation workflow or an at-save attribution picker (Self / peer / Unknown).
 
 #### Scenario: Gap between Emprunteur sessions
 - **WHEN** Emprunteur B ends a session at 12 400 km
 - **AND** Emprunteur C later starts a session at 12 650 km without B having logged an intervening reading
-- **THEN** C is prompted to attribute the 250 km gap
-- **WHEN** C attributes it to B
-- **THEN** B is notified on their device(s)
+- **THEN** C confirms the 250 km divergence
+- **THEN** the gap is stored as Unknown on the Propriétaire record
+- **THEN** the Propriétaire is notified to open pending corrections
+- **THEN** only the Propriétaire may later attribute or correct that stretch
