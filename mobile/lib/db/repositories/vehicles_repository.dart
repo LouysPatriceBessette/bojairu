@@ -16,6 +16,7 @@ import '../../vehicle/vehicle_meter_journal_sort.dart';
 import '../../vehicle/vehicle_meter_reading_effective.dart';
 import '../../vehicle/vehicle_owner_contact.dart';
 import '../../vehicle/vehicle_owned_active_cap.dart';
+import '../../vehicle/vehicle_emprunteur_cap.dart';
 
 const String kVehicleGapAttributionUnknown = 'unknown';
 
@@ -1495,6 +1496,22 @@ class VehiclesRepository {
     DateTime? expiresAt,
   }) async {
     await ensureVehicleActiveForWrite(vehicleId);
+    final vehicle = await getVehicle(vehicleId);
+    if (vehicle == null ||
+        vehicle.ownerContactId != kVehicleOwnerSelfContactId) {
+      throw const SelfBorrowForbiddenException();
+    }
+    if (vehicleContactIsOwnerSelf(borrowerContactId) ||
+        vehicleContactIsBorrowerSelf(borrowerContactId)) {
+      throw const SelfBorrowForbiddenException();
+    }
+    final counting = await distinctEmprunteurContactIdsCountingTowardCap();
+    if (EmprunteurCapLogic.wouldExceedCap(
+      countingContactIds: counting,
+      borrowerContactId: borrowerContactId,
+    )) {
+      throw const EmprunteurCapExceededException();
+    }
     final id = _newVehicleId('vshare:');
     final now = DateTime.now().toUtc();
     await _db
@@ -1519,8 +1536,29 @@ class VehiclesRepository {
     )..where((t) => t.id.equals(id))).getSingle());
   }
 
-  /// Marks pending offers past [expiresAt] as expired (local wall-clock only).
-  /// Appends one activity-log row per newly expired link (both devices).
+  /// Distinct borrower Contact ids that count toward [kMaxDistinctEmprunteurs]
+  /// on this device's owned fleet (`active`, `pending`, `reactivatePending`).
+  Future<Set<String>> distinctEmprunteurContactIdsCountingTowardCap({
+    DateTime? nowUtc,
+  }) async {
+    await expirePendingOffersPastDeadline(nowUtc: nowUtc);
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)..where(
+              (t) =>
+                  t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
+                  (t.status.equals(VehicleSharingLinkStatus.active.wire) |
+                      t.status.equals(VehicleSharingLinkStatus.pending.wire) |
+                      t.status.equals(
+                        VehicleSharingLinkStatus.reactivatePending.wire,
+                      )),
+            ))
+            .get();
+    return {for (final r in rows) r.borrowerContactId};
+  }
+
+  /// Marks pending offers past [expiresAt] as expired, and past-deadline
+  /// reactivate proposals back to revoked (local wall-clock only).
+  /// Appends one activity-log row per newly expired pending offer.
   Future<void> expirePendingOffersPastDeadline({DateTime? nowUtc}) async {
     final now = (nowUtc ?? DateTime.now()).toUtc();
     final pending =
@@ -1545,6 +1583,28 @@ class VehiclesRepository {
           initiatorKind: RelayActivityLogService.initiatorSystem,
           details: {'linkId': link.id, 'vehicleId': link.vehicleId},
           occurredAt: now,
+        );
+      }
+    }
+
+    final reactivatePending =
+        await (_db.select(_db.vehicleSharingLinks)..where(
+              (t) => t.status.equals(
+                VehicleSharingLinkStatus.reactivatePending.wire,
+              ),
+            ))
+            .get();
+    for (final link in reactivatePending) {
+      final expires = link.expiresAt;
+      if (expires == null) continue;
+      if (!expires.toUtc().isAfter(now)) {
+        await (_db.update(
+          _db.vehicleSharingLinks,
+        )..where((t) => t.id.equals(link.id))).write(
+          VehicleSharingLinksCompanion(
+            status: drift.Value(VehicleSharingLinkStatus.revoked.wire),
+            expiresAt: const drift.Value(null),
+          ),
         );
       }
     }
@@ -1748,12 +1808,29 @@ class VehiclesRepository {
   }
 
   /// Marks a revoked link as waiting for Emprunteur reactivation accept.
-  Future<void> markSharingLinkReactivatePending(String linkId) async {
+  Future<void> markSharingLinkReactivatePending(
+    String linkId, {
+    DateTime? expiresAt,
+  }) async {
+    final link = await getSharingLink(linkId);
+    if (link == null) {
+      throw StateError('sharing link not found: $linkId');
+    }
+    if (link.ownerContactId == kVehicleOwnerSelfContactId) {
+      final counting = await distinctEmprunteurContactIdsCountingTowardCap();
+      if (EmprunteurCapLogic.wouldExceedCap(
+        countingContactIds: counting,
+        borrowerContactId: link.borrowerContactId,
+      )) {
+        throw const EmprunteurCapExceededException();
+      }
+    }
     await (_db.update(
       _db.vehicleSharingLinks,
     )..where((t) => t.id.equals(linkId))).write(
       VehicleSharingLinksCompanion(
         status: drift.Value(VehicleSharingLinkStatus.reactivatePending.wire),
+        expiresAt: drift.Value(expiresAt?.toUtc()),
       ),
     );
   }
@@ -1768,6 +1845,7 @@ class VehiclesRepository {
         status: drift.Value(VehicleSharingLinkStatus.active.wire),
         acceptedAt: drift.Value(now),
         revokedAt: const drift.Value(null),
+        expiresAt: const drift.Value(null),
       ),
     );
   }

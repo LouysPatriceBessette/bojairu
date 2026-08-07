@@ -2114,6 +2114,11 @@
   "vehicleSharingOfferSent": "Oferta enviada.",
   "vehicleSharingOfferDeadlineTitle": "Plazo de respuesta",
   "vehicleSharingOfferDeadlineBody": "El prestatario tiene este plazo para aceptar la invitación.",
+  "vehicleSharingReactivateDeadlineTitle": "Plazo de respuesta",
+  "vehicleSharingReactivateDeadlineBody": "El prestatario tiene este plazo para aceptar la reactivación.",
+  "vehicleEmprunteurCapLimitReached": "Límite alcanzado: máximo 5 prestatarios (activos o pendientes).",
+  "vehicleEmprunteurCapLastSlotTitle": "Último puesto de prestatario",
+  "vehicleEmprunteurCapLastSlotBody": "Esta persona ocupa el quinto y último puesto. Mientras siga activa o pendiente, no podrá invitar a otro contacto distinto. ¿Continuar?",
   "vehicleSharingInvitationSentToAt": "Invitación enviada a {name} el {when}",
   "@vehicleSharingInvitationSentToAt": {
     "placeholders": {

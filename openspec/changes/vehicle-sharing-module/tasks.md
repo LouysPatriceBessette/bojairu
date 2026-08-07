@@ -9,9 +9,9 @@
 - [x] 1.2a Response deadline dialog (3h/8h/24h/48h) + `expiresAt` on link + offer JSON; local pending→expired; shares-detail “invitation sent to … on …”
 - [ ] 1.2b **Deferred (relay):** enforce offer TTL / inbox expiry on relay, deadline reminder fires, and cross-device expiry beyond client JSON (no Go change in 1.2a)
 - [x] 1.3a Borrower accept flow (`acceptSharingLink`)
-- [ ] 1.3b Owner revoke UI (`revokeSharingLink` API exists; no hub control yet)
+- [x] 1.3b Owner revoke / reactivate UI (unilateral revoke + dedicated reactivate kinds; shares screen controls)
 - [x] 1.4 Multi-vehicle and multi-borrower list surfaces (basic hub lists)
-- [ ] 1.5 Enforce cap of five distinct active Emprunteurs per Propriétaire (`vehicle-sharing-domain-model`)
+- [x] 1.5 Enforce cap of five distinct Emprunteurs per Propriétaire (`vehicle-sharing-domain-model`) — counts `active` + `pending` + `reactivatePending`; reactivation has offer-like `expiresAt` (back to `revoked` on expiry); fifth-slot warning + sixth blocked
 
 ## 2. Borrower usage
 
@@ -46,5 +46,5 @@
 
 - [x] 6.1 Spec written: one DB per installation, navigation-derived role, forbid self-borrow, accessible = other installations + relay.
 - [x] 6.2 Code: exclude self-owned vehicles from Emprunteur accessible/pending lists; `denyVehicleUsageAccess` on borrower path for own vehicles; `VehicleUsageContext` from hub routes.
-- [ ] 6.3 Enforce at API layer: `createSharingOffer` / seeds MUST NOT create self-borrow links; add unit tests for denial paths.
+- [x] 6.3 Enforce at API layer: `createSharingOffer` MUST NOT create self-borrow links (`SelfBorrowForbiddenException`); unit tests for denial paths.
 - [ ] 6.4 QA: document that current vehicle Maestro scenarios are **owner-path only**; Emprunteur E2E waits on relay fixtures (see `vehicle-module` tasks §14.4).

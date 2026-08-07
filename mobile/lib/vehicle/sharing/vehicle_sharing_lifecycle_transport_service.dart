@@ -88,6 +88,8 @@ class VehicleSharingLifecycleTransportService {
       'vehicleId': link.vehicleId,
       'proposedAt': DateTime.now().toUtc().toIso8601String(),
       'vehicleLabel': vehicle.displayLabel,
+      if (link.expiresAt != null)
+        'expiresAt': link.expiresAt!.toUtc().toIso8601String(),
     });
   }
 

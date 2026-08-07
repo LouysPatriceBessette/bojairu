@@ -4953,6 +4953,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'El prestatario tiene este plazo para aceptar la invitación.';
 
   @override
+  String get vehicleSharingReactivateDeadlineTitle => 'Plazo de respuesta';
+
+  @override
+  String get vehicleSharingReactivateDeadlineBody =>
+      'El prestatario tiene este plazo para aceptar la reactivación.';
+
+  @override
+  String get vehicleEmprunteurCapLimitReached =>
+      'Límite alcanzado: máximo 5 prestatarios (activos o pendientes).';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotTitle =>
+      'Último puesto de prestatario';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotBody =>
+      'Esta persona ocupa el quinto y último puesto. Mientras siga activa o pendiente, no podrá invitar a otro contacto distinto. ¿Continuar?';
+
+  @override
   String vehicleSharingInvitationSentToAt(String name, String when) {
     return 'Invitación enviada a $name el $when';
   }

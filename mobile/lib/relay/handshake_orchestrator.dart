@@ -2074,7 +2074,14 @@ class HandshakeOrchestrator {
           link.status != VehicleSharingLinkStatus.reactivatePending.wire) {
         return;
       }
-      await vehicles.markSharingLinkReactivatePending(link.id);
+      final expiresAtRaw = payload['expiresAt'] as String?;
+      final expiresAt = expiresAtRaw == null
+          ? null
+          : DateTime.tryParse(expiresAtRaw)?.toUtc();
+      await vehicles.markSharingLinkReactivatePending(
+        link.id,
+        expiresAt: expiresAt,
+      );
       await RelayActivityLogService(_db).append(
         kind: RelayActivityLogKinds.vehicleSharingReactivateProposeReceived,
         initiatorKind: RelayActivityLogService.initiatorContact,
@@ -3131,6 +3138,7 @@ class HandshakeOrchestrator {
   /// Proposes reactivation of a revoked link (Propriétaire → Emprunteur).
   Future<void> sendVehicleSharingReactivatePropose({
     required String linkId,
+    required DateTime expiresAt,
   }) async {
     final vehicles = VehiclesRepository(_db);
     final link = await vehicles.getSharingLink(linkId);
@@ -3140,7 +3148,10 @@ class HandshakeOrchestrator {
     if (link.status != VehicleSharingLinkStatus.revoked.wire) {
       throw HandshakeOrchestratorError('unknown');
     }
-    await vehicles.markSharingLinkReactivatePending(link.id);
+    await vehicles.markSharingLinkReactivatePending(
+      link.id,
+      expiresAt: expiresAt.toUtc(),
+    );
     final payloadJson = await VehicleSharingLifecycleTransportService(
       _db,
     ).exportReactivateProposeJson(link.id);

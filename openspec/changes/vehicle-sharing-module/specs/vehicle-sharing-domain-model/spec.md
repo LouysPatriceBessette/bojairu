@@ -67,11 +67,11 @@ An **Emprunteur** SHALL log usage only when they have effective **PE** (`vehicle
 ### Requirement: Multiple vehicles and multiple Emprunteurs within Propriétaire caps
 The system SHALL support:
 - one Propriétaire sharing **up to three owned vehicles** (each with separate pairwise links),
-- one Propriétaire having at most **five distinct active Emprunteurs** across all owned vehicles,
+- one Propriétaire having at most **five distinct Emprunteurs** across all owned vehicles who currently hold an **active**, **pending offer**, or **reactivate-pending** link (same Contact on two vehicles counts once),
 - one Emprunteur using **multiple vehicles** (same or different Propriétaires, without a product cap on the Emprunteur side),
 - one Propriétaire **borrowing another Propriétaire's vehicle** while sharing their own.
 
-The system MUST NOT allow a Propriétaire to exceed **three** owned vehicles (see `vehicle-domain-model`) or to activate a sharing link with a **sixth distinct** Emprunteur while five others already have active links on that Propriétaire's fleet.
+The system MUST NOT allow a Propriétaire to exceed **three** owned vehicles (see `vehicle-domain-model`) or to create / propose a sharing relationship with a **sixth distinct** Emprunteur while five others already count toward the cap. Pending invitations and reactivation proposals count toward the five until they expire (or are accepted / revoked). When inviting a Contact who would occupy the **fifth** slot, the Propriétaire SHALL see clear guidance that further distinct invitations will be blocked while that slot remains occupied.
 
 #### Scenario: Propriétaire borrows while sharing out
 - **WHEN** A shares their car with B and also has an active link as Emprunteur on C's vehicle
@@ -82,11 +82,29 @@ The system MUST NOT allow a Propriétaire to exceed **three** owned vehicles (se
 - **WHEN** Emprunteur B has active links on two vehicles owned by Propriétaire A
 - **THEN** B counts as one Emprunteur toward A's limit of five
 
+#### Scenario: Pending invitation counts toward the cap
+- **WHEN** a Propriétaire has four distinct Contacts with active links and one pending invitation to a fifth Contact
+- **THEN** that fifth Contact counts toward the limit of five
+- **AND** an offer to a sixth distinct Contact is blocked until the pending invitation expires or a counted Emprunteur is revoked
+
 #### Scenario: Propriétaire cannot invite a sixth distinct Emprunteur
-- **WHEN** a Propriétaire already has five distinct Contacts with active sharing links on their owned vehicles
+- **WHEN** a Propriétaire already has five distinct Contacts counting toward the cap (active and/or pending / reactivate-pending)
 - **AND** they attempt to offer a vehicle to a sixth distinct Contact
 - **THEN** the system blocks the new offer
 - **THEN** the user sees clear guidance that the limit is five Emprunteurs per Propriétaire
+
+#### Scenario: Fifth-slot warning before invite
+- **WHEN** a Propriétaire has four distinct Contacts counting toward the cap
+- **AND** they invite a fifth distinct Contact
+- **THEN** the system allows the invite after showing guidance that this fills the last slot
+
+### Requirement: Reactivation proposals expire like offers
+Before proposing reactivation of a revoked sharing link, the Propriétaire SHALL choose a response deadline from the product standard validity presets (3h / 8h / 24h / 48h). The chosen instant SHALL be persisted as `expiresAt` on the link and included in the reactivation propose payload. When wall-clock passes `expiresAt` while the link is still `reactivatePending`, the link SHALL return to **revoked** (as if no reactivation had been proposed).
+
+#### Scenario: Reactivation expires back to revoked
+- **WHEN** a link is `reactivatePending` with `expiresAt` in the past
+- **THEN** local expiry processing sets the link status to `revoked`
+- **THEN** that Emprunteur no longer counts toward the five unless they have another counting link
 
 ### Requirement: Revoking sharing stops new Emprunteur usage
 When a Propriétaire revokes a sharing link, the Emprunteur MUST NOT log new usage on that vehicle after revocation. Historical usage facts remain on the vehicle record for the Propriétaire's reconciliation.

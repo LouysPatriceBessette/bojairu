@@ -2315,6 +2315,11 @@
   "vehicleSharingOfferSent": "Offer sent.",
   "vehicleSharingOfferDeadlineTitle": "Response deadline",
   "vehicleSharingOfferDeadlineBody": "The borrower has this long to accept the invitation.",
+  "vehicleSharingReactivateDeadlineTitle": "Response deadline",
+  "vehicleSharingReactivateDeadlineBody": "The borrower has this long to accept reactivation.",
+  "vehicleEmprunteurCapLimitReached": "Limit reached: at most 5 borrowers (active or pending).",
+  "vehicleEmprunteurCapLastSlotTitle": "Last borrower slot",
+  "vehicleEmprunteurCapLastSlotBody": "This person fills the fifth and final slot. While they remain active or pending, you cannot invite another distinct contact. Continue?",
   "vehicleSharingInvitationSentToAt": "Invitation sent to {name} on {when}",
   "@vehicleSharingInvitationSentToAt": {
     "placeholders": {

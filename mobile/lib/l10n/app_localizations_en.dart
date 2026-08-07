@@ -4902,6 +4902,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'The borrower has this long to accept the invitation.';
 
   @override
+  String get vehicleSharingReactivateDeadlineTitle => 'Response deadline';
+
+  @override
+  String get vehicleSharingReactivateDeadlineBody =>
+      'The borrower has this long to accept reactivation.';
+
+  @override
+  String get vehicleEmprunteurCapLimitReached =>
+      'Limit reached: at most 5 borrowers (active or pending).';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotTitle => 'Last borrower slot';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotBody =>
+      'This person fills the fifth and final slot. While they remain active or pending, you cannot invite another distinct contact. Continue?';
+
+  @override
   String vehicleSharingInvitationSentToAt(String name, String when) {
     return 'Invitation sent to $name on $when';
   }

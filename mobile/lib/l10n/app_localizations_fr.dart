@@ -4950,6 +4950,25 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'emprunteur a jusqu\'à cette durée pour accepter l\'invitation.';
 
   @override
+  String get vehicleSharingReactivateDeadlineTitle => 'Délai de réponse';
+
+  @override
+  String get vehicleSharingReactivateDeadlineBody =>
+      'L\'emprunteur a jusqu\'à cette durée pour accepter la réactivation.';
+
+  @override
+  String get vehicleEmprunteurCapLimitReached =>
+      'Limite atteinte : 5 emprunteurs maximum (actifs ou en attente).';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotTitle =>
+      'Dernier emprunteur disponible';
+
+  @override
+  String get vehicleEmprunteurCapLastSlotBody =>
+      'Cette personne occupe le cinquième et dernier créneau. Tant qu\'elle reste active ou en attente, vous ne pourrez pas inviter un autre contact distinct. Continuer ?';
+
+  @override
   String vehicleSharingInvitationSentToAt(String name, String when) {
     return 'Invitation envoyée à $name le $when';
   }

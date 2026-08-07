@@ -17,6 +17,8 @@ import '../../relay/relay_client.dart';
 import '../../util/display_units.dart';
 import '../../util/format_money.dart';
 import '../../vehicle/sharing/vehicle_sharing_offer_deadline_dialog.dart';
+import '../../vehicle/sharing/emprunteur_cap_ui.dart';
+import '../../vehicle/vehicle_emprunteur_cap.dart';
 import '../../vehicle/vehicle_module_access.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_text_field.dart';
@@ -337,6 +339,11 @@ class _VehicleSharingInviteFormScreenState
       );
       return;
     }
+    final allowed = await ensureEmprunteurCapAllowsInvite(
+      context: context,
+      borrowerContactId: widget.contactId,
+    );
+    if (!allowed || !mounted) return;
     final responseWindow = await showVehicleSharingOfferDeadlineDialog(context);
     if (responseWindow == null || !mounted) return;
     final expiresAt = DateTime.now().toUtc().add(responseWindow);
@@ -397,6 +404,18 @@ class _VehicleSharingInviteFormScreenState
         SnackBar(content: Text(l10n.vehicleSharingOfferSent)),
       );
       context.pop();
+    } on EmprunteurCapExceededException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleEmprunteurCapLimitReached)),
+      );
+      setState(() => _submitting = false);
+    } on SelfBorrowForbiddenException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorSomethingWentWrongBody)),
+      );
+      setState(() => _submitting = false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

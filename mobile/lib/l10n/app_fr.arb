@@ -2136,6 +2136,11 @@
   "vehicleSharingOfferSent": "Offre envoyée.",
   "vehicleSharingOfferDeadlineTitle": "Délai de réponse",
   "vehicleSharingOfferDeadlineBody": "L'emprunteur a jusqu'à cette durée pour accepter l'invitation.",
+  "vehicleSharingReactivateDeadlineTitle": "Délai de réponse",
+  "vehicleSharingReactivateDeadlineBody": "L'emprunteur a jusqu'à cette durée pour accepter la réactivation.",
+  "vehicleEmprunteurCapLimitReached": "Limite atteinte : 5 emprunteurs maximum (actifs ou en attente).",
+  "vehicleEmprunteurCapLastSlotTitle": "Dernier emprunteur disponible",
+  "vehicleEmprunteurCapLastSlotBody": "Cette personne occupe le cinquième et dernier créneau. Tant qu'elle reste active ou en attente, vous ne pourrez pas inviter un autre contact distinct. Continuer ?",
   "vehicleSharingInvitationSentToAt": "Invitation envoyée à {name} le {when}",
   "@vehicleSharingInvitationSentToAt": {
     "placeholders": {

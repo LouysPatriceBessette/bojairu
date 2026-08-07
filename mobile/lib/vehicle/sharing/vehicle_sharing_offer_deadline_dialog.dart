@@ -5,10 +5,13 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/dialog_tap_guard.dart';
 import '../../widgets/standard_validity_duration_bar.dart';
 
-/// Propriétaire picks how long the Emprunteur may accept before the offer expires.
+/// Propriétaire picks how long the Emprunteur may accept before the offer
+/// (or reactivation proposal) expires.
 Future<Duration?> showVehicleSharingOfferDeadlineDialog(
-  BuildContext context,
-) async {
+  BuildContext context, {
+  String? title,
+  String? body,
+}) async {
   return DialogTapGuard.run<Duration?>(
     'vehicleSharingOfferDeadline',
     () async {
@@ -21,14 +24,14 @@ Future<Duration?> showVehicleSharingOfferDeadlineDialog(
           builder: (ctx, setLocal) => AlertDialog(
             title: qaVehicleSharingSemantics(
               identifier: kQaVehicleSharingOfferDeadlineDialog,
-              child: Text(l10n.vehicleSharingOfferDeadlineTitle),
+              child: Text(title ?? l10n.vehicleSharingOfferDeadlineTitle),
             ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l10n.vehicleSharingOfferDeadlineBody),
+                  Text(body ?? l10n.vehicleSharingOfferDeadlineBody),
                   const SizedBox(height: 16),
                   StandardValidityDurationSegmented(
                     selected: selected,

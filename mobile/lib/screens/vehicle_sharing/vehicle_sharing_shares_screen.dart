@@ -10,7 +10,10 @@ import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
 import '../../sandbox/sandbox_mode.dart';
 import '../../util/display_date.dart';
+import '../../vehicle/vehicle_emprunteur_cap.dart';
 import '../../vehicle/vehicle_module_access.dart';
+import '../../vehicle/sharing/emprunteur_cap_ui.dart';
+import '../../vehicle/sharing/vehicle_sharing_offer_deadline_dialog.dart';
 import '../../widgets/screen_body_padding.dart';
 import '../contacts/contact_picker_sheet.dart';
 
@@ -125,6 +128,18 @@ class _VehicleSharingSharesScreenState
       allowInvite: !SandboxMode.isActive(widget.prefs),
     );
     if (selected == null || !mounted) return;
+    final counting = await VehiclesRepository(AppDatabase.processScope)
+        .distinctEmprunteurContactIdsCountingTowardCap();
+    if (!mounted) return;
+    if (EmprunteurCapLogic.wouldExceedCap(
+      countingContactIds: counting,
+      borrowerContactId: selected.id,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleEmprunteurCapLimitReached)),
+      );
+      return;
+    }
     final encoded = Uri.encodeComponent(selected.id);
     await context.push(
       '/vehicle-sharing/${widget.vehicleId}/invite-form?contactId=$encoded',
@@ -212,8 +227,28 @@ class _VehicleSharingSharesScreenState
     final l10n = AppLocalizations.of(context);
     final orch = HandshakeOrchestrator.maybeInstance;
     if (orch == null) return;
+    final allowed = await ensureEmprunteurCapAllowsInvite(
+      context: context,
+      borrowerContactId: link.borrowerContactId,
+    );
+    if (!allowed || !mounted) return;
+    final responseWindow = await showVehicleSharingOfferDeadlineDialog(
+      context,
+      title: l10n.vehicleSharingReactivateDeadlineTitle,
+      body: l10n.vehicleSharingReactivateDeadlineBody,
+    );
+    if (responseWindow == null || !mounted) return;
+    final expiresAt = DateTime.now().toUtc().add(responseWindow);
     try {
-      await orch.sendVehicleSharingReactivatePropose(linkId: link.id);
+      await orch.sendVehicleSharingReactivatePropose(
+        linkId: link.id,
+        expiresAt: expiresAt,
+      );
+    } on EmprunteurCapExceededException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleEmprunteurCapLimitReached)),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

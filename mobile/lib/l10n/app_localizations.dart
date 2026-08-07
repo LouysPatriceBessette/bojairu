@@ -8188,6 +8188,36 @@ abstract class AppLocalizations {
   /// **'The borrower has this long to accept the invitation.'**
   String get vehicleSharingOfferDeadlineBody;
 
+  /// No description provided for @vehicleSharingReactivateDeadlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response deadline'**
+  String get vehicleSharingReactivateDeadlineTitle;
+
+  /// No description provided for @vehicleSharingReactivateDeadlineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The borrower has this long to accept reactivation.'**
+  String get vehicleSharingReactivateDeadlineBody;
+
+  /// No description provided for @vehicleEmprunteurCapLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached: at most 5 borrowers (active or pending).'**
+  String get vehicleEmprunteurCapLimitReached;
+
+  /// No description provided for @vehicleEmprunteurCapLastSlotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last borrower slot'**
+  String get vehicleEmprunteurCapLastSlotTitle;
+
+  /// No description provided for @vehicleEmprunteurCapLastSlotBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This person fills the fifth and final slot. While they remain active or pending, you cannot invite another distinct contact. Continue?'**
+  String get vehicleEmprunteurCapLastSlotBody;
+
   /// No description provided for @vehicleSharingInvitationSentToAt.
   ///
   /// In en, this message translates to:
