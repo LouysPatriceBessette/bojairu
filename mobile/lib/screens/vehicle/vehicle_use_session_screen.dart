@@ -39,11 +39,15 @@ class VehicleUseSessionScreen extends StatefulWidget {
     this.initialVehicleId,
     this.prefs,
     this.usageContext = const VehicleUsageContext.owner(),
+    this.forceEndBorrowerSessionLinkId,
   });
 
   final String? initialVehicleId;
   final AppPreferences? prefs;
   final VehicleUsageContext usageContext;
+
+  /// When set (owner), end the open borrower session and notify the peer.
+  final String? forceEndBorrowerSessionLinkId;
 
   @override
   State<VehicleUseSessionScreen> createState() =>
@@ -207,12 +211,15 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     VehicleUse? open;
     if (denial == null && v != null) {
       open = await repo.openUseForVehicle(v.id);
-      // Propriétaire (or any actor) may only end a session attributed to them.
-      // A peer/borrower open use must leave this form in "start" mode.
-      if (!canEndUseSessionAsActor(
-        openUse: open,
-        context: widget.usageContext,
-      )) {
+      final forceEnd =
+          (widget.forceEndBorrowerSessionLinkId ?? '').trim().isNotEmpty;
+      // Propriétaire (or any actor) may only end a session attributed to them,
+      // unless forcing end of a borrower session for revoke.
+      if (!forceEnd &&
+          !canEndUseSessionAsActor(
+            openUse: open,
+            context: widget.usageContext,
+          )) {
         open = null;
       }
     }
@@ -314,13 +321,18 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
     final repo = VehiclesRepository(AppDatabase.processScope);
     try {
       final existingOpen = await repo.openUseForVehicle(v.id);
-      final ending = canEndUseSessionAsActor(
-        openUse: existingOpen,
-        context: widget.usageContext,
-      );
+      final forceEndLinkId =
+          (widget.forceEndBorrowerSessionLinkId ?? '').trim();
+      final forceEndBorrower = forceEndLinkId.isNotEmpty && existingOpen != null;
+      final ending = forceEndBorrower ||
+          canEndUseSessionAsActor(
+            openUse: existingOpen,
+            context: widget.usageContext,
+          );
       // Only the attributed actor may end; otherwise this submit is a start.
       final openUse = ending ? existingOpen : null;
-      final blockingOpenUse = !ending ? existingOpen : null;
+      final blockingOpenUse =
+          !ending && !forceEndBorrower ? existingOpen : null;
       if (!mounted) return;
       // Starting a session (or ending one with other writes) confirms import.
       final ok = await confirmSaleImportCommitmentIfNeeded(
@@ -425,6 +437,67 @@ class _VehicleUseSessionScreenState extends State<VehicleUseSessionScreen> {
         if (!tankOk) {
           return;
         }
+      }
+
+      if (forceEndBorrower && openUse != null) {
+        final endReading = await repo.saveMeterReading(
+          vehicleId: v.id,
+          value: parsed,
+          unit: unit,
+          photoPath: photoPath,
+          recordedByContactId: actingId,
+          role: MeterReadingRole.sessionEnd,
+          vehicleUseId: openUse.id,
+          negativeGapAcknowledged: latest != null && parsed < latest,
+          isFullTank: _tankFillLevel.percent >= 100,
+          tankFillFraction:
+              _tankFillLevel.percent >= 100 ? null : _tankFillLevel.percent,
+        );
+        await repo.closeUseSession(
+          useId: openUse.id,
+          endReadingId: endReading.id,
+          drivingRoutePercent: _requiresDetailedDrivingMix
+              ? int.tryParse(_routePercent.text.trim())
+              : null,
+          drivingCityPercent: _requiresDetailedDrivingMix
+              ? int.tryParse(_cityPercent.text.trim())
+              : null,
+          drivingTrafficPercent: _requiresDetailedDrivingMix
+              ? int.tryParse(_trafficPercent.text.trim())
+              : null,
+        );
+        final orch = HandshakeOrchestrator.maybeInstance;
+        if (orch != null) {
+          try {
+            await orch.sendVehicleUseSessionEndByOwner(
+              linkId: forceEndLinkId,
+              vehicleId: v.id,
+              remoteUseId: openUse.id,
+              endReadingId: endReading.id,
+              drivingRoutePercent: _requiresDetailedDrivingMix
+                  ? int.tryParse(_routePercent.text.trim())
+                  : null,
+              drivingCityPercent: _requiresDetailedDrivingMix
+                  ? int.tryParse(_cityPercent.text.trim())
+                  : null,
+              drivingTrafficPercent: _requiresDetailedDrivingMix
+                  ? int.tryParse(_trafficPercent.text.trim())
+                  : null,
+            );
+          } catch (_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.vehicleSharingSessionRelayFailed)),
+            );
+            return;
+          }
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.vehicleUseSessionEnded)),
+        );
+        context.pop(true);
+        return;
       }
 
       // Good faith: owner's trusted start reading closes a peer/borrower session

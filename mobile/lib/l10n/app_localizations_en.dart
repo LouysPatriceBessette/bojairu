@@ -1857,6 +1857,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Vehicle sharing offer expired';
 
   @override
+  String get activityLogKindVehicleSharingRevokeSent =>
+      'Sharing access revoked (sent)';
+
+  @override
+  String get activityLogKindVehicleSharingRevokeReceived =>
+      'Sharing access revoked (received)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateProposeSent =>
+      'Sharing reactivation proposed (sent)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateProposeReceived =>
+      'Sharing reactivation proposed (received)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateAcceptSent =>
+      'Sharing reactivation accepted (sent)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateAcceptReceived =>
+      'Sharing reactivation accepted (received)';
+
+  @override
   String get activityLogKindVehicleUseSessionStartSent =>
       'Sharing session start sent';
 
@@ -1871,6 +1895,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get activityLogKindVehicleUseSessionEndReceived =>
       'Sharing session end received';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndByOwnerSent =>
+      'Session end forced by owner (sent)';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndByOwnerReceived =>
+      'Session end forced by owner (received)';
 
   @override
   String get housingInvitePlanActivating =>
@@ -2135,6 +2167,48 @@ class AppLocalizationsEn extends AppLocalizations {
     String vehicle,
   ) {
     return '$name accepted your offer to share $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingRevokeTitle =>
+      'Sharing access revoked';
+
+  @override
+  String pushNotificationVehicleSharingRevokeBody(String name, String vehicle) {
+    return '$name revoked your sharing access to $vehicle';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingReactivateProposeTitle =>
+      'Sharing reactivation';
+
+  @override
+  String pushNotificationVehicleSharingReactivateProposeBody(
+    String name,
+    String vehicle,
+  ) {
+    return '$name reactivated your sharing access to $vehicle';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingReactivateAcceptTitle =>
+      'Reactivation accepted';
+
+  @override
+  String pushNotificationVehicleSharingReactivateAcceptBody(
+    String name,
+    String vehicle,
+  ) {
+    return '$name accepted reactivation of sharing for $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleUseSessionEndByOwnerTitle =>
+      'Session closed';
+
+  @override
+  String pushNotificationVehicleUseSessionEndByOwnerBody(String name) {
+    return 'Your use session was closed by $name';
   }
 
   @override
@@ -4241,7 +4315,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehicleLogMeterFuelTitle => 'Odometer and fuel';
 
   @override
-  String get vehicleLogSharingSessionsTitle => 'Sharing sessions';
+  String get vehicleLogSharingSessionsTitle => 'Other';
 
   @override
   String get vehicleLogMeterDetailTitle => 'Reading details';
@@ -4718,6 +4792,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vehicleSharingAddShare => 'Add a share';
+
+  @override
+  String get vehicleSharingRevoke => 'Revoke';
+
+  @override
+  String get vehicleSharingReactivate => 'Reactivate';
+
+  @override
+  String vehicleSharingRevokeConfirmBody(
+    String borrowerName,
+    String vehicleName,
+  ) {
+    return 'Revoke $borrowerName\'s access to $vehicleName?';
+  }
+
+  @override
+  String vehicleSharingRevokeForceSessionBody(String name, String when) {
+    return 'A use session is in progress for $name since $when.\n\nIf the vehicle is not actually in use and you can take a meter reading, you can force-close this session.\n\nDo you want to close this session?';
+  }
+
+  @override
+  String get vehicleSharingRevokeForceSessionYes => 'Yes';
+
+  @override
+  String get vehicleSharingReactivatePendingSent => 'Reactivation sent';
+
+  @override
+  String get vehicleSharingPendingReactivateTitle => 'Pending reactivation';
+
+  @override
+  String get vehicleSharingPendingReactivateTitlePlural =>
+      'Pending reactivations';
 
   @override
   String get vehicleSharingNewShareTitle => 'New share';

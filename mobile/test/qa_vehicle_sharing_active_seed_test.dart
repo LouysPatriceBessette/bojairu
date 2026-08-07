@@ -1,3 +1,4 @@
+import 'package:compartarenta/activity/relay_activity_log_service.dart';
 import 'package:compartarenta/db/app_database.dart';
 import 'package:compartarenta/db/repositories/vehicles_repository.dart';
 import 'package:compartarenta/debug/qa_fcm_wake_push_seed.dart';
@@ -45,6 +46,16 @@ void main() {
 
     final active = await repo.listActiveLinksAsOwner();
     expect(active.map((e) => e.id), contains(kQaVehicleSharingActiveLinkId));
+
+    final journal = await RelayActivityLogService(db)
+        .listVehicleSharingSessionEvents(kQaVehicleSharingActiveVehicleId);
+    expect(
+      journal.map((e) => e.kind),
+      containsAll([
+        RelayActivityLogKinds.vehicleSharingOfferSent,
+        RelayActivityLogKinds.vehicleSharingOfferResponse,
+      ]),
+    );
   });
 
   test('active borrower local data: accessible fixed vehicle', () async {
@@ -71,6 +82,16 @@ void main() {
     expect(
       accessible.first.link.borrowerContactId,
       kVehicleBorrowerSelfContactId,
+    );
+
+    final journal = await RelayActivityLogService(db)
+        .listVehicleSharingSessionEvents(kQaVehicleSharingActiveVehicleId);
+    expect(
+      journal.map((e) => e.kind),
+      containsAll([
+        RelayActivityLogKinds.vehicleSharingOfferReceived,
+        RelayActivityLogKinds.vehicleSharingOfferResponse,
+      ]),
     );
   });
 }

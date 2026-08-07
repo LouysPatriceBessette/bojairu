@@ -179,12 +179,36 @@ class _VehicleUsageBalanceReconciliationPanelState
     );
   }
 
+  bool get _linkRevoked =>
+      widget.link.status == VehicleSharingLinkStatus.revoked.wire;
+
+  int get _carriedForwardMinor {
+    final confirmedFreezes = _freezes
+        .where((f) => f.status == UsageBalanceFreezeStatus.confirmed);
+    final confirmedTransfers = _transfers
+        .where((t) => t.status == UsageBalanceTransferStatus.confirmed);
+    return usageBalanceCarriedForwardMinor(
+      confirmedFreezeBalanceMinors: confirmedFreezes.map((f) => f.balanceMinor),
+      confirmedTransferLedgerDeltas:
+          confirmedTransfers.map(_transferLedgerDelta),
+    );
+  }
+
   /// Freeze is blocked while any freeze/transfer awaits a decision, or when
-  /// the current-period net is zero (nothing to freeze).
+  /// the current-period net is zero (nothing to freeze), or link is revoked.
   bool get _canProposeFreeze =>
+      !_linkRevoked &&
       !_hasOpenFreezeRequest &&
       !_hasPendingTransfer &&
       widget.breakdown.balanceMinor != 0;
+
+  bool get _canProposeTransfer {
+    if (_hasPendingTransfer) return false;
+    if (_linkRevoked) {
+      return _carriedForwardMinor != 0;
+    }
+    return true;
+  }
 
   Future<void> _maybeShowDecisionDialog() async {
     if (_decisionDialogShown || !mounted) return;
@@ -271,6 +295,12 @@ class _VehicleUsageBalanceReconciliationPanelState
     );
     if (major == null || major <= 0) return;
     final amountMinor = (major * 100).round();
+    if (_linkRevoked) {
+      final maxMinor = _carriedForwardMinor.abs();
+      if (amountMinor > maxMinor) {
+        return;
+      }
+    }
     final orch = HandshakeOrchestrator.maybeInstance;
     if (orch == null) return;
     await orch.sendUsageTransferPropose(
@@ -461,8 +491,9 @@ class _VehicleUsageBalanceReconciliationPanelState
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton(
-                  onPressed:
-                      _hasPendingTransfer ? null : _showTransferProposeDialog,
+                  onPressed: _canProposeTransfer
+                      ? _showTransferProposeDialog
+                      : null,
                   child: Text(l10n.vehicleUsageBalanceTransferButton),
                 ),
               ),

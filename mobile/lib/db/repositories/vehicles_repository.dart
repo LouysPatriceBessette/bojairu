@@ -47,7 +47,9 @@ enum VehicleSharingLinkStatus {
   pending,
   active,
   expired,
-  revoked;
+  revoked,
+  /// Owner proposed reactivation; Emprunteur has not accepted yet.
+  reactivatePending;
 
   String get wire => name;
 
@@ -1745,6 +1747,39 @@ class VehiclesRepository {
     );
   }
 
+  /// Marks a revoked link as waiting for Emprunteur reactivation accept.
+  Future<void> markSharingLinkReactivatePending(String linkId) async {
+    await (_db.update(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).write(
+      VehicleSharingLinksCompanion(
+        status: drift.Value(VehicleSharingLinkStatus.reactivatePending.wire),
+      ),
+    );
+  }
+
+  /// Restores a revoked / reactivate-pending link to active (history kept).
+  Future<void> reactivateSharingLink(String linkId) async {
+    final now = DateTime.now().toUtc();
+    await (_db.update(
+      _db.vehicleSharingLinks,
+    )..where((t) => t.id.equals(linkId))).write(
+      VehicleSharingLinksCompanion(
+        status: drift.Value(VehicleSharingLinkStatus.active.wire),
+        acceptedAt: drift.Value(now),
+        revokedAt: const drift.Value(null),
+      ),
+    );
+  }
+
+  /// True when a freeze or transfer still awaits a peer decision on [linkId].
+  Future<bool> hasPendingUsageBalanceDecision(String linkId) async {
+    final freeze = await pendingUsageBalanceFreezeForLink(linkId);
+    if (freeze != null) return true;
+    final transfer = await pendingUsageTransferForLink(linkId);
+    return transfer != null;
+  }
+
   Future<List<VehicleSharingLink>> listSharingLinksForVehicle(
     String vehicleId,
   ) async {
@@ -1782,7 +1817,11 @@ class VehiclesRepository {
                   t.vehicleId.equals(vehicleId) &
                   t.ownerContactId.equals(kVehicleOwnerSelfContactId) &
                   (t.status.equals(VehicleSharingLinkStatus.active.wire) |
-                      t.status.equals(VehicleSharingLinkStatus.pending.wire)),
+                      t.status.equals(VehicleSharingLinkStatus.pending.wire) |
+                      t.status.equals(VehicleSharingLinkStatus.revoked.wire) |
+                      t.status.equals(
+                        VehicleSharingLinkStatus.reactivatePending.wire,
+                      )),
             ))
             .get();
     return {for (final r in rows) r.borrowerContactId};
@@ -1827,14 +1866,19 @@ class VehiclesRepository {
         .get();
   }
 
-  /// Active sharing links on vehicles **not** owned on this device (Emprunteur
-  /// accessible vehicles — typically synced from another owner's instance).
+  /// Active or revoked sharing links on vehicles **not** owned on this device
+  /// (Emprunteur accessible — including revoked, for settlement / journals).
   Future<List<({Vehicle vehicle, VehicleSharingLink link})>>
   listBorrowerAccessibleEntries() async {
     final rows =
         await (_db.select(_db.vehicleSharingLinks)
               ..where(
-                (t) => t.status.equals(VehicleSharingLinkStatus.active.wire),
+                (t) =>
+                    t.status.equals(VehicleSharingLinkStatus.active.wire) |
+                    t.status.equals(VehicleSharingLinkStatus.revoked.wire) |
+                    t.status.equals(
+                      VehicleSharingLinkStatus.reactivatePending.wire,
+                    ),
               )
               ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
             .get();
@@ -1844,6 +1888,32 @@ class VehiclesRepository {
       if (v == null) continue;
       if (v.ownerContactId == kVehicleOwnerSelfContactId) continue;
       out.add((vehicle: v, link: link));
+    }
+    return out;
+  }
+
+  /// Inbound reactivation proposals waiting for local Emprunteur accept.
+  Future<List<({VehicleSharingLink link, String vehicleLabel})>>
+  listPendingReactivateOffersForBorrower() async {
+    final rows =
+        await (_db.select(_db.vehicleSharingLinks)
+              ..where(
+                (t) => t.status.equals(
+                  VehicleSharingLinkStatus.reactivatePending.wire,
+                ),
+              )
+              ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+            .get();
+    final external = await _linksOnExternalOwnedVehicles(rows);
+    final out = <({VehicleSharingLink link, String vehicleLabel})>[];
+    for (final link in external) {
+      final v = await getVehicle(link.vehicleId);
+      out.add((
+        link: link,
+        vehicleLabel: v?.displayLabel.trim().isNotEmpty == true
+            ? v!.displayLabel.trim()
+            : link.vehicleId,
+      ));
     }
     return out;
   }

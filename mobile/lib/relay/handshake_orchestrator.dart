@@ -41,11 +41,13 @@ import '../notifications/push_notification_service.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
 import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
+import '../vehicle/sharing/vehicle_sharing_lifecycle_transport_service.dart';
 import '../vehicle/sharing/vehicle_fuel_purchase_transport_service.dart';
 import '../vehicle/sharing/vehicle_maintenance_transport_service.dart';
 import '../vehicle/sharing/vehicle_usage_balance.dart';
 import '../vehicle/sharing/vehicle_usage_balance_reconciliation.dart';
 import '../vehicle/sharing/vehicle_usage_balance_reconciliation_transport.dart';
+import '../vehicle/sharing/vehicle_usage_balance_service.dart';
 import '../vehicle/sharing/vehicle_violation_transport_service.dart';
 import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
 import '../vehicle/vehicle_owner_contact.dart';
@@ -1282,6 +1284,30 @@ class HandshakeOrchestrator {
               selfPriv: selfPriv,
               peerPub: peerPub,
             );
+          } else if (env.kind == EnvelopeKind.vehicleSharingRevoke) {
+            await _handleInboundVehicleSharingRevoke(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleSharingReactivatePropose) {
+            await _handleInboundVehicleSharingReactivatePropose(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleSharingReactivateAccept) {
+            await _handleInboundVehicleSharingReactivateAccept(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
           } else if (env.kind == EnvelopeKind.vehicleUseSessionStart) {
             await _handleInboundVehicleUseSessionStart(
               contact: contact,
@@ -1292,6 +1318,14 @@ class HandshakeOrchestrator {
             );
           } else if (env.kind == EnvelopeKind.vehicleUseSessionEnd) {
             await _handleInboundVehicleUseSessionEnd(
+              contact: contact,
+              envelope: env,
+              myListenAddr: myListen,
+              selfPriv: selfPriv,
+              peerPub: peerPub,
+            );
+          } else if (env.kind == EnvelopeKind.vehicleUseSessionEndByOwner) {
+            await _handleInboundVehicleUseSessionEndByOwner(
               contact: contact,
               envelope: env,
               myListenAddr: myListen,
@@ -1926,6 +1960,215 @@ class HandshakeOrchestrator {
     );
   }
 
+  Future<void> _handleInboundVehicleSharingRevoke({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    try {
+      final decrypted = await EnvelopeCodec.decryptVehicleSharingRevoke(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+      final sender = await _resolveVehicleUsageSender(
+        routedContact: contact,
+        senderPublicKey: decrypted.senderLongTermPublicKey,
+        routedPeerPublicKey: peerPub,
+      );
+      if (sender == null) return;
+      final payload = VehicleSharingLifecycleTransportService(
+        _db,
+      ).parseRevoke(decrypted.payloadJson);
+      final vehicles = VehiclesRepository(_db);
+      final linkId = payload['linkId'] as String? ?? '';
+      final vehicleId = payload['vehicleId'] as String? ?? '';
+      final link = await vehicles.getSharingLink(linkId);
+      if (link == null ||
+          link.vehicleId != vehicleId ||
+          link.ownerContactId != sender.id) {
+        return;
+      }
+      final freezeRaw = payload['freeze'];
+      if (freezeRaw is! Map) return;
+      final freeze = Map<String, dynamic>.from(freezeRaw);
+      final freezeId = freeze['freezeId'] as String? ?? '';
+      if (freezeId.isEmpty) return;
+      final confirmedAt = DateTime.parse(
+        freeze['confirmedAt'] as String? ?? payload['revokedAt'] as String,
+      ).toUtc();
+      await vehicles.upsertUsageBalanceFreeze(
+        id: freezeId,
+        sharingLinkId: link.id,
+        vehicleId: link.vehicleId,
+        status: UsageBalanceFreezeStatus.confirmed,
+        initiatedByContactId: sender.id,
+        proposedAt: confirmedAt,
+        confirmedAt: confirmedAt,
+        balanceMinor: freeze['balanceMinor'] as int,
+        windowStart: DateTime.parse(freeze['windowStart'] as String).toUtc(),
+        windowEnd: DateTime.parse(freeze['windowEnd'] as String).toUtc(),
+        breakdownJson: freeze['breakdownJson'] as String,
+        lastKnownPurchaseId: freeze['lastKnownPurchaseId'] as String?,
+      );
+      await vehicles.revokeSharingLink(link.id);
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleSharingRevokeReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: sender.id,
+        initiatorDisplayName: sender.displayName,
+        details: {
+          'linkId': link.id,
+          'vehicleId': link.vehicleId,
+          'freezeId': freezeId,
+        },
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        final vehicle = await vehicles.getVehicle(link.vehicleId);
+        await PushNotificationService.showLocalVehicleSharingRevokeNotification(
+          ownerDisplayName: sender.displayName,
+          vehicleLabel: vehicle?.displayLabel ?? link.vehicleId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_sharing_revoke import failed for ${contact.id}: $e\n$st',
+      );
+    } finally {
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+    }
+  }
+
+  Future<void> _handleInboundVehicleSharingReactivatePropose({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    try {
+      final decrypted =
+          await EnvelopeCodec.decryptVehicleSharingReactivatePropose(
+            frame: envelope.ciphertext,
+            receiverLongTermPrivateKey: selfPriv,
+          );
+      final sender = await _resolveVehicleUsageSender(
+        routedContact: contact,
+        senderPublicKey: decrypted.senderLongTermPublicKey,
+        routedPeerPublicKey: peerPub,
+      );
+      if (sender == null) return;
+      final payload = VehicleSharingLifecycleTransportService(
+        _db,
+      ).parseReactivatePropose(decrypted.payloadJson);
+      final vehicles = VehiclesRepository(_db);
+      final linkId = payload['linkId'] as String? ?? '';
+      final link = await vehicles.getSharingLink(linkId);
+      if (link == null || link.ownerContactId != sender.id) return;
+      if (link.status != VehicleSharingLinkStatus.revoked.wire &&
+          link.status != VehicleSharingLinkStatus.reactivatePending.wire) {
+        return;
+      }
+      await vehicles.markSharingLinkReactivatePending(link.id);
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleSharingReactivateProposeReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: sender.id,
+        initiatorDisplayName: sender.displayName,
+        details: {'linkId': link.id, 'vehicleId': link.vehicleId},
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        final vehicle = await vehicles.getVehicle(link.vehicleId);
+        await PushNotificationService
+            .showLocalVehicleSharingReactivateProposeNotification(
+          ownerDisplayName: sender.displayName,
+          vehicleLabel: vehicle?.displayLabel ??
+              (payload['vehicleLabel'] as String?) ??
+              link.vehicleId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_sharing_reactivate_propose import failed for ${contact.id}: '
+        '$e\n$st',
+      );
+    } finally {
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+    }
+  }
+
+  Future<void> _handleInboundVehicleSharingReactivateAccept({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    try {
+      final decrypted =
+          await EnvelopeCodec.decryptVehicleSharingReactivateAccept(
+            frame: envelope.ciphertext,
+            receiverLongTermPrivateKey: selfPriv,
+          );
+      final sender = await _resolveVehicleUsageSender(
+        routedContact: contact,
+        senderPublicKey: decrypted.senderLongTermPublicKey,
+        routedPeerPublicKey: peerPub,
+      );
+      if (sender == null) return;
+      final payload = VehicleSharingLifecycleTransportService(
+        _db,
+      ).parseReactivateAccept(decrypted.payloadJson);
+      final vehicles = VehiclesRepository(_db);
+      final linkId = payload['linkId'] as String? ?? '';
+      final link = await vehicles.getSharingLink(linkId);
+      if (link == null ||
+          !_isLocalVehicleOwner(link) ||
+          link.borrowerContactId != sender.id) {
+        return;
+      }
+      if (link.status != VehicleSharingLinkStatus.reactivatePending.wire) {
+        return;
+      }
+      await vehicles.reactivateSharingLink(link.id);
+      await RelayActivityLogService(_db).append(
+        kind: RelayActivityLogKinds.vehicleSharingReactivateAcceptReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: sender.id,
+        initiatorDisplayName: sender.displayName,
+        details: {'linkId': link.id, 'vehicleId': link.vehicleId},
+      );
+      steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+      if (_ownsDeviceHousingNotifications) {
+        final vehicle = await vehicles.getVehicle(link.vehicleId);
+        await PushNotificationService
+            .showLocalVehicleSharingReactivateAcceptNotification(
+          borrowerDisplayName: sender.displayName,
+          vehicleLabel: vehicle?.displayLabel ?? link.vehicleId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_sharing_reactivate_accept import failed for ${contact.id}: '
+        '$e\n$st',
+      );
+    } finally {
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+    }
+  }
+
   Future<void> _handleInboundVehicleUseSessionStart({
     required Contact contact,
     required RelayEnvelopeView envelope,
@@ -2093,6 +2336,66 @@ class HandshakeOrchestrator {
       envelopeId: envelope.envelopeId,
       recipient: myListenAddr,
     );
+  }
+
+  Future<void> _handleInboundVehicleUseSessionEndByOwner({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    try {
+      final decrypted = await EnvelopeCodec.decryptVehicleUseSessionEndByOwner(
+        frame: envelope.ciphertext,
+        receiverLongTermPrivateKey: selfPriv,
+      );
+      var senderContact = contact;
+      if (!_bytesEqual(decrypted.senderLongTermPublicKey, peerPub)) {
+        final matched = await _contactForPeerPublicKey(
+          decrypted.senderLongTermPublicKey,
+        );
+        if (matched == null) return;
+        senderContact = matched;
+      }
+      final closed = await VehicleUseSessionTransportService(_db)
+          .importReceivedSessionEndByOwner(
+            sessionJson: decrypted.sessionJson,
+            ownerContactId: senderContact.id,
+          );
+      debugPrint(
+        'vehicle_use_session_end_by_owner imported from ${senderContact.id} '
+        'closed=$closed',
+      );
+      if (closed) {
+        final root = jsonDecode(decrypted.sessionJson) as Map<String, dynamic>;
+        final vehicleId = (root['vehicleId'] as String?)?.trim() ?? '';
+        await RelayActivityLogService(_db).append(
+          kind: RelayActivityLogKinds.vehicleUseSessionEndByOwnerReceived,
+          initiatorKind: RelayActivityLogService.initiatorContact,
+          initiatorContactId: senderContact.id,
+          initiatorDisplayName: senderContact.displayName,
+          details: {if (vehicleId.isNotEmpty) 'vehicleId': vehicleId},
+        );
+        steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+        if (_ownsDeviceHousingNotifications) {
+          await PushNotificationService
+              .showLocalVehicleUseSessionEndByOwnerNotification(
+            ownerDisplayName: senderContact.displayName,
+          );
+        }
+      }
+    } catch (e, st) {
+      debugPrint(
+        'vehicle_use_session_end_by_owner import failed for ${contact.id}: '
+        '$e\n$st',
+      );
+    } finally {
+      await _relay.ackEnvelope(
+        envelopeId: envelope.envelopeId,
+        recipient: myListenAddr,
+      );
+    }
   }
 
   Future<void> _handleInboundVehicleFuelPurchase({
@@ -2739,6 +3042,225 @@ class HandshakeOrchestrator {
         'vehicleId': link.vehicleId,
         'transferId': transfer.id,
         'accepted': accepted,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Unilateral revoke + confirmed auto-freeze (Propriétaire → Emprunteur).
+  Future<void> sendVehicleSharingRevoke({required String linkId}) async {
+    final vehicles = VehiclesRepository(_db);
+    final link = await vehicles.getSharingLink(linkId);
+    if (link == null || !_isLocalVehicleOwner(link)) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    if (link.status != VehicleSharingLinkStatus.active.wire) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    if (await vehicles.hasPendingUsageBalanceDecision(linkId)) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final openUse = await vehicles.openUseForVehicle(link.vehicleId);
+    if (openUse != null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+
+    final balance = await VehicleUsageBalanceService(vehicles).computeForLink(
+      link: link,
+    );
+    final breakdown = balance.breakdown;
+    if (breakdown == null) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final freezeId = vehicles.newUsageBalanceFreezeId();
+    final now = DateTime.now().toUtc();
+    final breakdownJson = UsageBalanceBreakdownCodec.encode(breakdown);
+    await vehicles.upsertUsageBalanceFreeze(
+      id: freezeId,
+      sharingLinkId: link.id,
+      vehicleId: link.vehicleId,
+      status: UsageBalanceFreezeStatus.confirmed,
+      initiatedByContactId: kVehicleOwnerSelfContactId,
+      proposedAt: now,
+      confirmedAt: now,
+      balanceMinor: breakdown.balanceMinor,
+      windowStart: breakdown.windowStart,
+      windowEnd: breakdown.windowEnd,
+      breakdownJson: breakdownJson,
+    );
+    await vehicles.revokeSharingLink(link.id);
+
+    final payloadJson = VehicleSharingLifecycleTransportService(_db)
+        .exportRevokeJson(
+          linkId: link.id,
+          vehicleId: link.vehicleId,
+          revokedAt: now,
+          freezeId: freezeId,
+          breakdown: breakdown,
+        );
+    final peer = await _vehicleUsagePeer(link);
+    final selfPrivateKey = await _identity.loadOrCreatePrivateKey();
+    final selfPublicKey = await _identity.publicKey();
+    final frame = await EnvelopeCodec.encryptVehicleSharingRevoke(
+      envelope: VehicleSharingLifecycleEnvelope(
+        senderLongTermPublicKey: selfPublicKey,
+        payloadJson: payloadJson,
+      ),
+      senderLongTermPrivateKey: selfPrivateKey,
+      peerLongTermPublicKey: peer.peerPub,
+    );
+    await _postVehicleUsageEnvelope(
+      frame: frame,
+      selfPub: selfPublicKey,
+      peerPub: peer.peerPub,
+      kind: EnvelopeKind.vehicleSharingRevoke,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingRevokeSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': link.id,
+        'vehicleId': link.vehicleId,
+        'freezeId': freezeId,
+        'balanceMinor': breakdown.balanceMinor,
+      },
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Proposes reactivation of a revoked link (Propriétaire → Emprunteur).
+  Future<void> sendVehicleSharingReactivatePropose({
+    required String linkId,
+  }) async {
+    final vehicles = VehiclesRepository(_db);
+    final link = await vehicles.getSharingLink(linkId);
+    if (link == null || !_isLocalVehicleOwner(link)) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    if (link.status != VehicleSharingLinkStatus.revoked.wire) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    await vehicles.markSharingLinkReactivatePending(link.id);
+    final payloadJson = await VehicleSharingLifecycleTransportService(
+      _db,
+    ).exportReactivateProposeJson(link.id);
+    final peer = await _vehicleUsagePeer(link);
+    final selfPrivateKey = await _identity.loadOrCreatePrivateKey();
+    final selfPublicKey = await _identity.publicKey();
+    final frame = await EnvelopeCodec.encryptVehicleSharingReactivatePropose(
+      envelope: VehicleSharingLifecycleEnvelope(
+        senderLongTermPublicKey: selfPublicKey,
+        payloadJson: payloadJson,
+      ),
+      senderLongTermPrivateKey: selfPrivateKey,
+      peerLongTermPublicKey: peer.peerPub,
+    );
+    await _postVehicleUsageEnvelope(
+      frame: frame,
+      selfPub: selfPublicKey,
+      peerPub: peer.peerPub,
+      kind: EnvelopeKind.vehicleSharingReactivatePropose,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingReactivateProposeSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'linkId': link.id, 'vehicleId': link.vehicleId},
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Accepts reactivation (Emprunteur → Propriétaire).
+  Future<void> sendVehicleSharingReactivateAccept({
+    required String linkId,
+  }) async {
+    final vehicles = VehiclesRepository(_db);
+    final link = await vehicles.getSharingLink(linkId);
+    if (link == null || _isLocalVehicleOwner(link)) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    if (link.status != VehicleSharingLinkStatus.reactivatePending.wire) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    await vehicles.reactivateSharingLink(link.id);
+    final payloadJson = VehicleSharingLifecycleTransportService(_db)
+        .exportReactivateAcceptJson(
+          linkId: link.id,
+          vehicleId: link.vehicleId,
+        );
+    final peer = await _vehicleUsagePeer(link);
+    final selfPrivateKey = await _identity.loadOrCreatePrivateKey();
+    final selfPublicKey = await _identity.publicKey();
+    final frame = await EnvelopeCodec.encryptVehicleSharingReactivateAccept(
+      envelope: VehicleSharingLifecycleEnvelope(
+        senderLongTermPublicKey: selfPublicKey,
+        payloadJson: payloadJson,
+      ),
+      senderLongTermPrivateKey: selfPrivateKey,
+      peerLongTermPublicKey: peer.peerPub,
+    );
+    await _postVehicleUsageEnvelope(
+      frame: frame,
+      selfPub: selfPublicKey,
+      peerPub: peer.peerPub,
+      kind: EnvelopeKind.vehicleSharingReactivateAccept,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleSharingReactivateAcceptSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {'linkId': link.id, 'vehicleId': link.vehicleId},
+    );
+    steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
+  }
+
+  /// Owner-forced session end after local close (Propriétaire → Emprunteur).
+  Future<void> sendVehicleUseSessionEndByOwner({
+    required String linkId,
+    required String vehicleId,
+    required String remoteUseId,
+    required String endReadingId,
+    int? drivingRoutePercent,
+    int? drivingCityPercent,
+    int? drivingTrafficPercent,
+  }) async {
+    final vehicles = VehiclesRepository(_db);
+    final link = await vehicles.getSharingLink(linkId);
+    if (link == null || !_isLocalVehicleOwner(link)) {
+      throw HandshakeOrchestratorError('unknown');
+    }
+    final sessionJson = await VehicleUseSessionTransportService(_db)
+        .exportSessionEndByOwnerJson(
+          linkId: linkId,
+          vehicleId: vehicleId,
+          remoteUseId: remoteUseId,
+          endReadingId: endReadingId,
+          drivingRoutePercent: drivingRoutePercent,
+          drivingCityPercent: drivingCityPercent,
+          drivingTrafficPercent: drivingTrafficPercent,
+        );
+    final peer = await _vehicleUsagePeer(link);
+    final selfPrivateKey = await _identity.loadOrCreatePrivateKey();
+    final selfPublicKey = await _identity.publicKey();
+    final frame = await EnvelopeCodec.encryptVehicleUseSessionEndByOwner(
+      envelope: VehicleUseSessionEndEnvelope(
+        senderLongTermPublicKey: selfPublicKey,
+        sessionJson: sessionJson,
+      ),
+      senderLongTermPrivateKey: selfPrivateKey,
+      peerLongTermPublicKey: peer.peerPub,
+    );
+    await _postVehicleUsageEnvelope(
+      frame: frame,
+      selfPub: selfPublicKey,
+      peerPub: peer.peerPub,
+      kind: EnvelopeKind.vehicleUseSessionEndByOwner,
+    );
+    await RelayActivityLogService(_db).append(
+      kind: RelayActivityLogKinds.vehicleUseSessionEndByOwnerSent,
+      initiatorKind: RelayActivityLogService.initiatorSelf,
+      details: {
+        'linkId': linkId,
+        'vehicleId': vehicleId,
+        'remoteUseId': remoteUseId,
       },
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;

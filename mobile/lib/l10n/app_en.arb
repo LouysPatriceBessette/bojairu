@@ -834,10 +834,18 @@
   "activityLogKindVehicleSharingOfferReceived": "Vehicle sharing offer received",
   "activityLogKindVehicleSharingOfferResponse": "Vehicle sharing offer response",
   "activityLogKindVehicleSharingOfferExpired": "Vehicle sharing offer expired",
+  "activityLogKindVehicleSharingRevokeSent": "Sharing access revoked (sent)",
+  "activityLogKindVehicleSharingRevokeReceived": "Sharing access revoked (received)",
+  "activityLogKindVehicleSharingReactivateProposeSent": "Sharing reactivation proposed (sent)",
+  "activityLogKindVehicleSharingReactivateProposeReceived": "Sharing reactivation proposed (received)",
+  "activityLogKindVehicleSharingReactivateAcceptSent": "Sharing reactivation accepted (sent)",
+  "activityLogKindVehicleSharingReactivateAcceptReceived": "Sharing reactivation accepted (received)",
   "activityLogKindVehicleUseSessionStartSent": "Sharing session start sent",
   "activityLogKindVehicleUseSessionStartReceived": "Sharing session start received",
   "activityLogKindVehicleUseSessionEndSent": "Sharing session end sent",
   "activityLogKindVehicleUseSessionEndReceived": "Sharing session end received",
+  "activityLogKindVehicleUseSessionEndByOwnerSent": "Session end forced by owner (sent)",
+  "activityLogKindVehicleUseSessionEndByOwnerReceived": "Session end forced by owner (received)",
   "housingInvitePlanActivating": "All participants have accepted. Activating the agreement…",
   "housingInviteProposalAppBarTitle": "Invitation proposal",
   "housingInviteProposalIntroTitle": "Here is the proposal that will be sent to each of your participants.",
@@ -966,6 +974,37 @@
     "placeholders": {
       "name": { "type": "String" },
       "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingRevokeTitle": "Sharing access revoked",
+  "pushNotificationVehicleSharingRevokeBody": "{name} revoked your sharing access to {vehicle}",
+  "@pushNotificationVehicleSharingRevokeBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingReactivateProposeTitle": "Sharing reactivation",
+  "pushNotificationVehicleSharingReactivateProposeBody": "{name} reactivated your sharing access to {vehicle}",
+  "@pushNotificationVehicleSharingReactivateProposeBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingReactivateAcceptTitle": "Reactivation accepted",
+  "pushNotificationVehicleSharingReactivateAcceptBody": "{name} accepted reactivation of sharing for {vehicle}.",
+  "@pushNotificationVehicleSharingReactivateAcceptBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "vehicle": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleUseSessionEndByOwnerTitle": "Session closed",
+  "pushNotificationVehicleUseSessionEndByOwnerBody": "Your use session was closed by {name}",
+  "@pushNotificationVehicleUseSessionEndByOwnerBody": {
+    "placeholders": {
+      "name": { "type": "String" }
     }
   },
   "pushNotificationVehicleSessionGapTitle": "Possible odometer gap",
@@ -1984,7 +2023,7 @@
   "vehicleGapResolutionEndMeter": "End odometer",
   "vehicleLogMeterTitle": "Log — odometer",
   "vehicleLogMeterFuelTitle": "Odometer and fuel",
-  "vehicleLogSharingSessionsTitle": "Sharing sessions",
+  "vehicleLogSharingSessionsTitle": "Other",
   "vehicleLogMeterDetailTitle": "Reading details",
   "vehicleLogFuelTitle": "Log — fuel",
   "vehicleLogFuelDetailTitle": "Purchase details",
@@ -2214,6 +2253,26 @@
   "vehicleSharingEmptyNoneFeminine": "None",
   "vehicleSharingSharesDetailTitle": "Sharing",
   "vehicleSharingAddShare": "Add a share",
+  "vehicleSharingRevoke": "Revoke",
+  "vehicleSharingReactivate": "Reactivate",
+  "vehicleSharingRevokeConfirmBody": "Revoke {borrowerName}'s access to {vehicleName}?",
+  "@vehicleSharingRevokeConfirmBody": {
+    "placeholders": {
+      "borrowerName": { "type": "String" },
+      "vehicleName": { "type": "String" }
+    }
+  },
+  "vehicleSharingRevokeForceSessionBody": "A use session is in progress for {name} since {when}.\n\nIf the vehicle is not actually in use and you can take a meter reading, you can force-close this session.\n\nDo you want to close this session?",
+  "@vehicleSharingRevokeForceSessionBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "vehicleSharingRevokeForceSessionYes": "Yes",
+  "vehicleSharingReactivatePendingSent": "Reactivation sent",
+  "vehicleSharingPendingReactivateTitle": "Pending reactivation",
+  "vehicleSharingPendingReactivateTitlePlural": "Pending reactivations",
   "vehicleSharingNewShareTitle": "New share",
   "vehicleSharingInviteForContact": "Invitation for {name}",
   "@vehicleSharingInviteForContact": {

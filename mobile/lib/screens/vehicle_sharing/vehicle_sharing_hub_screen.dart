@@ -34,6 +34,8 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   List<({Vehicle vehicle, VehicleSharingLink link})> _accessible = const [];
   List<({VehicleSharingLink link, String vehicleLabel})> _pendingOffers =
       const [];
+  List<({VehicleSharingLink link, String vehicleLabel})> _pendingReactivates =
+      const [];
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
   HandshakeOrchestrator? _steadyOrch;
@@ -70,6 +72,13 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       for (final link in ownerActiveLinks) link.vehicleId,
     };
     final accessible = await repo.listBorrowerAccessibleEntries();
+    final accessibleActiveOrRevoked = accessible
+        .where(
+          (e) =>
+              e.link.status == VehicleSharingLinkStatus.active.wire ||
+              e.link.status == VehicleSharingLinkStatus.revoked.wire,
+        )
+        .toList();
     final pendingLinks = await repo.listPendingBorrowerOffers();
     final pending = <({VehicleSharingLink link, String vehicleLabel})>[];
     for (final link in pendingLinks) {
@@ -81,13 +90,15 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
             : link.vehicleId,
       ));
     }
+    final pendingReactivates = await repo.listPendingReactivateOffersForBorrower();
 
     if (!mounted || gen != _reloadGeneration) return;
     setState(() {
       _shareable = shareable;
       _vehicleIdsWithActiveShare = sharedIds;
-      _accessible = accessible;
+      _accessible = accessibleActiveOrRevoked;
       _pendingOffers = pending;
+      _pendingReactivates = pendingReactivates;
       _contactLabels = labels;
       _loading = false;
     });
@@ -125,6 +136,36 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
         );
       }
     }
+  }
+
+  Future<void> _acceptReactivate(VehicleSharingLink link) async {
+    final l10n = AppLocalizations.of(context);
+    final orch = HandshakeOrchestrator.maybeInstance;
+    if (orch == null) return;
+    try {
+      await orch.sendVehicleSharingReactivateAccept(linkId: link.id);
+    } on HandshakeOrchestratorError {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+      );
+    } on RelayClientError {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+      );
+    } on RelayUnreachableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+      );
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehicleSharingAcceptRelayFailed)),
+      );
+    }
+    if (mounted) await _reload();
   }
 
   @override
@@ -229,18 +270,16 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                         ),
                       ),
                     ),
-                  const Divider(height: 32),
-                  _sectionTitle(
-                    context,
-                    _countTitle(
-                      _pendingOffers.length,
-                      l10n.vehicleSharingPendingOfferTitle,
-                      l10n.vehicleSharingPendingOfferTitlePlural,
+                  if (_pendingOffers.isNotEmpty) ...[
+                    const Divider(height: 32),
+                    _sectionTitle(
+                      context,
+                      _countTitle(
+                        _pendingOffers.length,
+                        l10n.vehicleSharingPendingOfferTitle,
+                        l10n.vehicleSharingPendingOfferTitlePlural,
+                      ),
                     ),
-                  ),
-                  if (_pendingOffers.isEmpty)
-                    Text(l10n.vehicleSharingEmptyNoneFeminine)
-                  else
                     ..._pendingOffers.map(
                       (entry) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -255,12 +294,6 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                                 child: Text(entry.vehicleLabel),
                               ),
                             ),
-                            // Put qa-* on the label *inside* FilledButton so
-                            // Maestro bounds stay button-sized. A Semantics
-                            // wrapping the whole Row/trailing under ListView
-                            // reports full-width bounds; tapOn COMPLETED then
-                            // hits the title, not Accepter (hierarchy
-                            // 20260731T225710Z: accept [42,850][1038,997]).
                             FilledButton(
                               onPressed: () => _acceptOffer(entry.link),
                               child: qaVehicleSharingSemantics(
@@ -274,6 +307,32 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                         ),
                       ),
                     ),
+                  ],
+                  if (_pendingReactivates.isNotEmpty) ...[
+                    const Divider(height: 32),
+                    _sectionTitle(
+                      context,
+                      _countTitle(
+                        _pendingReactivates.length,
+                        l10n.vehicleSharingPendingReactivateTitle,
+                        l10n.vehicleSharingPendingReactivateTitlePlural,
+                      ),
+                    ),
+                    ..._pendingReactivates.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(entry.vehicleLabel)),
+                            FilledButton(
+                              onPressed: () => _acceptReactivate(entry.link),
+                              child: Text(l10n.vehicleSharingAccept),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -325,6 +384,12 @@ class _AccessibleCard extends StatefulWidget {
 class _AccessibleCardState extends State<_AccessibleCard> {
   bool _sessionOpen = false;
   bool _loadingSession = true;
+
+  bool get _linkActive =>
+      widget.link.status == VehicleSharingLinkStatus.active.wire;
+
+  bool get _sessionActionsEnabled =>
+      _linkActive || (_sessionOpen && !_loadingSession);
 
   @override
   void initState() {
@@ -391,10 +456,14 @@ class _AccessibleCardState extends State<_AccessibleCard> {
                       label: qaVehicleSharingSemantics(
                         identifier: kQaVehicleSharingSessionAction,
                         button: true,
-                        onTap: () => _openSession(context, usageContext),
+                        onTap: _sessionActionsEnabled
+                            ? () => _openSession(context, usageContext)
+                            : null,
                         child: Text(sessionLabel),
                       ),
-                      onPressed: () => _openSession(context, usageContext),
+                      onPressed: _sessionActionsEnabled
+                          ? () => _openSession(context, usageContext)
+                          : null,
                     ),
                     ActionChip(
                       label: qaVehicleSharingSemantics(

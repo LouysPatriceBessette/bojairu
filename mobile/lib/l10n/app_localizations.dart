@@ -3209,6 +3209,42 @@ abstract class AppLocalizations {
   /// **'Vehicle sharing offer expired'**
   String get activityLogKindVehicleSharingOfferExpired;
 
+  /// No description provided for @activityLogKindVehicleSharingRevokeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing access revoked (sent)'**
+  String get activityLogKindVehicleSharingRevokeSent;
+
+  /// No description provided for @activityLogKindVehicleSharingRevokeReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing access revoked (received)'**
+  String get activityLogKindVehicleSharingRevokeReceived;
+
+  /// No description provided for @activityLogKindVehicleSharingReactivateProposeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing reactivation proposed (sent)'**
+  String get activityLogKindVehicleSharingReactivateProposeSent;
+
+  /// No description provided for @activityLogKindVehicleSharingReactivateProposeReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing reactivation proposed (received)'**
+  String get activityLogKindVehicleSharingReactivateProposeReceived;
+
+  /// No description provided for @activityLogKindVehicleSharingReactivateAcceptSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing reactivation accepted (sent)'**
+  String get activityLogKindVehicleSharingReactivateAcceptSent;
+
+  /// No description provided for @activityLogKindVehicleSharingReactivateAcceptReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing reactivation accepted (received)'**
+  String get activityLogKindVehicleSharingReactivateAcceptReceived;
+
   /// No description provided for @activityLogKindVehicleUseSessionStartSent.
   ///
   /// In en, this message translates to:
@@ -3232,6 +3268,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sharing session end received'**
   String get activityLogKindVehicleUseSessionEndReceived;
+
+  /// No description provided for @activityLogKindVehicleUseSessionEndByOwnerSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Session end forced by owner (sent)'**
+  String get activityLogKindVehicleUseSessionEndByOwnerSent;
+
+  /// No description provided for @activityLogKindVehicleUseSessionEndByOwnerReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Session end forced by owner (received)'**
+  String get activityLogKindVehicleUseSessionEndByOwnerReceived;
 
   /// No description provided for @housingInvitePlanActivating.
   ///
@@ -3670,6 +3718,60 @@ abstract class AppLocalizations {
     String name,
     String vehicle,
   );
+
+  /// No description provided for @pushNotificationVehicleSharingRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing access revoked'**
+  String get pushNotificationVehicleSharingRevokeTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} revoked your sharing access to {vehicle}'**
+  String pushNotificationVehicleSharingRevokeBody(String name, String vehicle);
+
+  /// No description provided for @pushNotificationVehicleSharingReactivateProposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing reactivation'**
+  String get pushNotificationVehicleSharingReactivateProposeTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingReactivateProposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} reactivated your sharing access to {vehicle}'**
+  String pushNotificationVehicleSharingReactivateProposeBody(
+    String name,
+    String vehicle,
+  );
+
+  /// No description provided for @pushNotificationVehicleSharingReactivateAcceptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivation accepted'**
+  String get pushNotificationVehicleSharingReactivateAcceptTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingReactivateAcceptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} accepted reactivation of sharing for {vehicle}.'**
+  String pushNotificationVehicleSharingReactivateAcceptBody(
+    String name,
+    String vehicle,
+  );
+
+  /// No description provided for @pushNotificationVehicleUseSessionEndByOwnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session closed'**
+  String get pushNotificationVehicleUseSessionEndByOwnerTitle;
+
+  /// No description provided for @pushNotificationVehicleUseSessionEndByOwnerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your use session was closed by {name}'**
+  String pushNotificationVehicleUseSessionEndByOwnerBody(String name);
 
   /// No description provided for @pushNotificationVehicleSessionGapTitle.
   ///
@@ -7071,7 +7173,7 @@ abstract class AppLocalizations {
   /// No description provided for @vehicleLogSharingSessionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sharing sessions'**
+  /// **'Other'**
   String get vehicleLogSharingSessionsTitle;
 
   /// No description provided for @vehicleLogMeterDetailTitle.
@@ -7908,6 +8010,57 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a share'**
   String get vehicleSharingAddShare;
+
+  /// No description provided for @vehicleSharingRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get vehicleSharingRevoke;
+
+  /// No description provided for @vehicleSharingReactivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivate'**
+  String get vehicleSharingReactivate;
+
+  /// No description provided for @vehicleSharingRevokeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke {borrowerName}\'s access to {vehicleName}?'**
+  String vehicleSharingRevokeConfirmBody(
+    String borrowerName,
+    String vehicleName,
+  );
+
+  /// No description provided for @vehicleSharingRevokeForceSessionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A use session is in progress for {name} since {when}.\n\nIf the vehicle is not actually in use and you can take a meter reading, you can force-close this session.\n\nDo you want to close this session?'**
+  String vehicleSharingRevokeForceSessionBody(String name, String when);
+
+  /// No description provided for @vehicleSharingRevokeForceSessionYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get vehicleSharingRevokeForceSessionYes;
+
+  /// No description provided for @vehicleSharingReactivatePendingSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactivation sent'**
+  String get vehicleSharingReactivatePendingSent;
+
+  /// No description provided for @vehicleSharingPendingReactivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending reactivation'**
+  String get vehicleSharingPendingReactivateTitle;
+
+  /// No description provided for @vehicleSharingPendingReactivateTitlePlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending reactivations'**
+  String get vehicleSharingPendingReactivateTitlePlural;
 
   /// No description provided for @vehicleSharingNewShareTitle.
   ///

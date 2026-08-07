@@ -37,6 +37,25 @@ Si tu ne peux pas répondre clairement à « **quoi** faire, **où**, avec **quo
 sans lecture supplémentaire, **ne livre pas** la note — livre la procédure (ou
 dis ce qu’il te manque).
 
+## Questions de clarification — pas de jargon télégraphique seul
+
+Quand tu poses une question au développeur (choix produit, état à trancher,
+comportement attendu), **ne te contente pas** d’un libellé interne court
+(`pending`, `wire`, id de kind, statut brut, etc.) comme si le sens était
+évident.
+
+1. Formule d’abord en français courant ce dont tu parles.
+2. Si un terme technique aide ensuite, mets-le entre parenthèses.
+3. Ajoute un **exemple concret** quand deux notions voisines peuvent se
+   confondre.
+
+**Exemple (incident fil révocation partage, août 2026) :** ne pas demander
+seulement « que faire si fige/virement *pending* ? ». Dire plutôt : une
+demande de figer le solde, ou un virement proposé, qui **attend encore
+l’acceptation / le refus** de l’autre (comme le virement de 5 $ pas encore
+confirmé) — ce n’est **pas** le total déjà confirmé des soldes reportés.
+Sans cet exemple, le développeur peut croire qu’on parle du solde reporté.
+
 ## Prérequis et procédures déjà en cours
 
 Quand l’utilisateur est **au milieu** d’une procédure (redeploy, édition de

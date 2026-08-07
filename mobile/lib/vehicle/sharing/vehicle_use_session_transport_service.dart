@@ -39,6 +39,7 @@ class VehicleUseSessionTransportService {
 
   static const String startKind = 'vehicleUseSessionStart';
   static const String endKind = 'vehicleUseSessionEnd';
+  static const String endByOwnerKind = 'vehicleUseSessionEndByOwner';
 
   VehiclesRepository get _vehicles => VehiclesRepository(_db);
 
@@ -89,13 +90,57 @@ class VehicleUseSessionTransportService {
     int? drivingCityPercent,
     int? drivingTrafficPercent,
   }) async {
+    return _exportSessionEndJson(
+      kind: endKind,
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteUseId: remoteUseId,
+      endReadingId: endReadingId,
+      drivingRoutePercent: drivingRoutePercent,
+      drivingCityPercent: drivingCityPercent,
+      drivingTrafficPercent: drivingTrafficPercent,
+    );
+  }
+
+  /// Exports owner-forced session end (Propriétaire → Emprunteur).
+  Future<String> exportSessionEndByOwnerJson({
+    required String linkId,
+    required String vehicleId,
+    required String remoteUseId,
+    required String endReadingId,
+    int? drivingRoutePercent,
+    int? drivingCityPercent,
+    int? drivingTrafficPercent,
+  }) {
+    return _exportSessionEndJson(
+      kind: endByOwnerKind,
+      linkId: linkId,
+      vehicleId: vehicleId,
+      remoteUseId: remoteUseId,
+      endReadingId: endReadingId,
+      drivingRoutePercent: drivingRoutePercent,
+      drivingCityPercent: drivingCityPercent,
+      drivingTrafficPercent: drivingTrafficPercent,
+    );
+  }
+
+  Future<String> _exportSessionEndJson({
+    required String kind,
+    required String linkId,
+    required String vehicleId,
+    required String remoteUseId,
+    required String endReadingId,
+    int? drivingRoutePercent,
+    int? drivingCityPercent,
+    int? drivingTrafficPercent,
+  }) async {
     final reading = await _vehicles.getMeterReading(endReadingId);
     if (reading == null) {
       throw StateError('end reading not found: $endReadingId');
     }
     final photoB64 = await _encodePhotoBase64(reading.photoPath);
     return jsonEncode({
-      'kind': endKind,
+      'kind': kind,
       'linkId': linkId,
       'vehicleId': vehicleId,
       'remoteUseId': remoteUseId,
@@ -265,9 +310,37 @@ class VehicleUseSessionTransportService {
   Future<bool> importReceivedSessionEnd({
     required String sessionJson,
     required String borrowerContactId,
+  }) {
+    return _importSessionEnd(
+      sessionJson: sessionJson,
+      expectedKind: endKind,
+      readingRecorderContactId: borrowerContactId,
+      expectedAttributedContactId: borrowerContactId,
+    );
+  }
+
+  /// Imports owner-forced session end on the Emprunteur device.
+  Future<bool> importReceivedSessionEndByOwner({
+    required String sessionJson,
+    required String ownerContactId,
+  }) {
+    return _importSessionEnd(
+      sessionJson: sessionJson,
+      expectedKind: endByOwnerKind,
+      readingRecorderContactId: ownerContactId,
+      // Open use on borrower device is attributed to borrower self.
+      expectedAttributedContactId: null,
+    );
+  }
+
+  Future<bool> _importSessionEnd({
+    required String sessionJson,
+    required String expectedKind,
+    required String readingRecorderContactId,
+    required String? expectedAttributedContactId,
   }) async {
     final root = jsonDecode(sessionJson) as Map<String, dynamic>;
-    if ((root['kind'] as String?) != endKind) {
+    if ((root['kind'] as String?) != expectedKind) {
       throw FormatException('unexpected session end kind: ${root['kind']}');
     }
     final vehicleId = (root['vehicleId'] as String?)?.trim() ?? '';
@@ -282,8 +355,8 @@ class VehicleUseSessionTransportService {
     if (openUse == null) {
       return false;
     }
-    if (openUse.attributedContactId != borrowerContactId) {
-      // Likely a conflict residue (different actor still open).
+    if (expectedAttributedContactId != null &&
+        openUse.attributedContactId != expectedAttributedContactId) {
       return false;
     }
 
@@ -311,7 +384,7 @@ class VehicleUseSessionTransportService {
       value: meterTenths,
       unit: unit,
       photoPath: photoPath,
-      recordedByContactId: borrowerContactId,
+      recordedByContactId: readingRecorderContactId,
       role: MeterReadingRole.sessionEnd,
       vehicleUseId: openUse.id,
       isFullTank: isFullTank,

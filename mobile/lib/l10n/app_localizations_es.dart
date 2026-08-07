@@ -1883,6 +1883,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oferta de compartición de vehículo caducada';
 
   @override
+  String get activityLogKindVehicleSharingRevokeSent =>
+      'Acceso de compartido revocado (enviado)';
+
+  @override
+  String get activityLogKindVehicleSharingRevokeReceived =>
+      'Acceso de compartido revocado (recibido)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateProposeSent =>
+      'Reactivación de compartido propuesta (enviada)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateProposeReceived =>
+      'Reactivación de compartido propuesta (recibida)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateAcceptSent =>
+      'Reactivación de compartido aceptada (enviada)';
+
+  @override
+  String get activityLogKindVehicleSharingReactivateAcceptReceived =>
+      'Reactivación de compartido aceptada (recibida)';
+
+  @override
   String get activityLogKindVehicleUseSessionStartSent =>
       'Inicio de sesión de compartición enviado';
 
@@ -1897,6 +1921,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get activityLogKindVehicleUseSessionEndReceived =>
       'Fin de sesión de compartición recibida';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndByOwnerSent =>
+      'Fin de sesión forzada por el propietario (enviada)';
+
+  @override
+  String get activityLogKindVehicleUseSessionEndByOwnerReceived =>
+      'Fin de sesión forzada por el propietario (recibida)';
 
   @override
   String get housingInvitePlanActivating =>
@@ -2163,6 +2195,48 @@ class AppLocalizationsEs extends AppLocalizations {
     String vehicle,
   ) {
     return '$name aceptó compartir $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingRevokeTitle =>
+      'Acceso de compartido revocado';
+
+  @override
+  String pushNotificationVehicleSharingRevokeBody(String name, String vehicle) {
+    return '$name revocó su acceso de compartido del vehículo $vehicle';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingReactivateProposeTitle =>
+      'Reactivación de compartido';
+
+  @override
+  String pushNotificationVehicleSharingReactivateProposeBody(
+    String name,
+    String vehicle,
+  ) {
+    return '$name reactivó su acceso de compartido del vehículo $vehicle';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingReactivateAcceptTitle =>
+      'Reactivación aceptada';
+
+  @override
+  String pushNotificationVehicleSharingReactivateAcceptBody(
+    String name,
+    String vehicle,
+  ) {
+    return '$name aceptó la reactivación del compartido de $vehicle.';
+  }
+
+  @override
+  String get pushNotificationVehicleUseSessionEndByOwnerTitle =>
+      'Sesión cerrada';
+
+  @override
+  String pushNotificationVehicleUseSessionEndByOwnerBody(String name) {
+    return 'Su sesión de uso fue cerrada por el $name';
   }
 
   @override
@@ -4287,7 +4361,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vehicleLogMeterFuelTitle => 'Odómetro y combustible';
 
   @override
-  String get vehicleLogSharingSessionsTitle => 'Sesiones de compartición';
+  String get vehicleLogSharingSessionsTitle => 'Otro';
 
   @override
   String get vehicleLogMeterDetailTitle => 'Detalle de la lectura';
@@ -4769,6 +4843,38 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vehicleSharingAddShare => 'Añadir un compartido';
+
+  @override
+  String get vehicleSharingRevoke => 'Revocar';
+
+  @override
+  String get vehicleSharingReactivate => 'Reactivar';
+
+  @override
+  String vehicleSharingRevokeConfirmBody(
+    String borrowerName,
+    String vehicleName,
+  ) {
+    return '¿Revocar el acceso de $borrowerName para $vehicleName?';
+  }
+
+  @override
+  String vehicleSharingRevokeForceSessionBody(String name, String when) {
+    return 'Hay una sesión de uso en curso para $name desde $when.\n\nSi el vehículo no está realmente en uso y puede hacer una lectura del odómetro, puede forzar el cierre de esta sesión.\n\n¿Desea cerrar esta sesión?';
+  }
+
+  @override
+  String get vehicleSharingRevokeForceSessionYes => 'Sí';
+
+  @override
+  String get vehicleSharingReactivatePendingSent => 'Reactivación enviada';
+
+  @override
+  String get vehicleSharingPendingReactivateTitle => 'Reactivación pendiente';
+
+  @override
+  String get vehicleSharingPendingReactivateTitlePlural =>
+      'Reactivaciones pendientes';
 
   @override
   String get vehicleSharingNewShareTitle => 'Nuevo compartido';

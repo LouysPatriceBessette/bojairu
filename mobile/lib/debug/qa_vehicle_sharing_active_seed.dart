@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 
+import '../activity/relay_activity_log_service.dart';
 import '../db/app_database.dart';
 import '../db/repositories/vehicles_repository.dart';
 import '../vehicle/vehicle_consumption_estimation_mode.dart';
@@ -110,6 +111,11 @@ Future<void> seedQaVehicleSharingActiveOwnerLocalData(AppDatabase db) async {
           ownerRulesText: const drift.Value(''),
         ),
       );
+  await _seedActiveShareOfferAcceptActivityLogs(
+    db: db,
+    role: _QaActiveShareSeedRole.owner,
+    linkAt: linkAt,
+  );
 }
 
 /// External vehicle + active inbound link (no identity). Used by seed and tests.
@@ -144,4 +150,71 @@ Future<void> seedQaVehicleSharingActiveBorrowerLocalData(AppDatabase db) async {
           ownerRulesText: const drift.Value(''),
         ),
       );
+  await _seedActiveShareOfferAcceptActivityLogs(
+    db: db,
+    role: _QaActiveShareSeedRole.borrower,
+    linkAt: linkAt,
+  );
+}
+
+enum _QaActiveShareSeedRole { owner, borrower }
+
+/// Offer + accept rows for the vehicle journal filter « Autre ».
+Future<void> _seedActiveShareOfferAcceptActivityLogs({
+  required AppDatabase db,
+  required _QaActiveShareSeedRole role,
+  required DateTime linkAt,
+}) async {
+  final log = RelayActivityLogService(db);
+  final offeredAt = linkAt.subtract(const Duration(minutes: 5));
+  const vehicleId = kQaVehicleSharingActiveVehicleId;
+  const linkId = kQaVehicleSharingActiveLinkId;
+  switch (role) {
+    case _QaActiveShareSeedRole.owner:
+      await log.append(
+        kind: RelayActivityLogKinds.vehicleSharingOfferSent,
+        initiatorKind: RelayActivityLogService.initiatorSelf,
+        occurredAt: offeredAt,
+        details: {
+          'linkId': linkId,
+          'borrowerContactId': kQaFcmWakeMonicaContactId,
+          'vehicleId': vehicleId,
+        },
+      );
+      await log.append(
+        kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: kQaFcmWakeMonicaContactId,
+        initiatorDisplayName: 'Monica QA',
+        occurredAt: linkAt,
+        details: {
+          'linkId': linkId,
+          'vehicleId': vehicleId,
+          'status': 'accepted',
+        },
+      );
+    case _QaActiveShareSeedRole.borrower:
+      await log.append(
+        kind: RelayActivityLogKinds.vehicleSharingOfferReceived,
+        initiatorKind: RelayActivityLogService.initiatorContact,
+        initiatorContactId: kQaFcmWakeLouysContactId,
+        initiatorDisplayName: 'Louys QA',
+        occurredAt: offeredAt,
+        details: {
+          'linkId': linkId,
+          'vehicleId': vehicleId,
+          'vehicleLabel': kQaVehicleE2eDisplayLabel,
+        },
+      );
+      await log.append(
+        kind: RelayActivityLogKinds.vehicleSharingOfferResponse,
+        initiatorKind: RelayActivityLogService.initiatorSelf,
+        occurredAt: linkAt,
+        details: {
+          'linkId': linkId,
+          'vehicleId': vehicleId,
+          'status': 'accepted',
+        },
+      );
+  }
 }

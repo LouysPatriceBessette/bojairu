@@ -646,6 +646,11 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
                   initialVehicleId: state.pathParameters['vehicleId']!,
                   prefs: prefs,
                   usageContext: const VehicleUsageContext.owner(),
+                  forceEndBorrowerSessionLinkId:
+                      state.uri.queryParameters['forceEndBorrowerSession'] ==
+                              '1'
+                          ? state.uri.queryParameters['linkId']
+                          : null,
                 ),
               ),
               GoRoute(

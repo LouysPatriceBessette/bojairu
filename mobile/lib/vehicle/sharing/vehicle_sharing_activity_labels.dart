@@ -12,6 +12,18 @@ String vehicleSharingActivityKindLabel(AppLocalizations l10n, String kind) {
       l10n.activityLogKindVehicleSharingOfferResponse,
     RelayActivityLogKinds.vehicleSharingOfferExpired =>
       l10n.activityLogKindVehicleSharingOfferExpired,
+    RelayActivityLogKinds.vehicleSharingRevokeSent =>
+      l10n.activityLogKindVehicleSharingRevokeSent,
+    RelayActivityLogKinds.vehicleSharingRevokeReceived =>
+      l10n.activityLogKindVehicleSharingRevokeReceived,
+    RelayActivityLogKinds.vehicleSharingReactivateProposeSent =>
+      l10n.activityLogKindVehicleSharingReactivateProposeSent,
+    RelayActivityLogKinds.vehicleSharingReactivateProposeReceived =>
+      l10n.activityLogKindVehicleSharingReactivateProposeReceived,
+    RelayActivityLogKinds.vehicleSharingReactivateAcceptSent =>
+      l10n.activityLogKindVehicleSharingReactivateAcceptSent,
+    RelayActivityLogKinds.vehicleSharingReactivateAcceptReceived =>
+      l10n.activityLogKindVehicleSharingReactivateAcceptReceived,
     RelayActivityLogKinds.vehicleUseSessionStartSent =>
       l10n.activityLogKindVehicleUseSessionStartSent,
     RelayActivityLogKinds.vehicleUseSessionStartReceived =>
@@ -20,6 +32,10 @@ String vehicleSharingActivityKindLabel(AppLocalizations l10n, String kind) {
       l10n.activityLogKindVehicleUseSessionEndSent,
     RelayActivityLogKinds.vehicleUseSessionEndReceived =>
       l10n.activityLogKindVehicleUseSessionEndReceived,
+    RelayActivityLogKinds.vehicleUseSessionEndByOwnerSent =>
+      l10n.activityLogKindVehicleUseSessionEndByOwnerSent,
+    RelayActivityLogKinds.vehicleUseSessionEndByOwnerReceived =>
+      l10n.activityLogKindVehicleUseSessionEndByOwnerReceived,
     _ => kind,
   };
 }

@@ -262,12 +262,26 @@ abstract final class RelayActivityLogKinds {
   static const vehicleSharingOfferReceived = 'vehicle_sharing_offer_received';
   static const vehicleSharingOfferResponse = 'vehicle_sharing_offer_response';
   static const vehicleSharingOfferExpired = 'vehicle_sharing_offer_expired';
+  static const vehicleSharingRevokeSent = 'vehicle_sharing_revoke_sent';
+  static const vehicleSharingRevokeReceived = 'vehicle_sharing_revoke_received';
+  static const vehicleSharingReactivateProposeSent =
+      'vehicle_sharing_reactivate_propose_sent';
+  static const vehicleSharingReactivateProposeReceived =
+      'vehicle_sharing_reactivate_propose_received';
+  static const vehicleSharingReactivateAcceptSent =
+      'vehicle_sharing_reactivate_accept_sent';
+  static const vehicleSharingReactivateAcceptReceived =
+      'vehicle_sharing_reactivate_accept_received';
   static const vehicleUseSessionStartSent = 'vehicle_use_session_start_sent';
   static const vehicleUseSessionStartReceived =
       'vehicle_use_session_start_received';
   static const vehicleUseSessionEndSent = 'vehicle_use_session_end_sent';
   static const vehicleUseSessionEndReceived =
       'vehicle_use_session_end_received';
+  static const vehicleUseSessionEndByOwnerSent =
+      'vehicle_use_session_end_by_owner_sent';
+  static const vehicleUseSessionEndByOwnerReceived =
+      'vehicle_use_session_end_by_owner_received';
   static const vehicleFuelPurchaseSent = 'vehicle_fuel_purchase_sent';
   static const vehicleFuelPurchaseReceived = 'vehicle_fuel_purchase_received';
   static const vehicleFuelPurchaseCatchUpSent =
@@ -306,10 +320,18 @@ abstract final class RelayActivityLogKinds {
     vehicleSharingOfferReceived,
     vehicleSharingOfferResponse,
     vehicleSharingOfferExpired,
+    vehicleSharingRevokeSent,
+    vehicleSharingRevokeReceived,
+    vehicleSharingReactivateProposeSent,
+    vehicleSharingReactivateProposeReceived,
+    vehicleSharingReactivateAcceptSent,
+    vehicleSharingReactivateAcceptReceived,
     vehicleUseSessionStartSent,
     vehicleUseSessionStartReceived,
     vehicleUseSessionEndSent,
     vehicleUseSessionEndReceived,
+    vehicleUseSessionEndByOwnerSent,
+    vehicleUseSessionEndByOwnerReceived,
     vehicleFuelPurchaseSent,
     vehicleFuelPurchaseReceived,
     vehicleFuelPurchaseCatchUpSent,
@@ -330,16 +352,24 @@ abstract final class RelayActivityLogKinds {
     vehicleTrafficViolationReceived,
   };
 
-  /// Offer + session kinds shown under vehicle « Sessions de partage ».
+  /// Offer / lifecycle / session kinds shown under vehicle journal « Autre ».
   static const Set<String> sharingSessionJournalKinds = {
     vehicleSharingOfferSent,
     vehicleSharingOfferReceived,
     vehicleSharingOfferResponse,
     vehicleSharingOfferExpired,
+    vehicleSharingRevokeSent,
+    vehicleSharingRevokeReceived,
+    vehicleSharingReactivateProposeSent,
+    vehicleSharingReactivateProposeReceived,
+    vehicleSharingReactivateAcceptSent,
+    vehicleSharingReactivateAcceptReceived,
     vehicleUseSessionStartSent,
     vehicleUseSessionStartReceived,
     vehicleUseSessionEndSent,
     vehicleUseSessionEndReceived,
+    vehicleUseSessionEndByOwnerSent,
+    vehicleUseSessionEndByOwnerReceived,
   };
 
   static bool isVehicleRelated(String kind) => vehicleRelated.contains(kind);

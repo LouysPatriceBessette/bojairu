@@ -65,16 +65,16 @@ class _VehicleJournalsScreenState extends State<VehicleJournalsScreen> {
                   child: Text(l10n.vehicleLogMeterFuelTitle),
                 ),
                 DropdownMenuItem(
-                  value: _VehicleJournalKind.sharingSessions,
-                  child: Text(l10n.vehicleLogSharingSessionsTitle),
-                ),
-                DropdownMenuItem(
                   value: _VehicleJournalKind.maintenance,
                   child: Text(l10n.vehicleLogMaintenanceTitle),
                 ),
                 DropdownMenuItem(
                   value: _VehicleJournalKind.violation,
                   child: Text(l10n.vehicleLogViolationTitle),
+                ),
+                DropdownMenuItem(
+                  value: _VehicleJournalKind.sharingSessions,
+                  child: Text(l10n.vehicleLogSharingSessionsTitle),
                 ),
               ],
               onChanged: (value) {

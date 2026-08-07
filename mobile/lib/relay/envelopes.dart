@@ -39,6 +39,10 @@ class EnvelopeKind {
   static const int vehicleUsageTransferPropose = 26;
   static const int vehicleUsageTransferDecision = 27;
   static const int vehicleUsageBalanceFreezeCatchUp = 28;
+  static const int vehicleSharingRevoke = 29;
+  static const int vehicleSharingReactivatePropose = 30;
+  static const int vehicleSharingReactivateAccept = 31;
+  static const int vehicleUseSessionEndByOwner = 32;
 }
 
 /// One byte at the start of every envelope frame so we can evolve the
@@ -292,6 +296,17 @@ class VehicleSharingOfferAcceptEnvelope {
   final String acceptJson;
 }
 
+/// Steady-state revoke / reactivate propose / accept (JSON payload).
+class VehicleSharingLifecycleEnvelope {
+  VehicleSharingLifecycleEnvelope({
+    required this.senderLongTermPublicKey,
+    required this.payloadJson,
+  });
+
+  final Uint8List senderLongTermPublicKey;
+  final String payloadJson;
+}
+
 /// Steady-state borrower use-session start (Emprunteur → Propriétaire).
 class VehicleUseSessionStartEnvelope {
   VehicleUseSessionStartEnvelope({
@@ -433,6 +448,14 @@ const String _vehicleUsageTransferDecisionAeadInfo =
     'compartarenta/steady-v1/vehicle-usage-transfer-decision-aead';
 const String _vehicleUsageBalanceFreezeCatchUpAeadInfo =
     'compartarenta/steady-v1/vehicle-usage-balance-freeze-catch-up-aead';
+const String _vehicleSharingRevokeAeadInfo =
+    'compartarenta/steady-v1/vehicle-sharing-revoke-aead';
+const String _vehicleSharingReactivateProposeAeadInfo =
+    'compartarenta/steady-v1/vehicle-sharing-reactivate-propose-aead';
+const String _vehicleSharingReactivateAcceptAeadInfo =
+    'compartarenta/steady-v1/vehicle-sharing-reactivate-accept-aead';
+const String _vehicleUseSessionEndByOwnerAeadInfo =
+    'compartarenta/steady-v1/vehicle-use-session-end-by-owner-aead';
 
 // ---------- Public encode / decode API ----------
 
@@ -2238,6 +2261,141 @@ class EnvelopeCodec {
     return VehicleUsageBalanceFreezeEnvelope(
       senderLongTermPublicKey: d.senderPub,
       payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleSharingRevoke({
+    required VehicleSharingLifecycleEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleSharingRevoke,
+      aeadInfo: _vehicleSharingRevokeAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleSharingLifecycleEnvelope> decryptVehicleSharingRevoke({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleSharingRevoke,
+      aeadInfo: _vehicleSharingRevokeAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleSharingLifecycleEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleSharingReactivatePropose({
+    required VehicleSharingLifecycleEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleSharingReactivatePropose,
+      aeadInfo: _vehicleSharingReactivateProposeAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleSharingLifecycleEnvelope>
+      decryptVehicleSharingReactivatePropose({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleSharingReactivatePropose,
+      aeadInfo: _vehicleSharingReactivateProposeAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleSharingLifecycleEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleSharingReactivateAccept({
+    required VehicleSharingLifecycleEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleSharingReactivateAccept,
+      aeadInfo: _vehicleSharingReactivateAcceptAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.payloadJson,
+      jsonKey: 'payload_json',
+    );
+  }
+
+  static Future<VehicleSharingLifecycleEnvelope>
+      decryptVehicleSharingReactivateAccept({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleSharingReactivateAccept,
+      aeadInfo: _vehicleSharingReactivateAcceptAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'payload_json',
+    );
+    return VehicleSharingLifecycleEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      payloadJson: d.payloadJson,
+    );
+  }
+
+  static Future<Uint8List> encryptVehicleUseSessionEndByOwner({
+    required VehicleUseSessionEndEnvelope envelope,
+    required Uint8List senderLongTermPrivateKey,
+    required Uint8List peerLongTermPublicKey,
+  }) {
+    return _encryptSteadyPayloadJson(
+      kind: EnvelopeKind.vehicleUseSessionEndByOwner,
+      aeadInfo: _vehicleUseSessionEndByOwnerAeadInfo,
+      senderLongTermPublicKey: envelope.senderLongTermPublicKey,
+      senderLongTermPrivateKey: senderLongTermPrivateKey,
+      peerLongTermPublicKey: peerLongTermPublicKey,
+      payloadJson: envelope.sessionJson,
+      jsonKey: 'session_json',
+    );
+  }
+
+  static Future<VehicleUseSessionEndEnvelope>
+      decryptVehicleUseSessionEndByOwner({
+    required Uint8List frame,
+    required Uint8List receiverLongTermPrivateKey,
+  }) async {
+    final d = await _decryptSteadyPayloadJson(
+      frame: frame,
+      kind: EnvelopeKind.vehicleUseSessionEndByOwner,
+      aeadInfo: _vehicleUseSessionEndByOwnerAeadInfo,
+      receiverLongTermPrivateKey: receiverLongTermPrivateKey,
+      jsonKey: 'session_json',
+    );
+    return VehicleUseSessionEndEnvelope(
+      senderLongTermPublicKey: d.senderPub,
+      sessionJson: d.payloadJson,
     );
   }
 }

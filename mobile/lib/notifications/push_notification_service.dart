@@ -690,6 +690,103 @@ class PushNotificationService {
     debugPrint('vehicle_sharing_offer_accept notification shown');
   }
 
+  static Future<void> _showVehicleSharingSimpleNotification({
+    required String title,
+    required String body,
+    required String payload,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+    if (kIsWeb) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel =
+        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: payload,
+    );
+  }
+
+  static Future<void> showLocalVehicleSharingRevokeNotification({
+    required String ownerDisplayName,
+    required String vehicleLabel,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
+    await _showVehicleSharingSimpleNotification(
+      title: l10n.pushNotificationVehicleSharingRevokeTitle,
+      body: l10n.pushNotificationVehicleSharingRevokeBody(name, vehicle),
+      payload: _vehicleSharingOfferTapPayload,
+    );
+  }
+
+  static Future<void> showLocalVehicleSharingReactivateProposeNotification({
+    required String ownerDisplayName,
+    required String vehicleLabel,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
+    await _showVehicleSharingSimpleNotification(
+      title: l10n.pushNotificationVehicleSharingReactivateProposeTitle,
+      body: l10n.pushNotificationVehicleSharingReactivateProposeBody(
+        name,
+        vehicle,
+      ),
+      payload: _vehicleSharingOfferTapPayload,
+    );
+  }
+
+  static Future<void> showLocalVehicleSharingReactivateAcceptNotification({
+    required String borrowerDisplayName,
+    required String vehicleLabel,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name =
+        borrowerDisplayName.trim().isEmpty ? '—' : borrowerDisplayName.trim();
+    final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
+    await _showVehicleSharingSimpleNotification(
+      title: l10n.pushNotificationVehicleSharingReactivateAcceptTitle,
+      body: l10n.pushNotificationVehicleSharingReactivateAcceptBody(
+        name,
+        vehicle,
+      ),
+      payload: _vehicleSharingOfferAcceptTapPayload,
+    );
+  }
+
+  static Future<void> showLocalVehicleUseSessionEndByOwnerNotification({
+    required String ownerDisplayName,
+  }) async {
+    final prefs = await AppPreferences.load();
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    await _showVehicleSharingSimpleNotification(
+      title: l10n.pushNotificationVehicleUseSessionEndByOwnerTitle,
+      body: l10n.pushNotificationVehicleUseSessionEndByOwnerBody(name),
+      payload: _vehicleSharingOfferTapPayload,
+    );
+  }
+
   static Future<void> showLocalHousingRealizedExpenseNotification({
     required String senderDisplayName,
     String? expenseId,
