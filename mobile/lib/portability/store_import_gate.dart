@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../entitlement/app_module_id.dart';
+import '../entitlement/module_entitlement_controller.dart';
+
 /// Whether the user may import a device backup (active paid housing subscription).
 abstract class StoreImportGate {
   Future<bool> hasActiveHousingSubscription();
@@ -23,13 +26,20 @@ class DevFakeStoreImportGate implements StoreImportGate {
   }
 }
 
-/// Release builds until Play / StoreKit integration ships.
-class ReleaseStoreImportGate implements StoreImportGate {
+/// Release: housing must be [active-paid] from local store receipts / evaluation.
+class ModuleEntitlementImportGate implements StoreImportGate {
   @override
-  Future<bool> hasActiveHousingSubscription() async => false;
+  Future<bool> hasActiveHousingSubscription() async {
+    final c = ModuleEntitlementController.maybeInstance;
+    if (c == null) return false;
+    return c.isActivePaid(AppModuleId.housing);
+  }
 }
+
+/// Alias kept for existing call sites / tests.
+class ReleaseStoreImportGate extends ModuleEntitlementImportGate {}
 
 StoreImportGate defaultStoreImportGate() {
   if (kDebugMode) return DevFakeStoreImportGate();
-  return ReleaseStoreImportGate();
+  return ModuleEntitlementImportGate();
 }

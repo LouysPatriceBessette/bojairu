@@ -12,6 +12,7 @@ import 'db/repositories/contacts_repository.dart';
 import 'prefs/app_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
+import 'screens/licenses/licenses_screen.dart';
 import 'screens/settings/activity_log_settings_screen.dart';
 import 'screens/settings/about_settings_screen.dart';
 import 'screens/settings/device_data_export_import_screen.dart';
@@ -450,6 +451,10 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
     redirect: onboardingRedirect,
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/licenses',
+        builder: (context, state) => const LicensesScreen(),
+      ),
       GoRoute(
         path: '/settings',
         builder: (context, state) =>

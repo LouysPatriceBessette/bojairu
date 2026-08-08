@@ -485,6 +485,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeModuleVehicleSharing => 'Partage de véhicule';
 
   @override
+  String get homeModuleLicenses => 'Licences';
+
+  @override
+  String get licensesEffectiveHeading => 'État par module';
+
+  @override
+  String get licensesProductsHeading => 'Abonnements';
+
+  @override
+  String get licensesRestorePurchases => 'Restaurer les achats';
+
+  @override
+  String get licensesSubscribe => 'S’abonner';
+
+  @override
+  String get licensesStoreUnavailable =>
+      'Magasin indisponible sur cet appareil.';
+
+  @override
+  String get licensesNoProducts =>
+      'Aucun produit magasin disponible pour le moment.';
+
+  @override
+  String get licensesEntitlementUnavailable =>
+      'Service de licences non initialisé.';
+
+  @override
+  String get licensesStateFree => 'Libre';
+
+  @override
+  String get licensesStateLinkedNotActive => 'Lié, non actif';
+
+  @override
+  String get licensesStateActiveTrial => 'Essai';
+
+  @override
+  String get licensesStateActivePaid => 'Payé';
+
+  @override
+  String get licensesStateGrace => 'Grâce';
+
+  @override
+  String get licensesStateReadonly => 'Lecture seule';
+
+  @override
   String get housingPlanSummaryMonthlyTotal => 'Total mensuel';
 
   @override

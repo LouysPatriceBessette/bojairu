@@ -16,6 +16,7 @@ import 'debug/qa_scenario_seed.dart';
 import 'debug/web_dev_db_write_observer.dart';
 import 'debug/web_dev_host_session.dart';
 import 'entitlement/entitlement_coordinator.dart';
+import 'entitlement/module_entitlement_controller.dart';
 import 'entitlement/participant_installation_store.dart';
 import 'entitlement/plan_participant_installation_registry.dart';
 import 'relay/relay_diagnostics.dart';
@@ -99,6 +100,10 @@ Future<void> bootstrap() async {
           await reconcileDevOnboardingIfNeeded(appDb);
         }
         await logLocalStorageStartupDiagnostics(appDb);
+
+        final moduleEntitlement = ModuleEntitlementController();
+        ModuleEntitlementController.install(moduleEntitlement);
+        await moduleEntitlement.load();
       } catch (error, stack) {
         debugPrint(
           'AppDatabase warmUpStorage failed (stop melos, force-quit app, '

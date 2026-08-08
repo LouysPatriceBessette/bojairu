@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../entitlement/app_module_id.dart';
+import '../entitlement/module_entitlement_controller.dart';
+
 /// Module identifiers per OpenSpec (`vehicle`, `vehicle-sharing`).
 enum VehicleModuleId {
   vehicle('vehicle'),
@@ -9,17 +12,24 @@ enum VehicleModuleId {
   final String wire;
 }
 
-/// Local entitlement gate until per-module store licensing ships.
+/// Local entitlement gate for vehicle modules.
 ///
-/// Debug builds treat both modules as entitled. Release builds hide vehicle
-/// modules until Play/App Store SKUs and entitlement introspection are wired
-/// (`vehicle-module-licensing`, `per-module-licensing-and-bundles`).
+/// Debug builds keep modules usable without a store purchase (local QA).
+/// Release builds use [ModuleEntitlementController] effective state.
 class VehicleModuleAccess {
   const VehicleModuleAccess();
 
-  bool get hasVehicleEntitlement => kDebugMode;
+  bool get hasVehicleEntitlement {
+    if (kDebugMode) return true;
+    final c = ModuleEntitlementController.maybeInstance;
+    return c?.hasUsableAccess(AppModuleId.vehicle) ?? false;
+  }
 
-  bool get hasVehicleSharingEntitlement => kDebugMode;
+  bool get hasVehicleSharingEntitlement {
+    if (kDebugMode) return true;
+    final c = ModuleEntitlementController.maybeInstance;
+    return c?.hasUsableAccess(AppModuleId.vehicleSharing) ?? false;
+  }
 
   bool get vehicleModuleEnabled => true;
 

@@ -946,6 +946,90 @@ abstract class AppLocalizations {
   /// **'Vehicle sharing'**
   String get homeModuleVehicleSharing;
 
+  /// No description provided for @homeModuleLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Licenses'**
+  String get homeModuleLicenses;
+
+  /// No description provided for @licensesEffectiveHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Status by module'**
+  String get licensesEffectiveHeading;
+
+  /// No description provided for @licensesProductsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions'**
+  String get licensesProductsHeading;
+
+  /// No description provided for @licensesRestorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get licensesRestorePurchases;
+
+  /// No description provided for @licensesSubscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe'**
+  String get licensesSubscribe;
+
+  /// No description provided for @licensesStoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Store unavailable on this device.'**
+  String get licensesStoreUnavailable;
+
+  /// No description provided for @licensesNoProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'No store products available right now.'**
+  String get licensesNoProducts;
+
+  /// No description provided for @licensesEntitlementUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'License service not initialized.'**
+  String get licensesEntitlementUnavailable;
+
+  /// No description provided for @licensesStateFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get licensesStateFree;
+
+  /// No description provided for @licensesStateLinkedNotActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked, not active'**
+  String get licensesStateLinkedNotActive;
+
+  /// No description provided for @licensesStateActiveTrial.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial'**
+  String get licensesStateActiveTrial;
+
+  /// No description provided for @licensesStateActivePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get licensesStateActivePaid;
+
+  /// No description provided for @licensesStateGrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Grace'**
+  String get licensesStateGrace;
+
+  /// No description provided for @licensesStateReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get licensesStateReadonly;
+
   /// No description provided for @housingPlanSummaryMonthlyTotal.
   ///
   /// In en, this message translates to:

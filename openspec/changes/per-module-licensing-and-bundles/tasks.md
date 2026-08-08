@@ -7,12 +7,12 @@
 
 ## 2. App entitlement layer
 
-- [ ] 2.1 Introduce a module identifier enumeration in the app code (housing first, vehicle deferred).
-- [ ] 2.2 Refactor the entitlement state holder so it maintains one effective state per module (rather than a single global state).
-- [ ] 2.3 Implement the "most favorable source wins" rule combining per-module receipts, bundle receipt projection, and local lifecycle, with a documented deterministic evaluation order.
-- [ ] 2.4 Implement receipt validation paths that route per-module and bundle receipts into the correct module's effective state.
-- [ ] 2.5 Persist captured receipt metadata per module (Apple identifiers, Google Play identifiers) consistent with `store-product-mapping-per-module`.
-- [ ] 2.6 Implement `module-subscription-dependencies` (block owner-side sharing unless both `vehicle` and `vehicle-sharing` are entitled).
+- [x] 2.1 Introduce a module identifier enumeration in the app code (housing first, vehicle deferred). *(`AppModuleId` — 2026-08-08.)*
+- [x] 2.2 Refactor the entitlement state holder so it maintains one effective state per module (rather than a single global state). *(`ModuleEntitlementController`.)*
+- [x] 2.3 Implement the "most favorable source wins" rule combining per-module receipts, bundle receipt projection, and local lifecycle, with a documented deterministic evaluation order. *(`ModuleEntitlementEvaluator`.)*
+- [x] 2.4 Implement receipt validation paths that route per-module and bundle receipts into the correct module's effective state. *(`ReceiptToCandidates` — local only; no server upload in étape 1.)*
+- [x] 2.5 Persist captured receipt metadata per module (Apple identifiers, Google Play identifiers) consistent with `store-product-mapping-per-module`. *(`LocalStoreReceiptStore`.)*
+- [x] 2.6 Implement `module-subscription-dependencies` (block owner-side sharing unless both `vehicle` and `vehicle-sharing` are entitled). *(`VehicleModuleAccess.canOfferSharing`.)*
 
 ## 3. Module enable/disable and isolation
 
@@ -34,8 +34,8 @@
 
 ## 6. Tests
 
-- [ ] 6.1 Unit tests for the "most favorable source wins" evaluation, including ties and overlap between standalone and bundle receipts.
-- [ ] 6.2 Unit tests for per-module state machine isolation (a delinquency on one module does not transition state on another).
+- [x] 6.1 Unit tests for the "most favorable source wins" evaluation, including ties and overlap between standalone and bundle receipts. *(`module_entitlement_evaluator_test.dart`, `receipt_to_candidates_test.dart`.)*
+- [x] 6.2 Unit tests for per-module state machine isolation (a delinquency on one module does not transition state on another). *(`module_entitlement_controller_test.dart`.)*
 - [ ] 6.3 Unit tests for disable/enable behavior on relay traffic (no module-scoped envelopes generated while disabled; expired inbound proposals are not resurrected at re-enable).
 - [ ] 6.4 Integration test verifying export availability under various per-module entitlement combinations (active-paid, read-only, delinquent).
-- [ ] 6.5 Documentation test that confirms `docs/store-mapping.md` lists each currently-shipping module and bundle.
+- [x] 6.5 Documentation test that confirms `docs/store-mapping.md` lists each currently-shipping module and bundle. *(`store_product_catalog_test.dart` mirrors store-mapping ids.)*

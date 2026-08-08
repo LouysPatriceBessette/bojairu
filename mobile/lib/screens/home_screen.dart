@@ -145,6 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
+              tiles.add(
+                SizedBox(
+                  width: moduleTileW,
+                  child: _HomeActionCard(
+                    icon: Icons.workspace_premium_outlined,
+                    label: l10n.homeModuleLicenses,
+                    onTap: () => navigateTo(context, '/licenses'),
+                    semanticsIdentifier:
+                        kDebugMode ? 'qa-home-licenses' : null,
+                  ),
+                ),
+              );
+
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
                   contentInset + viewPadding.left,

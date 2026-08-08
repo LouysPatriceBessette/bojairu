@@ -5,7 +5,9 @@ import '../../db/app_database.dart';
 import '../../housing/participation/housing_inactive_participant_service.dart';
 import '../../housing/participation/housing_participation_membership_service.dart';
 import '../../entitlement/entitlement_coordinator.dart';
+import '../../entitlement/housing_lifecycle_source.dart';
 import '../../entitlement/housing_trial_consumption_store.dart';
+import '../../entitlement/module_entitlement_controller.dart';
 import '../../prefs/app_preferences.dart';
 import 'realized_expense_balance.dart';
 import 'realized_expense_line_snapshot.dart';
@@ -397,6 +399,7 @@ class RealizedExpenseLedgerService {
     final prefs = await AppPreferences.load();
     if (prefs.isHousingPlanActiveUseStarted(planId)) return;
     await prefs.markHousingPlanActiveUseStarted(planId);
+    _syncLocalHousingTrialLifecycle(prefs, planId);
 
     try {
       final trialStore = await HousingTrialConsumptionStore.load();
@@ -418,5 +421,18 @@ class RealizedExpenseLedgerService {
     } on Object catch (e, st) {
       debugPrint('housing: trial consumption on active use skipped: $e\n$st');
     }
+  }
+
+  void _syncLocalHousingTrialLifecycle(AppPreferences prefs, String planId) {
+    final started = prefs.housingPlanActiveUseStartedAt(planId);
+    if (started == null) return;
+    final trialEnds = started.toUtc().add(kHousingTrialDuration);
+    final now = DateTime.now().toUtc();
+    final snap = HousingLifecycleSource.afterTrialExpired(
+      trialStartedAt: started.toUtc(),
+      trialEndsAt: trialEnds,
+      now: now,
+    );
+    ModuleEntitlementController.maybeInstance?.setHousingLifecycle(snap);
   }
 }
