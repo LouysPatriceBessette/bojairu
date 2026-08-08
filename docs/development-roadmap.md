@@ -86,7 +86,7 @@ After Steps 1 and 2 land, attention focuses on completing housing:
 `per-module-licensing-and-bundles` is **not a standalone shipping step**. It defines the per-module entitlement model and the store-mapping rules. Its concrete implementation lands in two places:
 
 - The app's entitlement layer is refactored to be module-aware as part of Step 1 or Step 2 (whichever needs the entitlement layer first; in practice, Step 1's Contacts feature is free, so module-awareness is consumed first by Step 5's housing licensing).
-- The Apple subscription group and Google Play subscription product for **housing** are created when Step 5 implements housing licensing. Bundles (e.g., "Housing + Vehicle") are not created until at least one second module is ready to ship.
+- Google Play subscription products for **housing**, **vehicle**, **vehicle-sharing**, and the launch **bundles** are catalogued in [`docs/store-mapping.md`](store-mapping.md) (create in Play Console when monetization ships). Apple identifiers remain placeholders until iOS store work begins.
 
 ## Mapping to the existing OpenSpec changes
 

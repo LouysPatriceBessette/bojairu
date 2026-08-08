@@ -230,7 +230,10 @@ PY
 
   # abi|remote_name|sha256 (from package:sqlite3 asset_hashes for 3.3.1;
   # when bumping sqlite3, update these three fields together).
+  # armeabi-v7a (android/arm) is required for release appbundles; QA APKs
+  # often only need arm64 + x86_64, but stale hooks still reference arm.
   local rows=(
+    "armeabi-v7a|libsqlite3.arm.android.so|72d43c7c7119947ce2a7525bd63c4795b3cea250c09dba98c4fb9e52c7dbec82"
     "x86_64|libsqlite3.x64.android.so|2f235dff75b348ee62e5ae01177ea77ce1b1c9ebae7cb1a499319e7c82ec1358"
     "arm64-v8a|libsqlite3.arm64.android.so|cf2378ec6fa20479184d6c44b03c332343d2e0f5c648591f5302dca27ed41a94"
   )
@@ -269,6 +272,7 @@ PY
     fi
   done
 
+  cache_arm="${cache}/libsqlite3.arm.android.so"
   cache_x64="${cache}/libsqlite3.x64.android.so"
   cache_arm64="${cache}/libsqlite3.arm64.android.so"
 
@@ -284,7 +288,7 @@ PY
     fi
   done
 
-  qa_repair_stale_sqlite3_hook_downloads "${cache_arm64}" "${cache_x64}"
+  qa_repair_stale_sqlite3_hook_downloads "${cache_arm64}" "${cache_x64}" "${cache_arm}"
   echo "Android sqlite3 hook cache ready under ${cache}"
 }
 
@@ -294,6 +298,7 @@ PY
 qa_repair_stale_sqlite3_hook_downloads() {
   local cache_arm64="$1"
   local cache_x64="$2"
+  local cache_arm="${3:-}"
   local hooks="${COMPARTARENTA_ROOT}/.dart_tool/hooks_runner/sqlite3"
   local repaired
 
@@ -301,7 +306,7 @@ qa_repair_stale_sqlite3_hook_downloads() {
   [[ -f "${cache_arm64}" && -f "${cache_x64}" ]] || return 0
 
   repaired="$(
-    python3 - "${hooks}" "${cache_arm64}" "${cache_x64}" <<'PY'
+    python3 - "${hooks}" "${cache_arm64}" "${cache_x64}" "${cache_arm}" <<'PY'
 import json
 import shutil
 import sys
@@ -312,6 +317,9 @@ abi_for = {
     ("android", "arm64"): Path(sys.argv[2]),
     ("android", "x64"): Path(sys.argv[3]),
 }
+cache_arm = Path(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[4] else None
+if cache_arm is not None and cache_arm.is_file():
+    abi_for[("android", "arm")] = cache_arm
 count = 0
 for out in sorted(hooks.glob("*/output.json")):
     try:

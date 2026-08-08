@@ -1,9 +1,9 @@
 ## 1. Specification and store-mapping reference
 
-- [ ] 1.1 Confirm the canonical module identifier list at launch (e.g., `housing`, `vehicle`, `vehicle-sharing`) and document the rule for adding new modules.
-- [ ] 1.2 Author a `docs/store-mapping.md` reference that lists module → Apple subscription group identifier and module → Google Play subscription product identifier (placeholders until products are created).
-- [ ] 1.3 Document the bundle policy (which combinations are sold) and define the bundle product identifiers per platform.
-- [ ] 1.4 Cross-link this change with `licensing-trial-and-plan-entitlement` so the housing lifecycle remains the canonical instance of the per-module model.
+- [x] 1.1 Confirm the canonical module identifier list at launch (e.g., `housing`, `vehicle`, `vehicle-sharing`) and document the rule for adding new modules. *(`docs/store-mapping.md` — 2026-08-08.)*
+- [x] 1.2 Author a `docs/store-mapping.md` reference that lists module → Apple subscription group identifier and module → Google Play subscription product identifier (placeholders until products are created). *(`docs/store-mapping.md` — Play proposed ids; Apple TBD; Console create still pending.)*
+- [x] 1.3 Document the bundle policy (which combinations are sold) and define the bundle product identifiers per platform. *(Four launch bundles + standalones in `docs/store-mapping.md`.)*
+- [x] 1.4 Cross-link this change with `licensing-trial-and-plan-entitlement` so the housing lifecycle remains the canonical instance of the per-module model. *(Cross-refs in `docs/store-mapping.md`.)*
 
 ## 2. App entitlement layer
 
