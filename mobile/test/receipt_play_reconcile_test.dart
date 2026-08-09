@@ -5,32 +5,37 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 9, 21);
 
-  StoreReceiptRecord play(String productId, {String token = 't'}) {
+  StoreReceiptRecord play(
+    String productId, {
+    String token = 't',
+    bool autoRenewing = true,
+  }) {
     return StoreReceiptRecord(
       productId: productId,
       platform: 'google_play',
       purchaseTokenOrReceipt: token,
       purchasedAt: now,
-      autoRenewing: true,
+      autoRenewing: autoRenewing,
     );
   }
 
-  test('keeps live Play products and drops ghosts', () {
+  test('keeps live tokens and drops replaced / ghost tokens', () {
     final local = [
-      play('bojairu.bundle.all_modules'),
-      play('bojairu.housing'),
+      play('bojairu.housing', token: 'old', autoRenewing: false),
+      play('bojairu.housing', token: 'new', autoRenewing: true),
+      play('bojairu.bundle.all_modules', token: 'gone'),
     ];
     final next = reconcileGooglePlayReceipts(
       local: local,
-      liveProductIds: {'bojairu.housing'},
+      livePurchaseTokens: {'new'},
     );
-    expect(next.map((r) => r.productId), ['bojairu.housing']);
+    expect(next.map((r) => r.purchaseTokenOrReceipt), ['new']);
   });
 
   test('empty live set drops all Google Play rows', () {
     final next = reconcileGooglePlayReceipts(
       local: [play('bojairu.vehicle')],
-      liveProductIds: {},
+      livePurchaseTokens: {},
     );
     expect(next, isEmpty);
   });
@@ -44,7 +49,7 @@ void main() {
     );
     final next = reconcileGooglePlayReceipts(
       local: [apple, play('bojairu.vehicle')],
-      liveProductIds: {},
+      livePurchaseTokens: {},
     );
     expect(next, [apple]);
   });

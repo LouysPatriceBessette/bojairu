@@ -29,6 +29,10 @@ SubscriptionProductLineKind subscriptionProductLineKind({
 }
 
 /// Best still-valid receipt for [productId], or null.
+///
+/// When several tokens exist for the same SKU (cancel then resubscribe), prefer
+/// an auto-renewing receipt over a canceled-but-still-valid one, then the later
+/// [StoreReceiptRecord.purchasedAt], then the later [StoreReceiptRecord.expiresAt].
 StoreReceiptRecord? validReceiptForProductId({
   required String productId,
   required Iterable<StoreReceiptRecord> receipts,
@@ -38,18 +42,27 @@ StoreReceiptRecord? validReceiptForProductId({
   for (final r in receipts) {
     if (r.productId != productId) continue;
     if (!r.isValidAt(now)) continue;
-    final prev = best;
-    if (prev == null) {
-      best = r;
-      continue;
-    }
-    final a = r.expiresAt;
-    final b = prev.expiresAt;
-    if (a != null && (b == null || a.isAfter(b))) {
+    if (best == null || _isPreferredReceipt(r, best)) {
       best = r;
     }
   }
   return best;
+}
+
+bool _isPreferredReceipt(
+  StoreReceiptRecord candidate,
+  StoreReceiptRecord incumbent,
+) {
+  if (candidate.autoRenewing != incumbent.autoRenewing) {
+    return candidate.autoRenewing;
+  }
+  if (candidate.purchasedAt != incumbent.purchasedAt) {
+    return candidate.purchasedAt.isAfter(incumbent.purchasedAt);
+  }
+  final a = candidate.expiresAt;
+  final b = incumbent.expiresAt;
+  if (a != null && (b == null || a.isAfter(b))) return true;
+  return false;
 }
 
 /// True when [after] shows auto-renew turned off after [before] had it on,

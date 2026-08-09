@@ -82,8 +82,8 @@ class StoreBillingService extends ChangeNotifier {
   /// Re-query the store for owned subscriptions and reconcile local receipts.
   ///
   /// On Android this calls Play Billing [queryPastPurchases], upserts live
-  /// rows (including [autoRenewing]), and **drops** Google Play receipts for
-  /// productIds Play no longer returns. Returns `false` if the Play query
+  /// rows (including [autoRenewing]), and **drops** Google Play receipts whose
+  /// purchase tokens Play no longer returns. Returns `false` if the Play query
   /// failed (local receipts are left unchanged).
   Future<bool> refreshFromPlayStore() async {
     _lastError = null;
@@ -165,7 +165,7 @@ class StoreBillingService extends ChangeNotifier {
   }
 
   /// Upserts current Play purchases and removes local Google Play receipts
-  /// for productIds absent from the query (stale “still subscribed” UI).
+  /// whose tokens are absent from the query (stale cancel/resubscribe rows).
   Future<bool> _syncReceiptsFromPlayQuery() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       notifyListeners();
@@ -184,7 +184,7 @@ class StoreBillingService extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      final liveProductIds = <String>{};
+      final livePurchaseTokens = <String>{};
       for (final purchase in response.pastPurchases) {
         if (purchase.status == PurchaseStatus.error) continue;
         if (purchase.status == PurchaseStatus.canceled) continue;
@@ -192,7 +192,7 @@ class StoreBillingService extends ChangeNotifier {
           await _acknowledgeIfNeeded(purchase);
           final record = _toRecord(purchase);
           if (record == null) continue;
-          liveProductIds.add(record.productId);
+          livePurchaseTokens.add(record.purchaseTokenOrReceipt);
           await _entitlement.upsertReceipt(record);
           debugPrint(
             'StoreBillingService query sync: ${record.productId} '
@@ -202,10 +202,10 @@ class StoreBillingService extends ChangeNotifier {
           debugPrint('StoreBillingService query sync item failed: $e\n$st');
         }
       }
-      await _entitlement.retainGooglePlayProducts(liveProductIds);
+      await _entitlement.retainGooglePlayPurchaseTokens(livePurchaseTokens);
       debugPrint(
-        'StoreBillingService Play reconcile liveProductIds='
-        '${liveProductIds.join(',')}',
+        'StoreBillingService Play reconcile liveTokens='
+        '${livePurchaseTokens.length}',
       );
       notifyListeners();
       return true;

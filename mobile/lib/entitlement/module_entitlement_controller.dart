@@ -87,11 +87,13 @@ class ModuleEntitlementController extends ChangeNotifier {
   }
 
   /// After a successful Play purchase query: keep only Google Play rows whose
-  /// productId is still present (plus any non-Play rows).
-  Future<void> retainGooglePlayProducts(Set<String> liveProductIds) async {
+  /// purchase token is still present (plus any non-Play rows).
+  Future<void> retainGooglePlayPurchaseTokens(
+    Set<String> livePurchaseTokens,
+  ) async {
     final next = reconcileGooglePlayReceipts(
       local: _receipts,
-      liveProductIds: liveProductIds,
+      livePurchaseTokens: livePurchaseTokens,
     );
     if (next.length == _receipts.length &&
         listEquals(

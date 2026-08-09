@@ -9,13 +9,15 @@ void main() {
   StoreReceiptRecord receipt({
     required bool autoRenewing,
     DateTime? expiresAt,
+    DateTime? purchasedAt,
     String productId = 'bojairu.bundle.all_modules',
+    String token = 'tok',
   }) {
     return StoreReceiptRecord(
       productId: productId,
       platform: 'google_play',
-      purchaseTokenOrReceipt: 'tok',
-      purchasedAt: now.subtract(const Duration(days: 1)),
+      purchaseTokenOrReceipt: token,
+      purchasedAt: purchasedAt ?? now.subtract(const Duration(days: 1)),
       expiresAt: expiresAt ?? expires,
       autoRenewing: autoRenewing,
     );
@@ -70,6 +72,32 @@ void main() {
           now: now,
         ),
         SubscriptionProductLineKind.canceledStillValid,
+      );
+    });
+
+    test('prefers autoRenewing over older canceled token for same SKU', () {
+      expect(
+        subscriptionProductLineKind(
+          productId: 'bojairu.housing',
+          receipts: [
+            receipt(
+              autoRenewing: false,
+              productId: 'bojairu.housing',
+              token: 'old',
+              purchasedAt: now.subtract(const Duration(hours: 2)),
+              expiresAt: now.add(const Duration(minutes: 3)),
+            ),
+            receipt(
+              autoRenewing: true,
+              productId: 'bojairu.housing',
+              token: 'new',
+              purchasedAt: now.subtract(const Duration(minutes: 1)),
+              expiresAt: null,
+            ),
+          ],
+          now: now,
+        ),
+        SubscriptionProductLineKind.autoRenewing,
       );
     });
   });
