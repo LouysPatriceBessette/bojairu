@@ -151,6 +151,10 @@ class StoreBillingService extends ChangeNotifier {
       if (purchase.status == PurchaseStatus.canceled) continue;
 
       try {
+        // Acknowledge first: local persistence must not block Play's deadline
+        // (test purchases are refunded within minutes if unacked).
+        await _acknowledgeIfNeeded(purchase);
+
         final record = _toRecord(purchase);
         if (record != null) {
           await _entitlement.upsertReceipt(record);
@@ -158,11 +162,18 @@ class StoreBillingService extends ChangeNotifier {
             'StoreBillingService receipt upserted: ${record.productId}',
           );
         }
-
-        await _acknowledgeIfNeeded(purchase);
       } catch (e, st) {
         debugPrint('StoreBillingService purchase handling failed: $e\n$st');
         _lastError = e.toString();
+        // Still try acknowledge if upsert failed before we reordered callers.
+        try {
+          await _acknowledgeIfNeeded(purchase);
+        } catch (ackError, ackSt) {
+          debugPrint(
+            'StoreBillingService acknowledge after error failed: '
+            '$ackError\n$ackSt',
+          );
+        }
       }
     }
     notifyListeners();

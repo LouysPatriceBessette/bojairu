@@ -65,9 +65,9 @@ class StoreReceiptRecord {
       jsonEncode(rows.map((r) => r.toJson()).toList());
 
   static List<StoreReceiptRecord> decodeList(String? raw) {
-    if (raw == null || raw.isEmpty) return const <StoreReceiptRecord>[];
+    if (raw == null || raw.isEmpty) return <StoreReceiptRecord>[];
     final decoded = jsonDecode(raw);
-    if (decoded is! List) return const <StoreReceiptRecord>[];
+    if (decoded is! List) return <StoreReceiptRecord>[];
     return decoded
         .whereType<Map>()
         .map(

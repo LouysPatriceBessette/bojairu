@@ -26,7 +26,8 @@ class LocalStoreReceiptStore {
 
   /// Upsert by productId + purchaseTokenOrReceipt.
   Future<List<StoreReceiptRecord>> upsert(StoreReceiptRecord record) async {
-    final rows = await loadAll();
+    // [decodeList] may return a const empty list — copy before mutating.
+    final rows = List<StoreReceiptRecord>.from(await loadAll());
     final idx = rows.indexWhere(
       (r) =>
           r.productId == record.productId &&
