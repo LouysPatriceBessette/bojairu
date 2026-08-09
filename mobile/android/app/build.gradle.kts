@@ -90,7 +90,7 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-    // Play Console treats BILLING permission alone as legacy AIDL; a real
-    // Billing Library ≥ 6.0.1 is required to create subscription products.
-    implementation("com.android.billingclient:billing:7.1.1")
+    // Play requires Billing Library ≥ 8.0.0 for app updates after 2026-08-31.
+    // in_app_purchase_android 0.5.0 also pulls 8.0.0; keep this aligned.
+    implementation("com.android.billingclient:billing:8.0.0")
 }
