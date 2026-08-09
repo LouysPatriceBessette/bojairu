@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _HomeActionCard(
                     icon: Icons.workspace_premium_outlined,
                     label: l10n.homeModuleLicenses,
-                    onTap: () => navigateTo(context, '/licenses'),
+                    onTap: () => navigateToChild(context, '/licenses'),
                     semanticsIdentifier:
                         kDebugMode ? 'qa-home-licenses' : null,
                   ),

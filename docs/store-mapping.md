@@ -81,7 +81,10 @@ In **Google Play Console** → the Bojairũ app (`app.incoherences.bojairu`) →
 1. [x] Create each of the seven subscription products using the `productId` values above.
 2. [x] For each product, add one **base plan** `monthly` (auto-renewing, monthly billing period).
 3. [x] Set prices (CA$4.00 / month; Console may convert to other regions).
-4. [x] Activate the base plans; configure license testers (**Settings → License testing**) for purchase tests.
+4. [x] Activate the base plans; configure license testers for purchase tests.
+   - **Where (account-level, not inside the app):** Google Play Console → leave the app → **Settings** → **License testing** (FR: **Paramètres** → **Test de licence**).
+   - **Not** Monetize → Monetization setup, and **not** Testing → Internal testing → Testers.
+   - **Done:** list **Piste Interne** selected (2026-08-08); reconfirmed with device Play account match (2026-08-09). Do **not** ask the operator to re-verify this unless the phone Google account changes or a purchase is charged for real.
 5. [x] Update the **Live status** column in this file to `Created` and note the date (2026-08-08).
 
 Creating these products does **not** by itself change behavior of already-installed APKs; the app must query these ids (billing step 1).

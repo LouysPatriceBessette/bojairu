@@ -83,6 +83,26 @@ gesture alone as the product exit.
 
 ---
 
+## Home module cards → Licenses (binding — 2026-08-09)
+
+**Symptom:** Accueil → **Licences** had no in-app AppBar back; only Android
+system back. Recurrent class of trap when a new home tile is wired with
+`navigateTo`.
+
+**Root cause:** `home_screen.dart` used `navigateTo(context, '/licenses')`
+(`GoRouter.go`) — same stack replacement as Settings’ anti-pattern. Settings
+already uses `navigateToChild`; Licenses did not.
+
+**Fix:** `navigateToChild(context, '/licenses')` so `canPop` is true and the
+AppBar leading appears.
+
+**Rule of thumb for home tiles:** any card that should return to Accueil
+(settings-like, licenses, “view …” detail) → **`navigateToChild`**. Reserve
+`navigateTo` for top-level module shells where replacing Accueil is intentional
+and the module has its own exit.
+
+---
+
 ## Post-submit wizard → confirmation (binding — 2026-07-26)
 
 **Symptom:** After submitting a plan-line amendment (form → aperçu → « Changement

@@ -19,6 +19,7 @@ import 'entitlement/entitlement_coordinator.dart';
 import 'entitlement/module_entitlement_controller.dart';
 import 'entitlement/participant_installation_store.dart';
 import 'entitlement/plan_participant_installation_registry.dart';
+import 'entitlement/store_billing_service.dart';
 import 'relay/relay_diagnostics.dart';
 import 'debug/web_storage_flush.dart';
 import 'contacts/contact_invitations_repository.dart';
@@ -104,6 +105,19 @@ Future<void> bootstrap() async {
         final moduleEntitlement = ModuleEntitlementController();
         ModuleEntitlementController.install(moduleEntitlement);
         await moduleEntitlement.load();
+        // Listen to store purchaseStream for the whole process — not only while
+        // Licenses is open (Flutter IAP: listen as early as possible).
+        if (!kIsWeb) {
+          final storeBilling = StoreBillingService(
+            entitlement: moduleEntitlement,
+          );
+          StoreBillingService.install(storeBilling);
+          unawaited(
+            storeBilling.start().catchError((Object error, StackTrace stack) {
+              debugPrint('StoreBillingService.start failed: $error\n$stack');
+            }),
+          );
+        }
       } catch (error, stack) {
         debugPrint(
           'AppDatabase warmUpStorage failed (stop melos, force-quit app, '

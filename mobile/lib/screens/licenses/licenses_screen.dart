@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -18,7 +20,8 @@ class LicensesScreen extends StatefulWidget {
   State<LicensesScreen> createState() => _LicensesScreenState();
 }
 
-class _LicensesScreenState extends State<LicensesScreen> {
+class _LicensesScreenState extends State<LicensesScreen>
+    with WidgetsBindingObserver {
   StoreBillingService? _billing;
   ModuleEntitlementController? _entitlement;
   var _loading = true;
@@ -27,7 +30,16 @@ class _LicensesScreenState extends State<LicensesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // After Play's billing sheet closes, re-query so acknowledge can run.
+      unawaited(_billing?.restore());
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -37,30 +49,35 @@ class _LicensesScreenState extends State<LicensesScreen> {
       return;
     }
     await entitlement.load();
-    final billing = StoreBillingService(entitlement: entitlement);
-    await billing.start();
-    if (!mounted) {
-      billing.dispose();
-      return;
+
+    var billing = StoreBillingService.maybeInstance;
+    if (billing == null) {
+      billing = StoreBillingService(entitlement: entitlement);
+      StoreBillingService.install(billing);
     }
+    await billing.start();
+    if (!mounted) return;
+
     setState(() {
       _entitlement = entitlement;
       _billing = billing;
       _loading = false;
     });
-    entitlement.addListener(_onEntitlement);
+    entitlement.addListener(_onChanged);
+    billing.addListener(_onChanged);
   }
 
-  void _onEntitlement() {
+  void _onChanged() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _entitlement?.removeListener(_onEntitlement);
-    final billing = _billing;
-    _billing = null;
-    billing?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _entitlement?.removeListener(_onChanged);
+    _billing?.removeListener(_onChanged);
+    // Do not dispose [StoreBillingService] — purchaseStream must stay subscribed
+    // for the app process (see bootstrap + store_billing_service.dart).
     super.dispose();
   }
 

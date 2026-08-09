@@ -10,12 +10,29 @@ import 'store_product_catalog.dart';
 import 'store_receipt_record.dart';
 
 /// Play Billing (and StoreKit when available) bridge — local persistence only.
-class StoreBillingService {
+///
+/// Must stay alive for the app process (listen to [InAppPurchase.purchaseStream]
+/// from bootstrap). Creating/disposing this only while [LicensesScreen] is open
+/// misses purchase updates — and without [InAppPurchase.completePurchase]
+/// (Play acknowledge), Google cancels test purchases within minutes.
+class StoreBillingService extends ChangeNotifier {
   StoreBillingService({
     required ModuleEntitlementController entitlement,
     InAppPurchase? iap,
   })  : _entitlement = entitlement,
         _iap = iap ?? InAppPurchase.instance;
+
+  static StoreBillingService? _instance;
+
+  static StoreBillingService? get maybeInstance => _instance;
+
+  static void install(StoreBillingService service) {
+    _instance = service;
+  }
+
+  static void uninstall() {
+    _instance = null;
+  }
 
   final ModuleEntitlementController _entitlement;
   final InAppPurchase _iap;
@@ -24,6 +41,7 @@ class StoreBillingService {
   List<ProductDetails> _products = const <ProductDetails>[];
   bool _available = false;
   String? _lastError;
+  var _started = false;
 
   bool get isAvailable => _available;
   List<ProductDetails> get products =>
@@ -31,24 +49,42 @@ class StoreBillingService {
   String? get lastError => _lastError;
 
   Future<void> start() async {
+    if (_started) {
+      await queryProducts();
+      // Re-query owned purchases so unacknowledged ones still get completed.
+      await restore();
+      return;
+    }
+    _started = true;
     _available = await _iap.isAvailable();
     if (!_available) {
       _lastError = 'store_unavailable';
+      notifyListeners();
       return;
     }
     _sub ??= _iap.purchaseStream.listen(
-      _onPurchases,
+      (purchases) {
+        unawaited(_onPurchases(purchases));
+      },
       onError: (Object e, StackTrace st) {
         debugPrint('StoreBillingService purchaseStream error: $e\n$st');
         _lastError = e.toString();
+        notifyListeners();
       },
     );
     await queryProducts();
+    // Immediate restore: acknowledges any purchase Play already granted but
+    // that we never completed (required for license-tester accelerated refunds).
+    await restore();
   }
 
+  /// Cancels the purchase stream. Only for tests / process teardown.
+  @override
   void dispose() {
     unawaited(_sub?.cancel() ?? Future<void>.value());
     _sub = null;
+    _started = false;
+    super.dispose();
   }
 
   Future<void> queryProducts() async {
@@ -58,6 +94,7 @@ class StoreBillingService {
     if (!_available) {
       _products = const <ProductDetails>[];
       _lastError = 'store_unavailable';
+      notifyListeners();
       return;
     }
     final response = await _iap.queryProductDetails(
@@ -74,10 +111,12 @@ class StoreBillingService {
       for (final e in StoreProductCatalog.entries)
         if (byId.containsKey(e.productId)) byId[e.productId]!,
     ];
+    notifyListeners();
   }
 
   Future<bool> buy(ProductDetails product) async {
     _lastError = null;
+    notifyListeners();
     final PurchaseParam param;
     if (product is GooglePlayProductDetails) {
       param = GooglePlayPurchaseParam(
@@ -92,34 +131,67 @@ class StoreBillingService {
 
   Future<void> restore() async {
     _lastError = null;
+    notifyListeners();
     await _iap.restorePurchases();
   }
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
+      debugPrint(
+        'StoreBillingService purchaseStream: '
+        'productId=${purchase.productID} status=${purchase.status} '
+        'pendingComplete=${purchase.pendingCompletePurchase}',
+      );
       if (purchase.status == PurchaseStatus.pending) continue;
       if (purchase.status == PurchaseStatus.error) {
         _lastError = purchase.error?.message ?? 'purchase_error';
+        notifyListeners();
         continue;
       }
       if (purchase.status == PurchaseStatus.canceled) continue;
 
-      final record = _toRecord(purchase);
-      if (record != null) {
-        await _entitlement.upsertReceipt(record);
-      }
+      try {
+        final record = _toRecord(purchase);
+        if (record != null) {
+          await _entitlement.upsertReceipt(record);
+          debugPrint(
+            'StoreBillingService receipt upserted: ${record.productId}',
+          );
+        }
 
-      if (purchase.pendingCompletePurchase) {
-        await _iap.completePurchase(purchase);
+        await _acknowledgeIfNeeded(purchase);
+      } catch (e, st) {
+        debugPrint('StoreBillingService purchase handling failed: $e\n$st');
+        _lastError = e.toString();
       }
     }
+    notifyListeners();
+  }
+
+  /// Google Play cancels (and refunds) purchases that are never acknowledged.
+  /// Test / license-tester purchases are revoked within minutes.
+  Future<void> _acknowledgeIfNeeded(PurchaseDetails purchase) async {
+    final needsAck = purchase.pendingCompletePurchase ||
+        (purchase is GooglePlayPurchaseDetails &&
+            !purchase.billingClientPurchase.isAcknowledged);
+    if (!needsAck) return;
+
+    debugPrint(
+      'StoreBillingService completePurchase: ${purchase.productID}',
+    );
+    await _iap.completePurchase(purchase);
   }
 
   StoreReceiptRecord? _toRecord(PurchaseDetails purchase) {
     if (!StoreProductCatalog.byProductId.containsKey(purchase.productID)) {
+      debugPrint(
+        'StoreBillingService unknown productId=${purchase.productID}',
+      );
+      _lastError = 'unknown_product:${purchase.productID}';
       return null;
     }
-    String token = purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
+    String token =
+        purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
     String platform = 'unknown';
     DateTime? expiresAt;
     bool autoRenewing = true;
