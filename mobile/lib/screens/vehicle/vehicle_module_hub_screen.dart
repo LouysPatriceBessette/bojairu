@@ -44,6 +44,7 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
   List<Vehicle> _vehicles = const [];
   VehicleUse? _openUse;
   bool _loading = true;
+  bool _entitled = false;
   int _cardReloadToken = 0;
 
   @override
@@ -53,6 +54,16 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
   }
 
   Future<void> _reload() async {
+    if (mounted) setState(() => _loading = true);
+    final entitled = await _access.refreshAndHasVehicleEntitlement();
+    if (!mounted) return;
+    if (!entitled) {
+      setState(() {
+        _entitled = false;
+        _loading = false;
+      });
+      return;
+    }
     final vehicles = await _repo.listOwnedVehicles();
     final anyOpen = await _repo.findAnyOpenUse();
     // Propriétaire hub: only an open use attributed to self is "mine to end".
@@ -65,6 +76,7 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
         : null;
     if (!mounted) return;
     setState(() {
+      _entitled = true;
       _vehicles = vehicles;
       _openUse = ownOpen;
       _loading = false;
@@ -75,7 +87,13 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (!_access.hasVehicleEntitlement) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.homeModuleVehicle)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_entitled) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.homeModuleVehicle)),
         body: Center(child: Text(l10n.vehicleLicensingRequired)),

@@ -319,13 +319,16 @@ class _VehicleSharingInviteFormScreenState
   }
 
   Future<void> _submit() async {
-    final l10n = AppLocalizations.of(context);
-    if (!_access.canOfferSharing) {
+    if (!await _access.refreshAndCanOfferSharing()) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.vehicleSharingOfferBlocked)),
       );
       return;
     }
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     if (_availabilityEditing) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.vehicleSharingInviteAvailabilitySaveFirst)),

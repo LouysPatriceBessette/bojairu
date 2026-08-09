@@ -55,4 +55,30 @@ void main() {
     expect(rows.single.expiresAt, expiry);
     expect(rows.single.autoRenewing, isFalse);
   });
+
+  test('new token for same SKU keeps earlier purchasedAt from peer row', () async {
+    final store = LocalStoreReceiptStore();
+    final signup = DateTime.utc(2026, 8, 9, 23, 4);
+    await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'old',
+        purchasedAt: signup,
+        autoRenewing: false,
+      ),
+    );
+    final rows = await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'new',
+        purchasedAt: signup.add(const Duration(minutes: 4)),
+        autoRenewing: true,
+      ),
+    );
+    final neu = rows.firstWhere((r) => r.purchaseTokenOrReceipt == 'new');
+    expect(neu.purchasedAt, signup);
+    expect(neu.autoRenewing, isTrue);
+  });
 }

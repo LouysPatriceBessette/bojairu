@@ -33,26 +33,46 @@ class LocalStoreReceiptStore {
           r.productId == record.productId &&
           r.purchaseTokenOrReceipt == record.purchaseTokenOrReceipt,
     );
+    // Same SKU may have an older row (cancel then replace / resubscribe). Play
+    // keeps the period end; keep the earlier purchasedAt / known expiresAt so
+    // license-tester estimates do not jump forward on a new purchaseTime.
+    var purchasedAt = record.purchasedAt;
+    var expiresAt = record.expiresAt;
+    for (final r in rows) {
+      if (r.productId != record.productId) continue;
+      if (r.purchasedAt.isBefore(purchasedAt)) {
+        purchasedAt = r.purchasedAt;
+      }
+      expiresAt ??= r.expiresAt;
+    }
+
     if (idx >= 0) {
       final prev = rows[idx];
-      // Restore/upsert often omits client expiry; keep the last known value.
-      // Prefer the earlier purchasedAt (Play signup time must not drift to "now").
-      final purchasedAt = record.purchasedAt.isBefore(prev.purchasedAt)
-          ? record.purchasedAt
-          : prev.purchasedAt;
       rows[idx] = StoreReceiptRecord(
         productId: record.productId,
         platform: record.platform,
         purchaseTokenOrReceipt: record.purchaseTokenOrReceipt,
         purchasedAt: purchasedAt,
         orderId: record.orderId ?? prev.orderId,
-        expiresAt: record.expiresAt ?? prev.expiresAt,
+        expiresAt: expiresAt,
         autoRenewing: record.autoRenewing,
         acknowledged: record.acknowledged || prev.acknowledged,
         rawJson: record.rawJson ?? prev.rawJson,
       );
     } else {
-      rows.add(record);
+      rows.add(
+        StoreReceiptRecord(
+          productId: record.productId,
+          platform: record.platform,
+          purchaseTokenOrReceipt: record.purchaseTokenOrReceipt,
+          purchasedAt: purchasedAt,
+          orderId: record.orderId,
+          expiresAt: expiresAt,
+          autoRenewing: record.autoRenewing,
+          acknowledged: record.acknowledged,
+          rawJson: record.rawJson,
+        ),
+      );
     }
     await saveAll(rows);
     return rows;

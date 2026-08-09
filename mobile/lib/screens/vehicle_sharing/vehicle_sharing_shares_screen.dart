@@ -112,7 +112,8 @@ class _VehicleSharingSharesScreenState
 
   Future<void> _onAddShare() async {
     final l10n = AppLocalizations.of(context);
-    if (!_access.canOfferSharing) {
+    if (!await _access.refreshAndCanOfferSharing()) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.vehicleSharingOfferBlocked)),
       );

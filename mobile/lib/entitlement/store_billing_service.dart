@@ -79,6 +79,10 @@ class StoreBillingService extends ChangeNotifier {
     return refreshFromPlayStore();
   }
 
+  /// Same as [refreshFromPlayStore] — call at each license access checkpoint
+  /// (import, module hubs) so decisions are not based on a stale local cache.
+  Future<bool> refreshForLicenseCheckpoint() => refreshFromPlayStore();
+
   /// Re-query the store for owned subscriptions and reconcile local receipts.
   ///
   /// On Android this calls Play Billing [queryPastPurchases], upserts live

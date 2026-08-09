@@ -38,6 +38,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       const [];
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
+  bool _entitled = false;
   HandshakeOrchestrator? _steadyOrch;
   int _reloadGeneration = 0;
 
@@ -62,6 +63,16 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
 
   Future<void> _reload() async {
     final gen = ++_reloadGeneration;
+    if (mounted) setState(() => _loading = true);
+    final entitled = await _access.refreshAndHasVehicleSharingEntitlement();
+    if (!mounted || gen != _reloadGeneration) return;
+    if (!entitled) {
+      setState(() {
+        _entitled = false;
+        _loading = false;
+      });
+      return;
+    }
     final repo = VehiclesRepository(AppDatabase.processScope);
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
     final labels = {for (final c in contacts) c.id: c.displayName};
@@ -100,6 +111,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       _pendingOffers = pending;
       _pendingReactivates = pendingReactivates;
       _contactLabels = labels;
+      _entitled = true;
       _loading = false;
     });
   }
@@ -171,7 +183,18 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (!_access.hasVehicleSharingEntitlement) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => exitVehicleSharingModule(context),
+          ),
+          title: Text(l10n.homeModuleVehicleSharing),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_entitled) {
       return Scaffold(
         appBar: AppBar(
           leading: BackButton(
@@ -192,9 +215,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
           child: Text(l10n.homeModuleVehicleSharing),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+      body: RefreshIndicator(
               onRefresh: _reload,
               child: ListView(
                 padding: screenBodyScrollPadding(context),

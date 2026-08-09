@@ -150,7 +150,15 @@ class _LicensesScreenState extends State<LicensesScreen>
     }
   }
 
-  Future<void> _unsubscribe(String productId) async {
+  /// Opens Play subscription management (cancel or restore / re-enable renew).
+  ///
+  /// When [trackCancelTransition] is true, a post-resume dialog is shown if
+  /// auto-renew flips from on → off. Resubscribe uses the same deep link without
+  /// that tracking (Play restore keeps the same purchase token).
+  Future<void> _openPlaySubscriptionManagement(
+    String productId, {
+    required bool trackCancelTransition,
+  }) async {
     final billing = _billing;
     final entitlement = _entitlement;
     if (billing == null || entitlement == null) return;
@@ -163,8 +171,10 @@ class _LicensesScreenState extends State<LicensesScreen>
 
     setState(() {
       _busy = true;
-      _pendingUnsubscribeProductId = productId;
-      _receiptBeforeUnsubscribe = before;
+      if (trackCancelTransition) {
+        _pendingUnsubscribeProductId = productId;
+        _receiptBeforeUnsubscribe = before;
+      }
     });
     try {
       await billing.openManageSubscription(productId);
@@ -383,13 +393,24 @@ class _LicensesScreenState extends State<LicensesScreen>
         );
       case SubscriptionProductLineKind.autoRenewing:
         trailing = FilledButton(
-          onPressed: _busy ? null : () => _unsubscribe(product.id),
+          onPressed: _busy
+              ? null
+              : () => _openPlaySubscriptionManagement(
+                    product.id,
+                    trackCancelTransition: true,
+                  ),
           child: Text(l10n.licensesUnsubscribe),
         );
       case SubscriptionProductLineKind.canceledStillValid:
-        // Same Play purchase flow reactivates auto-renew before expiry.
+        // Play restore (same deep link as cancel) re-enables renew on the
+        // existing token — do not start a new in-app purchase.
         trailing = FilledButton(
-          onPressed: _busy ? null : () => _buy(product),
+          onPressed: _busy
+              ? null
+              : () => _openPlaySubscriptionManagement(
+                    product.id,
+                    trackCancelTransition: false,
+                  ),
           child: Text(l10n.licensesResubscribe),
         );
     }

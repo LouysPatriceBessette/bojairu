@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../entitlement/app_module_id.dart';
+import '../entitlement/license_checkpoint.dart';
 import '../entitlement/module_entitlement_controller.dart';
 
 /// Whether the user may import a device backup (active paid housing subscription).
@@ -26,10 +27,12 @@ class DevFakeStoreImportGate implements StoreImportGate {
   }
 }
 
-/// Release: housing must be [active-paid] from local store receipts / evaluation.
+/// Release: housing must be [active-paid] after a live Play receipt refresh.
 class ModuleEntitlementImportGate implements StoreImportGate {
   @override
   Future<bool> hasActiveHousingSubscription() async {
+    final playOk = await refreshPlayForLicenseCheckpoint();
+    if (!playOk) return false;
     final c = ModuleEntitlementController.maybeInstance;
     if (c == null) return false;
     return c.isActivePaid(AppModuleId.housing);
