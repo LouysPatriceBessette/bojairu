@@ -34,7 +34,23 @@ class LocalStoreReceiptStore {
           r.purchaseTokenOrReceipt == record.purchaseTokenOrReceipt,
     );
     if (idx >= 0) {
-      rows[idx] = record;
+      final prev = rows[idx];
+      // Restore/upsert often omits client expiry; keep the last known value.
+      // Prefer the earlier purchasedAt (Play signup time must not drift to "now").
+      final purchasedAt = record.purchasedAt.isBefore(prev.purchasedAt)
+          ? record.purchasedAt
+          : prev.purchasedAt;
+      rows[idx] = StoreReceiptRecord(
+        productId: record.productId,
+        platform: record.platform,
+        purchaseTokenOrReceipt: record.purchaseTokenOrReceipt,
+        purchasedAt: purchasedAt,
+        orderId: record.orderId ?? prev.orderId,
+        expiresAt: record.expiresAt ?? prev.expiresAt,
+        autoRenewing: record.autoRenewing,
+        acknowledged: record.acknowledged || prev.acknowledged,
+        rawJson: record.rawJson ?? prev.rawJson,
+      );
     } else {
       rows.add(record);
     }

@@ -51,34 +51,62 @@ class StoreBillingService extends ChangeNotifier {
       List<ProductDetails>.unmodifiable(_products);
   String? get lastError => _lastError;
 
-  Future<void> start() async {
-    if (_started) {
-      await queryProducts();
-      // Re-query owned purchases so unacknowledged ones still get completed.
-      await restore();
-      return;
+  /// Ensures the purchase stream is listening, then refreshes from the store.
+  /// Returns whether the Play-owned purchase query succeeded (see
+  /// [refreshFromPlayStore]).
+  Future<bool> start() async {
+    if (!_started) {
+      _started = true;
+      _available = await _iap.isAvailable();
+      if (!_available) {
+        _lastError = 'store_unavailable';
+        notifyListeners();
+        return false;
+      }
+      _sub ??= _iap.purchaseStream.listen(
+        (purchases) {
+          unawaited(_onPurchases(purchases));
+        },
+        onError: (Object e, StackTrace st) {
+          debugPrint('StoreBillingService purchaseStream error: $e\n$st');
+          _lastError = e.toString();
+          notifyListeners();
+        },
+      );
     }
-    _started = true;
-    _available = await _iap.isAvailable();
+    // Every start (including Licenses re-entry) re-queries Play — local cache
+    // alone must not drive subscription UI.
+    return refreshFromPlayStore();
+  }
+
+  /// Re-query the store for owned subscriptions and reconcile local receipts.
+  ///
+  /// On Android this calls Play Billing [queryPastPurchases], upserts live
+  /// rows (including [autoRenewing]), and **drops** Google Play receipts for
+  /// productIds Play no longer returns. Returns `false` if the Play query
+  /// failed (local receipts are left unchanged).
+  Future<bool> refreshFromPlayStore() async {
+    _lastError = null;
+    notifyListeners();
+    if (!_available) {
+      _available = await _iap.isAvailable();
+    }
     if (!_available) {
       _lastError = 'store_unavailable';
       notifyListeners();
-      return;
+      return false;
     }
-    _sub ??= _iap.purchaseStream.listen(
-      (purchases) {
-        unawaited(_onPurchases(purchases));
-      },
-      onError: (Object e, StackTrace st) {
-        debugPrint('StoreBillingService purchaseStream error: $e\n$st');
-        _lastError = e.toString();
-        notifyListeners();
-      },
-    );
     await queryProducts();
-    // Immediate restore: acknowledges any purchase Play already granted but
-    // that we never completed (required for license-tester accelerated refunds).
-    await restore();
+    try {
+      await _iap.restorePurchases();
+    } catch (e, st) {
+      debugPrint('StoreBillingService restorePurchases: $e\n$st');
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _syncReceiptsFromPlayQuery();
+    }
+    notifyListeners();
+    return true;
   }
 
   /// Cancels the purchase stream. Only for tests / process teardown.
@@ -133,9 +161,60 @@ class StoreBillingService extends ChangeNotifier {
   }
 
   Future<void> restore() async {
-    _lastError = null;
-    notifyListeners();
-    await _iap.restorePurchases();
+    await refreshFromPlayStore();
+  }
+
+  /// Upserts current Play purchases and removes local Google Play receipts
+  /// for productIds absent from the query (stale “still subscribed” UI).
+  Future<bool> _syncReceiptsFromPlayQuery() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      notifyListeners();
+      return true;
+    }
+    try {
+      final addition =
+          _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+      final response = await addition.queryPastPurchases();
+      if (response.error != null) {
+        debugPrint(
+          'StoreBillingService queryPastPurchases error: '
+          '${response.error!.message}',
+        );
+        _lastError = response.error!.message;
+        notifyListeners();
+        return false;
+      }
+      final liveProductIds = <String>{};
+      for (final purchase in response.pastPurchases) {
+        if (purchase.status == PurchaseStatus.error) continue;
+        if (purchase.status == PurchaseStatus.canceled) continue;
+        try {
+          await _acknowledgeIfNeeded(purchase);
+          final record = _toRecord(purchase);
+          if (record == null) continue;
+          liveProductIds.add(record.productId);
+          await _entitlement.upsertReceipt(record);
+          debugPrint(
+            'StoreBillingService query sync: ${record.productId} '
+            'autoRenewing=${record.autoRenewing}',
+          );
+        } catch (e, st) {
+          debugPrint('StoreBillingService query sync item failed: $e\n$st');
+        }
+      }
+      await _entitlement.retainGooglePlayProducts(liveProductIds);
+      debugPrint(
+        'StoreBillingService Play reconcile liveProductIds='
+        '${liveProductIds.join(',')}',
+      );
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      debugPrint('StoreBillingService _syncReceiptsFromPlayQuery: $e\n$st');
+      _lastError = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Opens the platform subscription management UI for [productId].
@@ -249,6 +328,10 @@ class StoreBillingService extends ChangeNotifier {
     String? orderId = purchase.purchaseID;
     String? raw;
 
+    // Signup time from the store (does not move on renewal). Used to estimate
+    // license-tester renewal boundaries when expiry is absent from the client JSON.
+    var purchasedAt = DateTime.now().toUtc();
+
     if (purchase is GooglePlayPurchaseDetails) {
       platform = 'google_play';
       token = purchase.billingClientPurchase.purchaseToken;
@@ -257,6 +340,13 @@ class StoreBillingService extends ChangeNotifier {
       raw = purchase.billingClientPurchase.originalJson;
       // Subscription expiry is not always on PurchaseDetails; parse if present.
       expiresAt = _tryParseExpiryMs(raw);
+      final purchaseTimeMs = purchase.billingClientPurchase.purchaseTime;
+      if (purchaseTimeMs > 0) {
+        purchasedAt = DateTime.fromMillisecondsSinceEpoch(
+          purchaseTimeMs,
+          isUtc: true,
+        );
+      }
     } else {
       platform = defaultTargetPlatform == TargetPlatform.iOS
           ? 'app_store'
@@ -268,7 +358,7 @@ class StoreBillingService extends ChangeNotifier {
       productId: purchase.productID,
       platform: platform,
       purchaseTokenOrReceipt: token,
-      purchasedAt: DateTime.now().toUtc(),
+      purchasedAt: purchasedAt,
       orderId: orderId,
       expiresAt: expiresAt,
       autoRenewing: autoRenewing,

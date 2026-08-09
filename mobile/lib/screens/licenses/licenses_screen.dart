@@ -11,6 +11,7 @@ import '../../entitlement/store_billing_service.dart';
 import '../../entitlement/store_product_catalog.dart';
 import '../../entitlement/store_receipt_record.dart';
 import '../../entitlement/subscription_product_line.dart';
+import '../../entitlement/subscription_renewal_estimate.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../util/display_date.dart';
@@ -31,6 +32,7 @@ class _LicensesScreenState extends State<LicensesScreen>
   AppPreferences? _prefs;
   var _loading = true;
   var _busy = false;
+  var _playSyncFailed = false;
 
   /// Product opened in Play for cancel; checked after restore / receipt upsert.
   String? _pendingUnsubscribeProductId;
@@ -54,32 +56,15 @@ class _LicensesScreenState extends State<LicensesScreen>
   Future<void> _onResumed() async {
     final billing = _billing;
     if (billing == null) return;
-    // After Play's billing sheet or subscription center closes, re-query.
-    await billing.restore();
+    if (mounted) setState(() => _loading = true);
+    // After Play's sheet closes — and on every return — re-query Play.
+    final ok = await billing.refreshFromPlayStore();
     if (!mounted) return;
-    // purchaseStream upserts may land after restore() returns.
-    await _waitForEntitlementTick(const Duration(seconds: 3));
-    if (!mounted) return;
+    setState(() {
+      _playSyncFailed = !ok;
+      _loading = false;
+    });
     await _maybeShowCancelDialog();
-  }
-
-  Future<void> _waitForEntitlementTick(Duration timeout) async {
-    final entitlement = _entitlement;
-    if (entitlement == null) return;
-    final completer = Completer<void>();
-    void listener() {
-      if (!completer.isCompleted) completer.complete();
-    }
-
-    entitlement.addListener(listener);
-    try {
-      await Future.any<void>([
-        completer.future,
-        Future<void>.delayed(timeout),
-      ]);
-    } finally {
-      entitlement.removeListener(listener);
-    }
   }
 
   Future<void> _bootstrap() async {
@@ -88,6 +73,8 @@ class _LicensesScreenState extends State<LicensesScreen>
       if (mounted) setState(() => _loading = false);
       return;
     }
+    // Load local prefs/controller wiring first; do not paint subscription
+    // rows until Play has answered (see [StoreBillingService.refreshFromPlayStore]).
     await entitlement.load();
     final prefs = await AppPreferences.load();
 
@@ -96,17 +83,23 @@ class _LicensesScreenState extends State<LicensesScreen>
       billing = StoreBillingService(entitlement: entitlement);
       StoreBillingService.install(billing);
     }
-    await billing.start();
-    if (!mounted) return;
-
-    setState(() {
-      _entitlement = entitlement;
-      _billing = billing;
-      _prefs = prefs;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _entitlement = entitlement;
+        _billing = billing;
+        _prefs = prefs;
+        _loading = true;
+      });
+    }
     entitlement.addListener(_onChanged);
     billing.addListener(_onChanged);
+
+    final ok = await billing.start();
+    if (!mounted) return;
+    setState(() {
+      _playSyncFailed = !ok;
+      _loading = false;
+    });
   }
 
   void _onChanged() {
@@ -129,11 +122,20 @@ class _LicensesScreenState extends State<LicensesScreen>
   Future<void> _restore() async {
     final billing = _billing;
     if (billing == null) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _loading = true;
+    });
     try {
-      await billing.restore();
+      final ok = await billing.refreshFromPlayStore();
+      if (mounted) _playSyncFailed = !ok;
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -200,7 +202,12 @@ class _LicensesScreenState extends State<LicensesScreen>
       _pendingUnsubscribeProductId = null;
       _receiptBeforeUnsubscribe = null;
 
-      final when = _formatWhen(after!.expiresAt ?? now);
+      final boundary = accessBoundaryForDisplay(
+        purchasedAt: after!.purchasedAt,
+        now: now,
+        expiresAt: after.expiresAt,
+      );
+      final when = _formatWhen(boundary ?? now);
       final l10n = AppLocalizations.of(context);
       await showDialog<void>(
         context: context,
@@ -231,14 +238,21 @@ class _LicensesScreenState extends State<LicensesScreen>
     StoreReceiptRecord? receipt,
     AppLocalizations l10n,
   ) {
+    if (receipt == null) return null;
+    final now = DateTime.now().toUtc();
+    final boundary = accessBoundaryForDisplay(
+      purchasedAt: receipt.purchasedAt,
+      now: now,
+      expiresAt: receipt.expiresAt,
+    );
+    if (boundary == null) return null;
+    final when = _formatWhen(boundary);
     switch (kind) {
       case SubscriptionProductLineKind.none:
         return null;
       case SubscriptionProductLineKind.autoRenewing:
-        final when = _formatWhen(receipt?.expiresAt ?? DateTime.now().toUtc());
         return l10n.licensesStatusAutoRenewOn(when);
       case SubscriptionProductLineKind.canceledStillValid:
-        final when = _formatWhen(receipt?.expiresAt ?? DateTime.now().toUtc());
         return l10n.licensesStatusValidUntil(when);
     }
   }
@@ -293,10 +307,20 @@ class _LicensesScreenState extends State<LicensesScreen>
                   const SizedBox(height: 12),
                   Text(l10n.licensesStoreUnavailable),
                 ],
-                if (billing?.lastError != null) ...[
+                if (_playSyncFailed) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.licensesPlaySyncFailed,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                if (billing?.lastError != null &&
+                    billing!.lastError != 'store_unavailable') ...[
                   const SizedBox(height: 8),
                   Text(
-                    billing!.lastError!,
+                    billing.lastError!,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),

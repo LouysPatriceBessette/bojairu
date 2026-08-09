@@ -115,6 +115,7 @@ Future<void> bootstrap() async {
           unawaited(
             storeBilling.start().catchError((Object error, StackTrace stack) {
               debugPrint('StoreBillingService.start failed: $error\n$stack');
+              return false;
             }),
           );
         }

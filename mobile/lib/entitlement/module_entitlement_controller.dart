@@ -5,6 +5,7 @@ import 'housing_lifecycle_source.dart';
 import 'local_store_receipt_store.dart';
 import 'module_entitlement_evaluator.dart';
 import 'module_entitlement_state.dart';
+import 'receipt_play_reconcile.dart';
 import 'receipt_to_candidates.dart';
 import 'store_receipt_record.dart';
 
@@ -83,6 +84,23 @@ class ModuleEntitlementController extends ChangeNotifier {
     await _receiptStore.saveAll(rows);
     _receipts = List<StoreReceiptRecord>.from(rows);
     _recompute();
+  }
+
+  /// After a successful Play purchase query: keep only Google Play rows whose
+  /// productId is still present (plus any non-Play rows).
+  Future<void> retainGooglePlayProducts(Set<String> liveProductIds) async {
+    final next = reconcileGooglePlayReceipts(
+      local: _receipts,
+      liveProductIds: liveProductIds,
+    );
+    if (next.length == _receipts.length &&
+        listEquals(
+          next.map((r) => r.purchaseTokenOrReceipt).toList(),
+          _receipts.map((r) => r.purchaseTokenOrReceipt).toList(),
+        )) {
+      return;
+    }
+    await replaceReceipts(next);
   }
 
   void _recompute() {

@@ -1,0 +1,45 @@
+---
+description: Never give copy-paste URLs/commands with placeholders when real values are known
+alwaysApply: true
+---
+
+# No placeholder URLs / commands when values are known
+
+## Hard rule
+
+When giving the user a **URL, deep link, shell command, Play Console path, or any
+string they are expected to open or paste**:
+
+1. **Use concrete values** that are already known in this thread, the repo, or
+   the topology rules (`productId`, package name, host, port, device id, etc.).
+2. **Never** ship angle-bracket / fake tokens such as `<productId>`, `<PACKAGE>`,
+   `YOUR_SKU`, `XXXXX`, `{sku}`, or `sku=<productId>` as if they were ready to use.
+3. If a value is **genuinely unknown**, say so and either look it up (grep /
+   `docs/store-mapping.md` / scripts) or ask **one** short question — do **not**
+   paste a placeholder link “for illustration” that looks clickable or copyable.
+
+## Why (founder incident — 9 Aug 2026)
+
+The agent wrote a Play subscriptions URL with a literal `sku=<productId>`
+placeholder even though the active SKU (`bojairu.bundle.all_modules`) and
+package (`app.incoherences.bojairu`) were known from the Licenses smoke and
+catalog. The user opened that URL, got « abonnement introuvable », and wasted
+time diagnosing a false “missing subscription” signal.
+
+| Forbidden | Required |
+| --- | --- |
+| `…?sku=<productId>&package=app.incoherences.bojairu` | `…?sku=bojairu.bundle.all_modules&package=app.incoherences.bojairu` |
+| “Replace PRODUCT_ID with your id” as the only form of the link | Full working URL first; optional note that other SKUs differ |
+| Placeholder “examples” that mirror real prod hosts/paths | Label clearly as non-runnable **or** fill real values |
+
+## Scope
+
+Applies to **chat replies** and to any procedure you ask the user to run
+(deploy, Play, QR, melos, adb). Complements `parler-clair-pas-de-jargon.mdc`
+(no opaque steps) and `do-not-invent-missing-referents.mdc` (do not invent
+missing objects — but when the object **is** known, write it in full).
+
+## Self-check before sending a link
+
+Ask: “If they paste this into the browser/terminal **unchanged**, does it hit
+the right resource?” If no → fix the string or do not present it as actionable.

@@ -211,6 +211,7 @@
   },
   "licensesCancelAccessUntilOk": "OK",
   "licensesStoreUnavailable": "Store unavailable on this device.",
+  "licensesPlaySyncFailed": "Could not verify subscriptions with Google Play. Try again.",
   "licensesNoProducts": "No store products available right now.",
   "licensesEntitlementUnavailable": "License service not initialized.",
   "licensesStateFree": "Free",

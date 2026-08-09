@@ -176,6 +176,7 @@
   },
   "licensesCancelAccessUntilOk": "OK",
   "licensesStoreUnavailable": "Magasin indisponible sur cet appareil.",
+  "licensesPlaySyncFailed": "Impossible de vérifier les abonnements auprès de Google Play. Réessayez.",
   "licensesNoProducts": "Aucun produit magasin disponible pour le moment.",
   "licensesEntitlementUnavailable": "Service de licences non initialisé.",
   "licensesStateFree": "Libre",

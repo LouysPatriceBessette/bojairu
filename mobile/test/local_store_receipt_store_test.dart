@@ -27,4 +27,32 @@ void main() {
     final loaded = await store.loadAll();
     expect(loaded, hasLength(1));
   });
+
+  test('upsert keeps earlier purchasedAt and previous expiresAt if omitted', () async {
+    final store = LocalStoreReceiptStore();
+    final signup = DateTime.utc(2026, 8, 9, 20);
+    final expiry = signup.add(const Duration(minutes: 5));
+    await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'tok',
+        purchasedAt: signup,
+        expiresAt: expiry,
+        autoRenewing: true,
+      ),
+    );
+    final rows = await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'tok',
+        purchasedAt: signup.add(const Duration(minutes: 1)),
+        autoRenewing: false,
+      ),
+    );
+    expect(rows.single.purchasedAt, signup);
+    expect(rows.single.expiresAt, expiry);
+    expect(rows.single.autoRenewing, isFalse);
+  });
 }

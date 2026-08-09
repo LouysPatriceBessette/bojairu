@@ -531,6 +531,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Magasin indisponible sur cet appareil.';
 
   @override
+  String get licensesPlaySyncFailed =>
+      'Impossible de vérifier les abonnements auprès de Google Play. Réessayez.';
+
+  @override
   String get licensesNoProducts =>
       'Aucun produit magasin disponible pour le moment.';
 

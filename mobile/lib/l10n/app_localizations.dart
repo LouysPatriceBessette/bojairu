@@ -1024,6 +1024,12 @@ abstract class AppLocalizations {
   /// **'Store unavailable on this device.'**
   String get licensesStoreUnavailable;
 
+  /// No description provided for @licensesPlaySyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify subscriptions with Google Play. Try again.'**
+  String get licensesPlaySyncFailed;
+
   /// No description provided for @licensesNoProducts.
   ///
   /// In en, this message translates to:

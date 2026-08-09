@@ -527,6 +527,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get licensesStoreUnavailable => 'Store unavailable on this device.';
 
   @override
+  String get licensesPlaySyncFailed =>
+      'Could not verify subscriptions with Google Play. Try again.';
+
+  @override
   String get licensesNoProducts => 'No store products available right now.';
 
   @override
