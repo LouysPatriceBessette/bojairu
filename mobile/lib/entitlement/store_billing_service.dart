@@ -4,10 +4,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'module_entitlement_controller.dart';
 import 'store_product_catalog.dart';
 import 'store_receipt_record.dart';
+import 'subscription_product_line.dart';
 
 /// Play Billing (and StoreKit when available) bridge — local persistence only.
 ///
@@ -133,6 +136,43 @@ class StoreBillingService extends ChangeNotifier {
     _lastError = null;
     notifyListeners();
     await _iap.restorePurchases();
+  }
+
+  /// Opens the platform subscription management UI for [productId].
+  ///
+  /// Android: Play subscriptions deep link (cancel / manage happens in Play).
+  /// iOS: not wired yet (tests deferred); returns false.
+  Future<bool> openManageSubscription(String productId) async {
+    _lastError = null;
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // StoreKit cancel deep-link deferred with iOS QA.
+      _lastError = 'manage_subscription_unsupported_ios';
+      notifyListeners();
+      return false;
+    }
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      _lastError = 'manage_subscription_unsupported';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final uri = playSubscriptionManagementUri(
+        productId: productId,
+        packageName: info.packageName,
+      );
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) {
+        _lastError = 'manage_subscription_launch_failed';
+        notifyListeners();
+      }
+      return ok;
+    } catch (e, st) {
+      debugPrint('StoreBillingService openManageSubscription: $e\n$st');
+      _lastError = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {

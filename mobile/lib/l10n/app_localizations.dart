@@ -976,6 +976,48 @@ abstract class AppLocalizations {
   /// **'Subscribe'**
   String get licensesSubscribe;
 
+  /// No description provided for @licensesUnsubscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribe'**
+  String get licensesUnsubscribe;
+
+  /// No description provided for @licensesResubscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Resubscribe'**
+  String get licensesResubscribe;
+
+  /// No description provided for @licensesStatusAutoRenewOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews on\n{when}'**
+  String licensesStatusAutoRenewOn(String when);
+
+  /// No description provided for @licensesStatusValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends on\n{when}'**
+  String licensesStatusValidUntil(String when);
+
+  /// No description provided for @licensesCancelAccessUntilTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription cancelled'**
+  String get licensesCancelAccessUntilTitle;
+
+  /// No description provided for @licensesCancelAccessUntilBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription stays active until {when}. It will not renew automatically.'**
+  String licensesCancelAccessUntilBody(String when);
+
+  /// No description provided for @licensesCancelAccessUntilOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get licensesCancelAccessUntilOk;
+
   /// No description provided for @licensesStoreUnavailable.
   ///
   /// In en, this message translates to:

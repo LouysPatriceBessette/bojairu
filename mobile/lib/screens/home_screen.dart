@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 
+import '../entitlement/module_entitlement_controller.dart';
 import '../l10n/app_localizations.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/sandbox_mode.dart';
@@ -17,11 +18,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   var _welcomeChecked = false;
+  ModuleEntitlementController? _entitlement;
 
   @override
   void initState() {
     super.initState();
+    _entitlement = ModuleEntitlementController.maybeInstance;
+    _entitlement?.addListener(_onEntitlementChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSandboxWelcome());
+  }
+
+  void _onEntitlementChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _entitlement?.removeListener(_onEntitlementChanged);
+    super.dispose();
   }
 
   Future<void> _maybeShowSandboxWelcome() async {

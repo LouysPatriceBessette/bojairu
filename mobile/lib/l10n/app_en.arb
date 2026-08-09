@@ -188,6 +188,28 @@
   "licensesProductsHeading": "Subscriptions",
   "licensesRestorePurchases": "Restore purchases",
   "licensesSubscribe": "Subscribe",
+  "licensesUnsubscribe": "Unsubscribe",
+  "licensesResubscribe": "Resubscribe",
+  "licensesStatusAutoRenewOn": "Renews on\n{when}",
+  "@licensesStatusAutoRenewOn": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesStatusValidUntil": "Ends on\n{when}",
+  "@licensesStatusValidUntil": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesCancelAccessUntilTitle": "Subscription cancelled",
+  "licensesCancelAccessUntilBody": "Your subscription stays active until {when}. It will not renew automatically.",
+  "@licensesCancelAccessUntilBody": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesCancelAccessUntilOk": "OK",
   "licensesStoreUnavailable": "Store unavailable on this device.",
   "licensesNoProducts": "No store products available right now.",
   "licensesEntitlementUnavailable": "License service not initialized.",

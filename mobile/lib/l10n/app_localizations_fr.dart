@@ -500,6 +500,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get licensesSubscribe => 'S’abonner';
 
   @override
+  String get licensesUnsubscribe => 'Se désabonner';
+
+  @override
+  String get licensesResubscribe => 'Se ré-abonner';
+
+  @override
+  String licensesStatusAutoRenewOn(String when) {
+    return 'Se renouvellera le\n$when';
+  }
+
+  @override
+  String licensesStatusValidUntil(String when) {
+    return 'Se termine le\n$when';
+  }
+
+  @override
+  String get licensesCancelAccessUntilTitle => 'Abonnement résilié';
+
+  @override
+  String licensesCancelAccessUntilBody(String when) {
+    return 'Votre abonnement reste actif jusqu’au $when. Il ne sera pas renouvelé automatiquement.';
+  }
+
+  @override
+  String get licensesCancelAccessUntilOk => 'OK';
+
+  @override
   String get licensesStoreUnavailable =>
       'Magasin indisponible sur cet appareil.';
 

@@ -497,6 +497,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get licensesSubscribe => 'Subscribe';
 
   @override
+  String get licensesUnsubscribe => 'Unsubscribe';
+
+  @override
+  String get licensesResubscribe => 'Resubscribe';
+
+  @override
+  String licensesStatusAutoRenewOn(String when) {
+    return 'Renews on\n$when';
+  }
+
+  @override
+  String licensesStatusValidUntil(String when) {
+    return 'Ends on\n$when';
+  }
+
+  @override
+  String get licensesCancelAccessUntilTitle => 'Subscription cancelled';
+
+  @override
+  String licensesCancelAccessUntilBody(String when) {
+    return 'Your subscription stays active until $when. It will not renew automatically.';
+  }
+
+  @override
+  String get licensesCancelAccessUntilOk => 'OK';
+
+  @override
   String get licensesStoreUnavailable => 'Store unavailable on this device.';
 
   @override

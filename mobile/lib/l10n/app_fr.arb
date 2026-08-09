@@ -153,6 +153,28 @@
   "licensesProductsHeading": "Abonnements",
   "licensesRestorePurchases": "Restaurer les achats",
   "licensesSubscribe": "S’abonner",
+  "licensesUnsubscribe": "Se désabonner",
+  "licensesResubscribe": "Se ré-abonner",
+  "licensesStatusAutoRenewOn": "Se renouvellera le\n{when}",
+  "@licensesStatusAutoRenewOn": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesStatusValidUntil": "Se termine le\n{when}",
+  "@licensesStatusValidUntil": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesCancelAccessUntilTitle": "Abonnement résilié",
+  "licensesCancelAccessUntilBody": "Votre abonnement reste actif jusqu’au {when}. Il ne sera pas renouvelé automatiquement.",
+  "@licensesCancelAccessUntilBody": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "licensesCancelAccessUntilOk": "OK",
   "licensesStoreUnavailable": "Magasin indisponible sur cet appareil.",
   "licensesNoProducts": "Aucun produit magasin disponible pour le moment.",
   "licensesEntitlementUnavailable": "Service de licences non initialisé.",

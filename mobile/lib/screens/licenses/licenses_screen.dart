@@ -9,7 +9,11 @@ import '../../entitlement/module_entitlement_controller.dart';
 import '../../entitlement/module_entitlement_state.dart';
 import '../../entitlement/store_billing_service.dart';
 import '../../entitlement/store_product_catalog.dart';
+import '../../entitlement/store_receipt_record.dart';
+import '../../entitlement/subscription_product_line.dart';
 import '../../l10n/app_localizations.dart';
+import '../../prefs/app_preferences.dart';
+import '../../util/display_date.dart';
 import '../../widgets/screen_body_padding.dart';
 
 /// Purchase / restore entry for module and bundle subscriptions.
@@ -24,8 +28,14 @@ class _LicensesScreenState extends State<LicensesScreen>
     with WidgetsBindingObserver {
   StoreBillingService? _billing;
   ModuleEntitlementController? _entitlement;
+  AppPreferences? _prefs;
   var _loading = true;
   var _busy = false;
+
+  /// Product opened in Play for cancel; checked after restore / receipt upsert.
+  String? _pendingUnsubscribeProductId;
+  StoreReceiptRecord? _receiptBeforeUnsubscribe;
+  var _cancelDialogInFlight = false;
 
   @override
   void initState() {
@@ -37,8 +47,38 @@ class _LicensesScreenState extends State<LicensesScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // After Play's billing sheet closes, re-query so acknowledge can run.
-      unawaited(_billing?.restore());
+      unawaited(_onResumed());
+    }
+  }
+
+  Future<void> _onResumed() async {
+    final billing = _billing;
+    if (billing == null) return;
+    // After Play's billing sheet or subscription center closes, re-query.
+    await billing.restore();
+    if (!mounted) return;
+    // purchaseStream upserts may land after restore() returns.
+    await _waitForEntitlementTick(const Duration(seconds: 3));
+    if (!mounted) return;
+    await _maybeShowCancelDialog();
+  }
+
+  Future<void> _waitForEntitlementTick(Duration timeout) async {
+    final entitlement = _entitlement;
+    if (entitlement == null) return;
+    final completer = Completer<void>();
+    void listener() {
+      if (!completer.isCompleted) completer.complete();
+    }
+
+    entitlement.addListener(listener);
+    try {
+      await Future.any<void>([
+        completer.future,
+        Future<void>.delayed(timeout),
+      ]);
+    } finally {
+      entitlement.removeListener(listener);
     }
   }
 
@@ -49,6 +89,7 @@ class _LicensesScreenState extends State<LicensesScreen>
       return;
     }
     await entitlement.load();
+    final prefs = await AppPreferences.load();
 
     var billing = StoreBillingService.maybeInstance;
     if (billing == null) {
@@ -61,6 +102,7 @@ class _LicensesScreenState extends State<LicensesScreen>
     setState(() {
       _entitlement = entitlement;
       _billing = billing;
+      _prefs = prefs;
       _loading = false;
     });
     entitlement.addListener(_onChanged);
@@ -69,6 +111,9 @@ class _LicensesScreenState extends State<LicensesScreen>
 
   void _onChanged() {
     if (mounted) setState(() {});
+    if (_pendingUnsubscribeProductId != null) {
+      unawaited(_maybeShowCancelDialog());
+    }
   }
 
   @override
@@ -103,11 +148,107 @@ class _LicensesScreenState extends State<LicensesScreen>
     }
   }
 
+  Future<void> _unsubscribe(String productId) async {
+    final billing = _billing;
+    final entitlement = _entitlement;
+    if (billing == null || entitlement == null) return;
+
+    final before = validReceiptForProductId(
+      productId: productId,
+      receipts: entitlement.receipts,
+      now: DateTime.now().toUtc(),
+    );
+
+    setState(() {
+      _busy = true;
+      _pendingUnsubscribeProductId = productId;
+      _receiptBeforeUnsubscribe = before;
+    });
+    try {
+      await billing.openManageSubscription(productId);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _maybeShowCancelDialog() async {
+    if (_cancelDialogInFlight) return;
+    final productId = _pendingUnsubscribeProductId;
+    final before = _receiptBeforeUnsubscribe;
+    final entitlement = _entitlement;
+    if (productId == null || before == null || entitlement == null) return;
+
+    _cancelDialogInFlight = true;
+    try {
+      await entitlement.load();
+      if (!mounted) return;
+
+      final now = DateTime.now().toUtc();
+      final after = validReceiptForProductId(
+        productId: productId,
+        receipts: entitlement.receipts,
+        now: now,
+      );
+
+      final canceled = didCancelAutoRenew(
+        before: before,
+        after: after,
+        now: now,
+      );
+      if (!canceled) return;
+
+      _pendingUnsubscribeProductId = null;
+      _receiptBeforeUnsubscribe = null;
+
+      final when = _formatWhen(after!.expiresAt ?? now);
+      final l10n = AppLocalizations.of(context);
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.licensesCancelAccessUntilTitle),
+          content: Text(l10n.licensesCancelAccessUntilBody(when)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.licensesCancelAccessUntilOk),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      _cancelDialogInFlight = false;
+    }
+  }
+
+  String _formatWhen(DateTime utc) {
+    final prefs = _prefs;
+    final fmt = prefs == null ? 'YYYY-MM-DD' : effectiveDateFormat(prefs);
+    return formatPreferenceDateTime(utc, fmt);
+  }
+
+  String? _statusLine(
+    SubscriptionProductLineKind kind,
+    StoreReceiptRecord? receipt,
+    AppLocalizations l10n,
+  ) {
+    switch (kind) {
+      case SubscriptionProductLineKind.none:
+        return null;
+      case SubscriptionProductLineKind.autoRenewing:
+        final when = _formatWhen(receipt?.expiresAt ?? DateTime.now().toUtc());
+        return l10n.licensesStatusAutoRenewOn(when);
+      case SubscriptionProductLineKind.canceledStillValid:
+        final when = _formatWhen(receipt?.expiresAt ?? DateTime.now().toUtc());
+        return l10n.licensesStatusValidUntil(when);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final entitlement = _entitlement;
     final billing = _billing;
+    final now = DateTime.now().toUtc();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.homeModuleLicenses)),
@@ -171,17 +312,11 @@ class _LicensesScreenState extends State<LicensesScreen>
                   Text(l10n.licensesNoProducts)
                 else
                   for (final product in billing.products)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(product.title),
-                      subtitle: Text(
-                        '${product.price}\n${product.id}',
-                      ),
-                      isThreeLine: true,
-                      trailing: FilledButton(
-                        onPressed: _busy ? null : () => _buy(product),
-                        child: Text(l10n.licensesSubscribe),
-                      ),
+                    _productTile(
+                      product: product,
+                      entitlement: entitlement,
+                      now: now,
+                      l10n: l10n,
                     ),
                 if (kDebugMode) ...[
                   const SizedBox(height: 16),
@@ -192,6 +327,55 @@ class _LicensesScreenState extends State<LicensesScreen>
                 ],
               ],
             ),
+    );
+  }
+
+  Widget _productTile({
+    required ProductDetails product,
+    required ModuleEntitlementController? entitlement,
+    required DateTime now,
+    required AppLocalizations l10n,
+  }) {
+    final receipts = entitlement?.receipts ?? const <StoreReceiptRecord>[];
+    final kind = subscriptionProductLineKind(
+      productId: product.id,
+      receipts: receipts,
+      now: now,
+    );
+    final receipt = validReceiptForProductId(
+      productId: product.id,
+      receipts: receipts,
+      now: now,
+    );
+    final status = _statusLine(kind, receipt, l10n);
+    final subtitle = status == null ? product.price : '${product.price}\n$status';
+
+    Widget? trailing;
+    switch (kind) {
+      case SubscriptionProductLineKind.none:
+        trailing = FilledButton(
+          onPressed: _busy ? null : () => _buy(product),
+          child: Text(l10n.licensesSubscribe),
+        );
+      case SubscriptionProductLineKind.autoRenewing:
+        trailing = FilledButton(
+          onPressed: _busy ? null : () => _unsubscribe(product.id),
+          child: Text(l10n.licensesUnsubscribe),
+        );
+      case SubscriptionProductLineKind.canceledStillValid:
+        // Same Play purchase flow reactivates auto-renew before expiry.
+        trailing = FilledButton(
+          onPressed: _busy ? null : () => _buy(product),
+          child: Text(l10n.licensesResubscribe),
+        );
+    }
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(product.title),
+      subtitle: Text(subtitle),
+      isThreeLine: status != null,
+      trailing: trailing,
     );
   }
 
