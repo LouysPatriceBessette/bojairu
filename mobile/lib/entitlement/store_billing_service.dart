@@ -46,10 +46,24 @@ class StoreBillingService extends ChangeNotifier {
   String? _lastError;
   var _started = false;
 
+  /// Serializes Play purchase queries so restore/stream upserts cannot race prune.
+  Future<bool>? _syncInFlight;
+
   bool get isAvailable => _available;
   List<ProductDetails> get products =>
       List<ProductDetails>.unmodifiable(_products);
   String? get lastError => _lastError;
+
+  /// Visible in release logcat (`debugPrint` is stripped from AAB release).
+  static void _releaseLog(String message) {
+    // ignore: avoid_print
+    print('StoreBillingService: $message');
+  }
+
+  static String _tokenPreview(String token) {
+    if (token.length <= 12) return token;
+    return '${token.substring(0, 6)}…${token.substring(token.length - 4)}';
+  }
 
   /// Ensures the purchase stream is listening, then refreshes from the store.
   /// Returns whether the Play-owned purchase query succeeded (see
@@ -68,7 +82,7 @@ class StoreBillingService extends ChangeNotifier {
           unawaited(_onPurchases(purchases));
         },
         onError: (Object e, StackTrace st) {
-          debugPrint('StoreBillingService purchaseStream error: $e\n$st');
+          _releaseLog('purchaseStream error: $e\n$st');
           _lastError = e.toString();
           notifyListeners();
         },
@@ -89,6 +103,11 @@ class StoreBillingService extends ChangeNotifier {
   /// rows (including [autoRenewing]), and **drops** Google Play receipts whose
   /// purchase tokens Play no longer returns. Returns `false` if the Play query
   /// failed (local receipts are left unchanged).
+  ///
+  /// Android does **not** call [InAppPurchase.restorePurchases]: that API
+  /// re-queries the same purchases and pushes them on [purchaseStream]
+  /// asynchronously, which can re-upsert tokens after prune. Presence is
+  /// decided only by [queryPastPurchases] + retain.
   Future<bool> refreshFromPlayStore() async {
     _lastError = null;
     notifyListeners();
@@ -101,13 +120,13 @@ class StoreBillingService extends ChangeNotifier {
       return false;
     }
     await queryProducts();
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _syncReceiptsFromPlayQuery();
+    }
     try {
       await _iap.restorePurchases();
     } catch (e, st) {
-      debugPrint('StoreBillingService restorePurchases: $e\n$st');
-    }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return _syncReceiptsFromPlayQuery();
+      _releaseLog('restorePurchases: $e\n$st');
     }
     notifyListeners();
     return true;
@@ -171,6 +190,21 @@ class StoreBillingService extends ChangeNotifier {
   /// Upserts current Play purchases and removes local Google Play receipts
   /// whose tokens are absent from the query (stale cancel/resubscribe rows).
   Future<bool> _syncReceiptsFromPlayQuery() async {
+    final existing = _syncInFlight;
+    if (existing != null) return existing;
+
+    final done = _syncReceiptsFromPlayQueryBody();
+    _syncInFlight = done;
+    try {
+      return await done;
+    } finally {
+      if (identical(_syncInFlight, done)) {
+        _syncInFlight = null;
+      }
+    }
+  }
+
+  Future<bool> _syncReceiptsFromPlayQueryBody() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       notifyListeners();
       return true;
@@ -180,9 +214,8 @@ class StoreBillingService extends ChangeNotifier {
           _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
       final response = await addition.queryPastPurchases();
       if (response.error != null) {
-        debugPrint(
-          'StoreBillingService queryPastPurchases error: '
-          '${response.error!.message}',
+        _releaseLog(
+          'queryPastPurchases error: ${response.error!.message}',
         );
         _lastError = response.error!.message;
         notifyListeners();
@@ -198,23 +231,24 @@ class StoreBillingService extends ChangeNotifier {
           if (record == null) continue;
           livePurchaseTokens.add(record.purchaseTokenOrReceipt);
           await _entitlement.upsertReceipt(record);
-          debugPrint(
-            'StoreBillingService query sync: ${record.productId} '
-            'autoRenewing=${record.autoRenewing}',
+          _releaseLog(
+            'query sync productId=${record.productId} '
+            'autoRenewing=${record.autoRenewing} '
+            'token=${_tokenPreview(record.purchaseTokenOrReceipt)}',
           );
         } catch (e, st) {
-          debugPrint('StoreBillingService query sync item failed: $e\n$st');
+          _releaseLog('query sync item failed: $e\n$st');
         }
       }
       await _entitlement.retainGooglePlayPurchaseTokens(livePurchaseTokens);
-      debugPrint(
-        'StoreBillingService Play reconcile liveTokens='
-        '${livePurchaseTokens.length}',
+      _releaseLog(
+        'Play reconcile liveTokens=${livePurchaseTokens.length} '
+        'ok=true',
       );
       notifyListeners();
       return true;
     } catch (e, st) {
-      debugPrint('StoreBillingService _syncReceiptsFromPlayQuery: $e\n$st');
+      _releaseLog('_syncReceiptsFromPlayQuery: $e\n$st');
       _lastError = e.toString();
       notifyListeners();
       return false;
@@ -251,7 +285,7 @@ class StoreBillingService extends ChangeNotifier {
       }
       return ok;
     } catch (e, st) {
-      debugPrint('StoreBillingService openManageSubscription: $e\n$st');
+      _releaseLog('openManageSubscription: $e\n$st');
       _lastError = e.toString();
       notifyListeners();
       return false;
@@ -260,9 +294,9 @@ class StoreBillingService extends ChangeNotifier {
 
   Future<void> _onPurchases(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
-      debugPrint(
-        'StoreBillingService purchaseStream: '
-        'productId=${purchase.productID} status=${purchase.status} '
+      _releaseLog(
+        'purchaseStream productId=${purchase.productID} '
+        'status=${purchase.status} '
         'pendingComplete=${purchase.pendingCompletePurchase}',
       );
       if (purchase.status == PurchaseStatus.pending) continue;
@@ -281,23 +315,29 @@ class StoreBillingService extends ChangeNotifier {
         final record = _toRecord(purchase);
         if (record != null) {
           await _entitlement.upsertReceipt(record);
-          debugPrint(
-            'StoreBillingService receipt upserted: ${record.productId}',
+          _releaseLog(
+            'receipt upserted productId=${record.productId} '
+            'autoRenewing=${record.autoRenewing} '
+            'token=${_tokenPreview(record.purchaseTokenOrReceipt)}',
           );
         }
       } catch (e, st) {
-        debugPrint('StoreBillingService purchase handling failed: $e\n$st');
+        _releaseLog('purchase handling failed: $e\n$st');
         _lastError = e.toString();
         // Still try acknowledge if upsert failed before we reordered callers.
         try {
           await _acknowledgeIfNeeded(purchase);
         } catch (ackError, ackSt) {
-          debugPrint(
-            'StoreBillingService acknowledge after error failed: '
-            '$ackError\n$ackSt',
+          _releaseLog(
+            'acknowledge after error failed: $ackError\n$ackSt',
           );
         }
       }
+    }
+    // Re-query Play so a stream upsert cannot leave a token Play no longer owns.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await _syncReceiptsFromPlayQuery();
+      return;
     }
     notifyListeners();
   }
@@ -310,17 +350,13 @@ class StoreBillingService extends ChangeNotifier {
             !purchase.billingClientPurchase.isAcknowledged);
     if (!needsAck) return;
 
-    debugPrint(
-      'StoreBillingService completePurchase: ${purchase.productID}',
-    );
+    _releaseLog('completePurchase: ${purchase.productID}');
     await _iap.completePurchase(purchase);
   }
 
   StoreReceiptRecord? _toRecord(PurchaseDetails purchase) {
     if (!StoreProductCatalog.byProductId.containsKey(purchase.productID)) {
-      debugPrint(
-        'StoreBillingService unknown productId=${purchase.productID}',
-      );
+      _releaseLog('unknown productId=${purchase.productID}');
       _lastError = 'unknown_product:${purchase.productID}';
       return null;
     }

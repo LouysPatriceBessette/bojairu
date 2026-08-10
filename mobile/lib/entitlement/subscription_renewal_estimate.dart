@@ -34,7 +34,12 @@ DateTime nextLicenseTesterRenewalBoundary({
   return next;
 }
 
-/// Prefer Play/server [expiresAt]; otherwise license-tester monthly estimate.
+/// Renewal / period-end date for Licenses UI copy only.
+///
+/// Call only when a receipt is still present after a successful Play sync
+/// (subscription exists). Prefer Play/server [expiresAt]; otherwise the
+/// license-tester 5-minute estimate. This helper never decides whether the
+/// subscription exists — presence is Play query + prune only.
 DateTime? accessBoundaryForDisplay({
   required DateTime purchasedAt,
   required DateTime now,

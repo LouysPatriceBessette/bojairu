@@ -248,6 +248,7 @@ class _LicensesScreenState extends State<LicensesScreen>
     StoreReceiptRecord? receipt,
     AppLocalizations l10n,
   ) {
+    // No receipt after Play sync ⇒ subscription gone ⇒ no renewal date.
     if (receipt == null) return null;
     final now = DateTime.now().toUtc();
     final boundary = accessBoundaryForDisplay(
