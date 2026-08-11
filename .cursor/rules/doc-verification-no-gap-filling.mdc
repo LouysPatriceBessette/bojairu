@@ -1,0 +1,74 @@
+---
+description: >-
+  When verifying documentation or vendor APIs, cite only what the source states;
+  on gaps say not documented / not verified and stop — never fill with invented
+  codes, formats, or product scenarios.
+alwaysApply: true
+---
+
+# Doc / API verification — cite only, stop on gaps
+
+## Hard rule
+
+When the user asks you to **check, verify, or look up** documentation, a
+vendor API, console help, SDK reference, or similar (e.g. Google Play Billing,
+StoreKit, Android docs):
+
+1. **Read the source** (fetch / search the real page or reference).
+2. In the reply, state **only** what that source **explicitly** says. Cite the
+   page (URL or official title) and the **named field / example** when relevant.
+3. If the asked detail is **not** stated in what you read — including which of
+   two wire values Play/Apple returns — write plainly that it is
+   **not documented** or **not verified here**, and **stop**.
+4. **Do not** fill the gap to stay helpful.
+
+This applies to **chat answers** as much as to code. Filling a documentation
+hole with invented alternatives is the same class of failure as probability
+coding — even when no file is edited.
+
+## Required delivery shape
+
+| Section | Content |
+| --- | --- |
+| **Documented** | Facts taken from the source, with citation |
+| **Not documented / not verified** | Exact question still unanswered after reading |
+| **Stop** | No invented codes, formats, product paths, or “or else…” branches |
+
+Do **not** replace the gap with a numbered list of **plausible** wire values,
+locale strings, or product architectures the user did not ask for.
+
+## Forbidden
+
+| Forbidden | Required |
+| --- | --- |
+| « Often `P12M` or `P1Y` » when the doc only lists one form (or neither for that case) | Quote the examples the doc actually lists; say the asked mapping is unverified |
+| Inventing a product path (« hors Play », « entitlement grant », « another console ») the user did not raise | Stay inside the asked surface (e.g. Play only) |
+| « Typically `Free` / `0,00 $` » presented as proven without a cited field + example | Cite `formattedPrice` / docs **or** mark unverified |
+| Softening with « usually », « in practice », « likely » after a verify request | Either cite or stop |
+
+## Founder incident — 11 Aug 2026 (Play free trial / period)
+
+| | Fact |
+| --- | --- |
+| **Ask** | User explicitly asked to check Google Play docs: free license price display; whether a **12-month** free period is exposed |
+| **Failure** | Agent answered with **two** gap-fills: (1) invented `P12M` **or** `P1Y` without a cited Play response or free-trial ISO mapping; (2) invented a « licence hors Play / entitlement server » branch the user never stated |
+| **What the doc did state** | `PricingPhase.getBillingPeriod()` examples include `P1W`, `P1M`, `P3M`, `P6M`, `P1Y` — **not** `P12M`; free trials are offer phases (3 days–3 years) with `priceAmountMicros == 0` in community/API usage notes — **not** a license to invent wire strings or product topology |
+| **Cost** | False confidence on day-one of a fresh session (prompt 2); user had to catch both inventions |
+
+## Scope
+
+- Triggers: explicit verify/lookup requests **and** any turn where you claim
+  « according to the docs / Google / Apple… ».
+- Surfaces: official docs, API references, Console Help, package READMEs you
+  actually opened this turn.
+- Out of scope for this rule alone: product decisions the user asks you to
+  **choose** (then ask); implementation still gated by
+  `no-probability-coding.mdc`.
+
+## Relation
+
+Complements `no-probability-coding.mdc` (no probable fixes in code),
+`do-not-invent-missing-referents.mdc` (no invented files/assets),
+`verify-state-before-claiming.mdc` (repo/deploy claims from commands), and
+`conversation-test-context-discipline.mdc` (do not invent operational
+branches).

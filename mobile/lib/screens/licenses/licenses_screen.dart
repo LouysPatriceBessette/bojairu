@@ -12,6 +12,7 @@ import '../../entitlement/store_product_catalog.dart';
 import '../../entitlement/store_product_display_names.dart';
 import '../../entitlement/store_receipt_record.dart';
 import '../../entitlement/store_subscription_offer_filter.dart';
+import '../../entitlement/store_subscription_price_label.dart';
 import '../../entitlement/subscription_product_line.dart';
 import '../../entitlement/subscription_renewal_estimate.dart';
 import '../../l10n/app_localizations.dart';
@@ -522,38 +523,67 @@ class _LicensesScreenState extends State<LicensesScreen>
     required AppLocalizations l10n,
     required Set<AppModuleId> covered,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final selectStyle = TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    );
+    return Column(
       children: [
-        for (final module in _moduleOrder)
-          Expanded(
-            child: Column(
-              children: [
-                _ModuleLicenseIcon(
-                  icon: _iconFor(module),
-                  covered: covered.contains(module),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final module in _moduleOrder)
+              Expanded(
+                child: Center(
+                  child: _ModuleLicenseIcon(
+                    icon: _iconFor(module),
+                    covered: covered.contains(module),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final module in _moduleOrder)
+              Expanded(
+                child: Text(
                   _moduleLabel(module, l10n),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                if (_addMode) ...[
-                  const SizedBox(height: 8),
-                  TextButton(
+              ),
+          ],
+        ),
+        if (_addMode) ...[
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final module in _moduleOrder)
+                Expanded(
+                  child: TextButton(
+                    style: selectStyle,
                     onPressed:
                         _busy ? null : () => _toggleCartModule(module),
                     child: Text(
                       _cart.contains(module)
                           ? l10n.licensesDeselectModule
                           : l10n.licensesSelectModule,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
                     ),
                   ),
-                ],
-              ],
-            ),
+                ),
+            ],
           ),
+        ],
       ],
     );
   }
@@ -576,8 +606,31 @@ class _LicensesScreenState extends State<LicensesScreen>
     );
     final expanded = _expandedProductId == productId;
     final details = _productDetailsFor(productId);
-    final price = details?.price ?? '';
+    final price = details == null
+        ? ''
+        : formatSubscriptionPriceWithPeriod(product: details, l10n: l10n);
     final status = _statusLine(kind, receipt, l10n);
+    final actionButton = kind == SubscriptionProductLineKind.autoRenewing
+        ? FilledButton(
+            onPressed: _busy
+                ? null
+                : () => _openPlaySubscriptionManagement(
+                      productId,
+                      trackCancelTransition: true,
+                    ),
+            child: Text(l10n.licensesCancelThisSubscription),
+          )
+        : kind == SubscriptionProductLineKind.canceledStillValid
+            ? FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () => _openPlaySubscriptionManagement(
+                          productId,
+                          trackCancelTransition: false,
+                        ),
+                child: Text(l10n.licensesResubscribe),
+              )
+            : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -606,44 +659,32 @@ class _LicensesScreenState extends State<LicensesScreen>
         if (expanded)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (price.isNotEmpty) ...[
-                  Text(price),
-                  const SizedBox(width: 12),
-                ],
-                if (status != null)
-                  Expanded(
-                    child: Text(
-                      status,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  )
-                else
-                  const Spacer(),
-                const SizedBox(width: 8),
-                if (kind == SubscriptionProductLineKind.autoRenewing)
-                  FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () => _openPlaySubscriptionManagement(
-                              productId,
-                              trackCancelTransition: true,
-                            ),
-                    child: Text(l10n.licensesCancelThisSubscription),
-                  )
-                else if (kind ==
-                    SubscriptionProductLineKind.canceledStillValid)
-                  FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () => _openPlaySubscriptionManagement(
-                              productId,
-                              trackCancelTransition: false,
-                            ),
-                    child: Text(l10n.licensesResubscribe),
+                Row(
+                  children: [
+                    if (price.isNotEmpty) ...[
+                      Text(price),
+                      const SizedBox(width: 12),
+                    ],
+                    if (status != null)
+                      Expanded(
+                        child: Text(
+                          status,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
+                if (actionButton != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: actionButton,
                   ),
+                ],
               ],
             ),
           ),
@@ -655,7 +696,7 @@ class _LicensesScreenState extends State<LicensesScreen>
 
 /// Module icon in a circle matching [FilledButton] primary / onPrimary
 /// (same colors as « Ajout d'abonnement »), with optional green coverage dot
-/// at 30° (12h = 0° clockwise).
+/// at [_ModuleLicenseIcon._dotAngleDegrees] (12h = 0° clockwise).
 class _ModuleLicenseIcon extends StatelessWidget {
   const _ModuleLicenseIcon({
     required this.icon,
@@ -667,11 +708,14 @@ class _ModuleLicenseIcon extends StatelessWidget {
 
   static const double _circleSize = 56;
   static const double _iconSize = 28;
-  static const double _dotSize = 8;
+  static const double _dotSize = 14;
+  /// Clockwise from 12 o'clock (0°) on the icon circle perimeter.
+  static const double _dotAngleDegrees = 310;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final angleRad = _dotAngleDegrees * math.pi / 180;
     return SizedBox(
       width: _circleSize + _dotSize,
       height: _circleSize + _dotSize,
@@ -695,10 +739,10 @@ class _ModuleLicenseIcon extends StatelessWidget {
           if (covered)
             Positioned(
               left: (_circleSize + _dotSize) / 2 +
-                  (_circleSize / 2) * math.sin(30 * math.pi / 180) -
+                  (_circleSize / 2) * math.sin(angleRad) -
                   _dotSize / 2,
               top: (_circleSize + _dotSize) / 2 -
-                  (_circleSize / 2) * math.cos(30 * math.pi / 180) -
+                  (_circleSize / 2) * math.cos(angleRad) -
                   _dotSize / 2,
               child: Container(
                 width: _dotSize,

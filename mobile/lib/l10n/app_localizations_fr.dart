@@ -518,6 +518,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get licensesCancelThisSubscription => 'Annuler cet abonnement';
 
   @override
+  String get licensesPriceFree => 'Gratuit';
+
+  @override
+  String licensesPricePerMonth(String price) {
+    return '$price/mois';
+  }
+
+  @override
+  String licensesPricePerYear(String price) {
+    return '$price/an';
+  }
+
+  @override
+  String licensesPricePerWeek(String price) {
+    return '$price/semaine';
+  }
+
+  @override
+  String licensesPricePerDay(String price) {
+    return '$price/jour';
+  }
+
+  @override
   String get licensesProductHousing => 'Logement';
 
   @override

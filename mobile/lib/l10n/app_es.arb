@@ -159,6 +159,31 @@
   "licensesDeselectModule": "Deseleccionar",
   "licensesSelectModuleToAdd": "Seleccione un módulo para añadir",
   "licensesCancelThisSubscription": "Cancelar esta suscripción",
+  "licensesPriceFree": "Gratis",
+  "licensesPricePerMonth": "{price}/mes",
+  "@licensesPricePerMonth": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "licensesPricePerYear": "{price}/año",
+  "@licensesPricePerYear": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "licensesPricePerWeek": "{price}/semana",
+  "@licensesPricePerWeek": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "licensesPricePerDay": "{price}/día",
+  "@licensesPricePerDay": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
   "licensesProductHousing": "Vivienda",
   "licensesProductVehicle": "Vehículo",
   "licensesProductSharing": "Compartir",

@@ -1012,6 +1012,36 @@ abstract class AppLocalizations {
   /// **'Cancel this subscription'**
   String get licensesCancelThisSubscription;
 
+  /// No description provided for @licensesPriceFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get licensesPriceFree;
+
+  /// No description provided for @licensesPricePerMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}/mo'**
+  String licensesPricePerMonth(String price);
+
+  /// No description provided for @licensesPricePerYear.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}/yr'**
+  String licensesPricePerYear(String price);
+
+  /// No description provided for @licensesPricePerWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}/wk'**
+  String licensesPricePerWeek(String price);
+
+  /// No description provided for @licensesPricePerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{price}/day'**
+  String licensesPricePerDay(String price);
+
   /// No description provided for @licensesProductHousing.
   ///
   /// In en, this message translates to:

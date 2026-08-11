@@ -5,8 +5,10 @@ alwaysApply: true
 
 # No probability-based coding
 
-Complements `no-blind-patching-evidence-first.mdc` and
-`conversation-test-context-discipline.mdc`. When they overlap, this rule is
+Complements `no-blind-patching-evidence-first.mdc`,
+`conversation-test-context-discipline.mdc`, and
+`doc-verification-no-gap-filling.mdc` (chat answers that invent undocumented
+API values or product paths after a doc lookup). When they overlap, this rule is
 **stricter** on implementation.
 
 ## Hard rule
