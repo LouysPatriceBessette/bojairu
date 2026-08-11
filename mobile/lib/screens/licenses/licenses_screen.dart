@@ -372,7 +372,22 @@ class _LicensesScreenState extends State<LicensesScreen>
         : filterSubscriptionOffers(cart: _cart, paidProductIds: paidIds);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.homeModuleLicenses)),
+      appBar: AppBar(
+        title: Text(l10n.homeModuleLicenses),
+        actions: [
+          IconButton(
+            tooltip: l10n.licensesRestorePurchases,
+            icon: _busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            onPressed: _busy || billing == null ? null : _restore,
+          ),
+        ],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -497,11 +512,6 @@ class _LicensesScreenState extends State<LicensesScreen>
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
-                FilledButton.tonal(
-                  onPressed: _busy || billing == null ? null : _restore,
-                  child: Text(l10n.licensesRestorePurchases),
-                ),
               ],
             ),
     );
