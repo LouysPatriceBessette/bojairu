@@ -1,19 +1,22 @@
 import 'dart:async';
+import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../entitlement/app_module_id.dart';
 import '../../entitlement/module_entitlement_controller.dart';
-import '../../entitlement/module_entitlement_state.dart';
 import '../../entitlement/store_billing_service.dart';
 import '../../entitlement/store_product_catalog.dart';
+import '../../entitlement/store_product_display_names.dart';
 import '../../entitlement/store_receipt_record.dart';
+import '../../entitlement/store_subscription_offer_filter.dart';
 import '../../entitlement/subscription_product_line.dart';
 import '../../entitlement/subscription_renewal_estimate.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
+import '../../theme/app_theme.dart';
 import '../../util/display_date.dart';
 import '../../widgets/screen_body_padding.dart';
 
@@ -39,6 +42,17 @@ class _LicensesScreenState extends State<LicensesScreen>
   StoreReceiptRecord? _receiptBeforeUnsubscribe;
   var _cancelDialogInFlight = false;
 
+  var _addMode = false;
+  final Set<AppModuleId> _cart = <AppModuleId>{};
+  String? _expandedProductId;
+  String? _selectedOfferProductId;
+
+  static const List<AppModuleId> _moduleOrder = <AppModuleId>[
+    AppModuleId.housing,
+    AppModuleId.vehicle,
+    AppModuleId.vehicleSharing,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +71,6 @@ class _LicensesScreenState extends State<LicensesScreen>
     final billing = _billing;
     if (billing == null) return;
     if (mounted) setState(() => _loading = true);
-    // After Play's sheet closes — and on every return — re-query Play.
     final ok = await billing.refreshFromPlayStore();
     if (!mounted) return;
     setState(() {
@@ -73,8 +86,6 @@ class _LicensesScreenState extends State<LicensesScreen>
       if (mounted) setState(() => _loading = false);
       return;
     }
-    // Load local prefs/controller wiring first; do not paint subscription
-    // rows until Play has answered (see [StoreBillingService.refreshFromPlayStore]).
     await entitlement.load();
     final prefs = await AppPreferences.load();
 
@@ -114,8 +125,6 @@ class _LicensesScreenState extends State<LicensesScreen>
     WidgetsBinding.instance.removeObserver(this);
     _entitlement?.removeListener(_onChanged);
     _billing?.removeListener(_onChanged);
-    // Do not dispose [StoreBillingService] — purchaseStream must stay subscribed
-    // for the app process (see bootstrap + store_billing_service.dart).
     super.dispose();
   }
 
@@ -150,11 +159,6 @@ class _LicensesScreenState extends State<LicensesScreen>
     }
   }
 
-  /// Opens Play subscription management (cancel or restore / re-enable renew).
-  ///
-  /// When [trackCancelTransition] is true, a post-resume dialog is shown if
-  /// auto-renew flips from on → off. Resubscribe uses the same deep link without
-  /// that tracking (Play restore keeps the same purchase token).
   Future<void> _openPlaySubscriptionManagement(
     String productId, {
     required bool trackCancelTransition,
@@ -248,7 +252,6 @@ class _LicensesScreenState extends State<LicensesScreen>
     StoreReceiptRecord? receipt,
     AppLocalizations l10n,
   ) {
-    // No receipt after Play sync ⇒ subscription gone ⇒ no renewal date.
     if (receipt == null) return null;
     final now = DateTime.now().toUtc();
     final boundary = accessBoundaryForDisplay(
@@ -262,10 +265,86 @@ class _LicensesScreenState extends State<LicensesScreen>
       case SubscriptionProductLineKind.none:
         return null;
       case SubscriptionProductLineKind.autoRenewing:
-        return l10n.licensesStatusAutoRenewOn(when);
+        return l10n.licensesStatusAutoRenewOn(when).replaceAll('\n', ' ');
       case SubscriptionProductLineKind.canceledStillValid:
-        return l10n.licensesStatusValidUntil(when);
+        return l10n.licensesStatusValidUntil(when).replaceAll('\n', ' ');
     }
+  }
+
+  Set<AppModuleId> _coveredByPlay(
+    Iterable<StoreReceiptRecord> receipts,
+    DateTime now,
+  ) {
+    return <AppModuleId>{
+      for (final m in _moduleOrder)
+        if (moduleCoveredByPlayReceipt(
+          module: m,
+          receipts: receipts,
+          now: now,
+        ))
+          m,
+    };
+  }
+
+  void _enterAddMode(Set<AppModuleId> covered) {
+    setState(() {
+      _addMode = true;
+      _cart
+        ..clear()
+        ..addAll(covered);
+      _selectedOfferProductId = null;
+      _expandedProductId = null;
+    });
+  }
+
+  void _exitAddMode() {
+    setState(() {
+      _addMode = false;
+      _cart.clear();
+      _selectedOfferProductId = null;
+    });
+  }
+
+  void _toggleCartModule(AppModuleId module) {
+    setState(() {
+      if (_cart.contains(module)) {
+        _cart.remove(module);
+      } else {
+        _cart.add(module);
+      }
+      _selectedOfferProductId = null;
+    });
+  }
+
+  IconData _iconFor(AppModuleId module) {
+    switch (module) {
+      case AppModuleId.housing:
+        return MdiIcons.homeCity;
+      case AppModuleId.vehicle:
+        return MdiIcons.carSide;
+      case AppModuleId.vehicleSharing:
+        return Icons.car_rental;
+    }
+  }
+
+  String _moduleLabel(AppModuleId module, AppLocalizations l10n) {
+    switch (module) {
+      case AppModuleId.housing:
+        return l10n.homeModuleHousing;
+      case AppModuleId.vehicle:
+        return l10n.homeModuleVehicle;
+      case AppModuleId.vehicleSharing:
+        return l10n.homeModuleVehicleSharing;
+    }
+  }
+
+  ProductDetails? _productDetailsFor(String productId) {
+    final billing = _billing;
+    if (billing == null) return null;
+    for (final p in billing.products) {
+      if (p.id == productId) return p;
+    }
+    return null;
   }
 
   @override
@@ -274,6 +353,23 @@ class _LicensesScreenState extends State<LicensesScreen>
     final entitlement = _entitlement;
     final billing = _billing;
     final now = DateTime.now().toUtc();
+    final receipts = entitlement?.receipts ?? const <StoreReceiptRecord>[];
+    final covered = _coveredByPlay(receipts, now);
+    final paidIds = paidProductIdsFromReceipts(receipts: receipts, now: now);
+    final allCovered = covered.length == _moduleOrder.length;
+
+    final activeProductIds = StoreProductCatalog.entries
+        .where((e) => paidIds.contains(e.productId))
+        .map((e) => e.productId)
+        .toList(growable: false);
+
+    final promptSelect = shouldPromptSelectModuleToAdd(
+      cart: _cart,
+      coveredByPlay: covered,
+    );
+    final offers = promptSelect
+        ? const <StoreCatalogEntry>[]
+        : filterSubscriptionOffers(cart: _cart, paidProductIds: paidIds);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.homeModuleLicenses)),
@@ -282,38 +378,102 @@ class _LicensesScreenState extends State<LicensesScreen>
           : ListView(
               padding: screenBodyScrollPadding(context),
               children: [
-                Text(
-                  l10n.licensesEffectiveHeading,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
                 if (entitlement == null)
                   Text(l10n.licensesEntitlementUnavailable)
                 else ...[
-                  _stateTile(
-                    context,
-                    l10n.homeModuleHousing,
-                    entitlement.stateOf(AppModuleId.housing),
-                    l10n,
+                  _moduleGrid(
+                    context: context,
+                    l10n: l10n,
+                    covered: covered,
                   ),
-                  _stateTile(
-                    context,
-                    l10n.homeModuleVehicle,
-                    entitlement.stateOf(AppModuleId.vehicle),
-                    l10n,
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.licensesActiveHeading,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  _stateTile(
-                    context,
-                    l10n.homeModuleVehicleSharing,
-                    entitlement.stateOf(AppModuleId.vehicleSharing),
-                    l10n,
-                  ),
+                  const SizedBox(height: 8),
+                  if (activeProductIds.isEmpty)
+                    Text(l10n.licensesNoActiveSubscription)
+                  else
+                    for (final productId in activeProductIds)
+                      _activeLicenseTile(
+                        productId: productId,
+                        receipts: receipts,
+                        now: now,
+                        l10n: l10n,
+                      ),
+                  if (!allCovered) ...[
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _busy
+                          ? null
+                          : () {
+                              if (_addMode) {
+                                _exitAddMode();
+                              } else {
+                                _enterAddMode(covered);
+                              }
+                            },
+                      child: Text(
+                        _addMode
+                            ? l10n.licensesAddNothing
+                            : l10n.licensesAddSubscription,
+                      ),
+                    ),
+                  ],
+                  if (_addMode && !allCovered) ...[
+                    const SizedBox(height: 16),
+                    if (promptSelect)
+                      Text(l10n.licensesSelectModuleToAdd)
+                    else if (offers.isEmpty)
+                      Text(l10n.licensesNoProducts)
+                    else ...[
+                      RadioGroup<String>(
+                        groupValue: _selectedOfferProductId,
+                        onChanged: (v) {
+                          if (_busy || v == null) return;
+                          setState(() {
+                            _selectedOfferProductId = v;
+                          });
+                        },
+                        child: Column(
+                          children: [
+                            for (final entry in offers)
+                              RadioListTile<String>(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  StoreProductDisplayNames.forProductId(
+                                    entry.productId,
+                                    l10n,
+                                  ),
+                                ),
+                                value: entry.productId,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      FilledButton(
+                        onPressed: _busy ||
+                                _selectedOfferProductId == null ||
+                                _productDetailsFor(
+                                      _selectedOfferProductId!,
+                                    ) ==
+                                    null
+                            ? null
+                            : () {
+                                final details = _productDetailsFor(
+                                  _selectedOfferProductId!,
+                                );
+                                if (details != null) {
+                                  unawaited(_buy(details));
+                                }
+                              },
+                        child: Text(l10n.licensesSubscribe),
+                      ),
+                    ],
+                  ],
                 ],
-                const SizedBox(height: 24),
-                FilledButton.tonal(
-                  onPressed: _busy || billing == null ? null : _restore,
-                  child: Text(l10n.licensesRestorePurchases),
-                ),
                 if (billing != null && !billing.isAvailable) ...[
                   const SizedBox(height: 12),
                   Text(l10n.licensesStoreUnavailable),
@@ -338,120 +498,209 @@ class _LicensesScreenState extends State<LicensesScreen>
                   ),
                 ],
                 const SizedBox(height: 24),
-                Text(
-                  l10n.licensesProductsHeading,
-                  style: Theme.of(context).textTheme.titleMedium,
+                FilledButton.tonal(
+                  onPressed: _busy || billing == null ? null : _restore,
+                  child: Text(l10n.licensesRestorePurchases),
                 ),
-                const SizedBox(height: 8),
-                if (billing == null || billing.products.isEmpty)
-                  Text(l10n.licensesNoProducts)
-                else
-                  for (final product in billing.products)
-                    _productTile(
-                      product: product,
-                      entitlement: entitlement,
-                      now: now,
-                      l10n: l10n,
-                    ),
-                if (kDebugMode) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'productIds: ${StoreProductCatalog.allProductIds.join(', ')}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
               ],
             ),
     );
   }
 
-  Widget _productTile({
-    required ProductDetails product,
-    required ModuleEntitlementController? entitlement,
+  Widget _moduleGrid({
+    required BuildContext context,
+    required AppLocalizations l10n,
+    required Set<AppModuleId> covered,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final module in _moduleOrder)
+          Expanded(
+            child: Column(
+              children: [
+                _ModuleLicenseIcon(
+                  icon: _iconFor(module),
+                  covered: covered.contains(module),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _moduleLabel(module, l10n),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (_addMode) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed:
+                        _busy ? null : () => _toggleCartModule(module),
+                    child: Text(
+                      _cart.contains(module)
+                          ? l10n.licensesDeselectModule
+                          : l10n.licensesSelectModule,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _activeLicenseTile({
+    required String productId,
+    required Iterable<StoreReceiptRecord> receipts,
     required DateTime now,
     required AppLocalizations l10n,
   }) {
-    final receipts = entitlement?.receipts ?? const <StoreReceiptRecord>[];
     final kind = subscriptionProductLineKind(
-      productId: product.id,
+      productId: productId,
       receipts: receipts,
       now: now,
     );
     final receipt = validReceiptForProductId(
-      productId: product.id,
+      productId: productId,
       receipts: receipts,
       now: now,
     );
+    final expanded = _expandedProductId == productId;
+    final details = _productDetailsFor(productId);
+    final price = details?.price ?? '';
     final status = _statusLine(kind, receipt, l10n);
-    final subtitle = status == null ? product.price : '${product.price}\n$status';
 
-    Widget? trailing;
-    switch (kind) {
-      case SubscriptionProductLineKind.none:
-        trailing = FilledButton(
-          onPressed: _busy ? null : () => _buy(product),
-          child: Text(l10n.licensesSubscribe),
-        );
-      case SubscriptionProductLineKind.autoRenewing:
-        trailing = FilledButton(
-          onPressed: _busy
-              ? null
-              : () => _openPlaySubscriptionManagement(
-                    product.id,
-                    trackCancelTransition: true,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              _expandedProductId = expanded ? null : productId;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    StoreProductDisplayNames.forProductId(productId, l10n),
+                    style: Theme.of(context).textTheme.titleSmall,
                   ),
-          child: Text(l10n.licensesUnsubscribe),
-        );
-      case SubscriptionProductLineKind.canceledStillValid:
-        // Play restore (same deep link as cancel) re-enables renew on the
-        // existing token — do not start a new in-app purchase.
-        trailing = FilledButton(
-          onPressed: _busy
-              ? null
-              : () => _openPlaySubscriptionManagement(
-                    product.id,
-                    trackCancelTransition: false,
+                ),
+                Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              ],
+            ),
+          ),
+        ),
+        if (expanded)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                if (price.isNotEmpty) ...[
+                  Text(price),
+                  const SizedBox(width: 12),
+                ],
+                if (status != null)
+                  Expanded(
+                    child: Text(
+                      status,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                else
+                  const Spacer(),
+                const SizedBox(width: 8),
+                if (kind == SubscriptionProductLineKind.autoRenewing)
+                  FilledButton(
+                    onPressed: _busy
+                        ? null
+                        : () => _openPlaySubscriptionManagement(
+                              productId,
+                              trackCancelTransition: true,
+                            ),
+                    child: Text(l10n.licensesCancelThisSubscription),
+                  )
+                else if (kind ==
+                    SubscriptionProductLineKind.canceledStillValid)
+                  FilledButton(
+                    onPressed: _busy
+                        ? null
+                        : () => _openPlaySubscriptionManagement(
+                              productId,
+                              trackCancelTransition: false,
+                            ),
+                    child: Text(l10n.licensesResubscribe),
                   ),
-          child: Text(l10n.licensesResubscribe),
-        );
-    }
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(product.title),
-      subtitle: Text(subtitle),
-      isThreeLine: status != null,
-      trailing: trailing,
+              ],
+            ),
+          ),
+        const Divider(height: 1),
+      ],
     );
   }
+}
 
-  Widget _stateTile(
-    BuildContext context,
-    String label,
-    ModuleEntitlementState state,
-    AppLocalizations l10n,
-  ) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label),
-      trailing: Text(_stateLabel(state, l10n)),
+/// Module icon in a circle matching [FilledButton] primary / onPrimary
+/// (same colors as « Ajout d'abonnement »), with optional green coverage dot
+/// at 30° (12h = 0° clockwise).
+class _ModuleLicenseIcon extends StatelessWidget {
+  const _ModuleLicenseIcon({
+    required this.icon,
+    required this.covered,
+  });
+
+  final IconData icon;
+  final bool covered;
+
+  static const double _circleSize = 56;
+  static const double _iconSize = 28;
+  static const double _dotSize = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: _circleSize + _dotSize,
+      height: _circleSize + _dotSize,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: _circleSize,
+            height: _circleSize,
+            decoration: BoxDecoration(
+              color: scheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: _iconSize,
+              color: scheme.onPrimary,
+            ),
+          ),
+          if (covered)
+            Positioned(
+              left: (_circleSize + _dotSize) / 2 +
+                  (_circleSize / 2) * math.sin(30 * math.pi / 180) -
+                  _dotSize / 2,
+              top: (_circleSize + _dotSize) / 2 -
+                  (_circleSize / 2) * math.cos(30 * math.pi / 180) -
+                  _dotSize / 2,
+              child: Container(
+                width: _dotSize,
+                height: _dotSize,
+                decoration: const BoxDecoration(
+                  color: AppBrandColors.moneyGreen,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
-  }
-
-  String _stateLabel(ModuleEntitlementState state, AppLocalizations l10n) {
-    switch (state) {
-      case ModuleEntitlementState.free:
-        return l10n.licensesStateFree;
-      case ModuleEntitlementState.linkedNotActive:
-        return l10n.licensesStateLinkedNotActive;
-      case ModuleEntitlementState.activeTrial:
-        return l10n.licensesStateActiveTrial;
-      case ModuleEntitlementState.activePaid:
-        return l10n.licensesStateActivePaid;
-      case ModuleEntitlementState.delinquentGrace:
-        return l10n.licensesStateGrace;
-      case ModuleEntitlementState.delinquentReadonly:
-        return l10n.licensesStateReadonly;
-    }
   }
 }

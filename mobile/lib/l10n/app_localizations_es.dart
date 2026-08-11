@@ -496,6 +496,54 @@ class AppLocalizationsEs extends AppLocalizations {
   String get licensesProductsHeading => 'Suscripciones';
 
   @override
+  String get licensesActiveHeading => 'Licencia activa:';
+
+  @override
+  String get licensesNoActiveSubscription => 'Ninguna suscripción activa';
+
+  @override
+  String get licensesAddSubscription => 'Añadir suscripción';
+
+  @override
+  String get licensesAddNothing => 'No añadir nada';
+
+  @override
+  String get licensesSelectModule => 'Seleccionar';
+
+  @override
+  String get licensesDeselectModule => 'Deseleccionar';
+
+  @override
+  String get licensesSelectModuleToAdd => 'Seleccione un módulo para añadir';
+
+  @override
+  String get licensesCancelThisSubscription => 'Cancelar esta suscripción';
+
+  @override
+  String get licensesProductHousing => 'Vivienda';
+
+  @override
+  String get licensesProductVehicle => 'Vehículo';
+
+  @override
+  String get licensesProductSharing => 'Compartir';
+
+  @override
+  String get licensesProductBundleHousingSharing =>
+      'Paquete Vivienda + Compartir';
+
+  @override
+  String get licensesProductBundleVehicleSharing =>
+      'Paquete Vehículo + Compartir';
+
+  @override
+  String get licensesProductBundleHousingVehicle =>
+      'Paquete Vivienda + Vehículo';
+
+  @override
+  String get licensesProductBundleAllModules => 'Paquete los tres';
+
+  @override
   String get licensesRestorePurchases => 'Restaurar compras';
 
   @override

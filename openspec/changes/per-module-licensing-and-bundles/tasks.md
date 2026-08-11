@@ -39,3 +39,7 @@
 - [ ] 6.3 Unit tests for disable/enable behavior on relay traffic (no module-scoped envelopes generated while disabled; expired inbound proposals are not resurrected at re-enable).
 - [ ] 6.4 Integration test verifying export availability under various per-module entitlement combinations (active-paid, read-only, delinquent).
 - [x] 6.5 Documentation test that confirms `docs/store-mapping.md` lists each currently-shipping module and bundle. *(`store_product_catalog_test.dart` mirrors store-mapping ids.)*
+
+## 7. Future — license catalog lifecycle procedure
+
+- [ ] 7.1 Author an exact, complete procedure for **adding and removing** licenses (standalone products, bundles, and any future **free** license type that does not exist yet): store Console steps, `docs/store-mapping.md` / catalog / display-name mapping, entitlement projection, and app UI impact. Deferred to a later release; not part of the Licenses screen UI redesign.

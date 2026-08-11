@@ -964,6 +964,96 @@ abstract class AppLocalizations {
   /// **'Subscriptions'**
   String get licensesProductsHeading;
 
+  /// No description provided for @licensesActiveHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Active license:'**
+  String get licensesActiveHeading;
+
+  /// No description provided for @licensesNoActiveSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscription'**
+  String get licensesNoActiveSubscription;
+
+  /// No description provided for @licensesAddSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subscription'**
+  String get licensesAddSubscription;
+
+  /// No description provided for @licensesAddNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add nothing'**
+  String get licensesAddNothing;
+
+  /// No description provided for @licensesSelectModule.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get licensesSelectModule;
+
+  /// No description provided for @licensesDeselectModule.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect'**
+  String get licensesDeselectModule;
+
+  /// No description provided for @licensesSelectModuleToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a module to add'**
+  String get licensesSelectModuleToAdd;
+
+  /// No description provided for @licensesCancelThisSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this subscription'**
+  String get licensesCancelThisSubscription;
+
+  /// No description provided for @licensesProductHousing.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing'**
+  String get licensesProductHousing;
+
+  /// No description provided for @licensesProductVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get licensesProductVehicle;
+
+  /// No description provided for @licensesProductSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get licensesProductSharing;
+
+  /// No description provided for @licensesProductBundleHousingSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle Housing + Sharing'**
+  String get licensesProductBundleHousingSharing;
+
+  /// No description provided for @licensesProductBundleVehicleSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle Vehicle + Sharing'**
+  String get licensesProductBundleVehicleSharing;
+
+  /// No description provided for @licensesProductBundleHousingVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle Housing + Vehicle'**
+  String get licensesProductBundleHousingVehicle;
+
+  /// No description provided for @licensesProductBundleAllModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle all three'**
+  String get licensesProductBundleAllModules;
+
   /// No description provided for @licensesRestorePurchases.
   ///
   /// In en, this message translates to:

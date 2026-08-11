@@ -1,0 +1,67 @@
+---
+description: No incomplete patches or Play AAB builds that will be rejected; fix known gates before handoff
+alwaysApply: true
+---
+
+# No scrap deliveries (complete patch + uploadable build)
+
+## Hard rule
+
+Do **not** hand the user an artifact or “done” claim that you already know
+(or can know in one command) will force another wasted cycle — re-upload,
+re-smoke, or another agent turn to finish the obvious remainder.
+
+This includes **partial patches** for a stated bug and **Play App Bundles**
+whose `versionCode` Play Console will reject.
+
+## Play AAB / `versionCode` (binding)
+
+Before saying an AAB is ready to upload to **Google Play Console**:
+
+1. Read the **last known** `versionCode` from this thread, the open handoff,
+   or the device (`adb shell dumpsys package … | rg versionCode=`).
+2. Ensure the built AAB’s `versionCode` is **strictly greater** than that
+   number. If `./tool/compute_version.sh` (or git commit count) still yields
+   the same or lower code — especially with a **dirty** working tree on the
+   same `HEAD` — pass an explicit `--build-number=N` (and matching
+   `--build-name=…`) and **rebuild**. Do **not** ask the user whether to bump.
+3. Verify the number in the build outputs (e.g. prodRelease
+   `AndroidManifest.xml` `android:versionCode`) **before** the chat handoff.
+4. Never present a path to `app-prod-release.aab` as uploadable when you have
+   already observed that Play (or the prior internal release) used that code.
+
+`compute_version.sh` counts **commits since tag**. It is **not** “last Play
+upload + 1”. Uncommitted billing fixes on the same SHA keep the old number.
+
+## Partial patches
+
+When the user asked to **fix a demonstrated gap** (or implement an agreed
+plan):
+
+| Forbidden | Required |
+| --- | --- |
+| Ship half the fix, warn about the rest, leave them to retest scrap | Finish the stated delivery bar in this turn, or stop at analysis with **Blocked** |
+| “AAB prêt” then “au fait, bump if Play rejects” | Bump + rebuild **before** “prêt” |
+| Hand off knowing a known gate will fail | Clear the gate first (version, sqlite `libc.so`, analyze, targeted tests) |
+
+Complements `no-blind-patching-evidence-first.mdc` and
+`no-probability-coding.mdc` (no speculative code) — this rule is about
+**not delivering unfinished or unusable outputs** once you are building or
+claiming done.
+
+## Founder incident — 9 Aug 2026 (billing / AAB 34)
+
+| | Fact |
+| --- | --- |
+| **Context** | Day spent on Licenses / Play sync; handoff already recorded AAB **34** on S25 |
+| **Failure** | Agent built with `$(./tool/compute_version.sh)` → still **34**; saw it; still handed the AAB as ready; asked whether to bump instead of rebuilding **35** |
+| **User cost** | Play Console: « Le code de version 34 a déjà été utilisé » — another upload cycle after hours already lost |
+| **Framing** | Same class as scrap deliveries all day: partial/wrong handoffs turning a ~2 h job into ~8 h |
+
+## Self-check before “prêt” / “upload this”
+
+1. What is the **last accepted** Play / device `versionCode`?
+2. Does **this** AAB’s manifest show a **higher** code?
+3. For the product fix: would a cold retest of the **stated** bug still fail
+   for an incomplete diff I already know about?
+4. If yes to (3) or no to (2) → **do not** tell them to upload or retest yet.
