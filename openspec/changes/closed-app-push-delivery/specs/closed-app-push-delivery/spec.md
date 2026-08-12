@@ -291,3 +291,29 @@ The system SHALL require the relay deployment documentation, the relay state sch
 #### Scenario: Deployment documentation describes the statistics pipeline
 - **WHEN** the change ships
 - **THEN** the relay deployment documentation describes the loopback-only stats endpoint, the cron job that calls it at 00:07 UTC, the location and format of the append-only stats file, and the operating-system user that owns both the relay process and the cron job
+
+### Requirement: Operator manual notification trigger (deferred)
+**Status:** deferred until the next coordinated **relay + entitlement** server update. Not part of V1 closed-app wake delivery.
+
+The product SHALL support an **operator-only** command that manually triggers a notification to open an in-app message page. The trigger SHALL be invocable **only** from the production VPS under the secured Linux account that operates the relay (and entitlement) stack — not from the mobile app and not via a public unauthenticated HTTP surface.
+
+The notification SHALL use a **new push `kind`** (distinct from inbox wake). An illustrative minimal operator payload shape (to be refined at implementation) is `{ "version": <number>, "message": <boolean> }` alongside schema/`kind` fields designed then.
+
+The in-app message page SHALL compare the installed app **build number** to the build number carried with the notification and SHALL show or hide an update affordance accordingly. The same mechanism MAY present a message that directs the user to consult content on the **static website**, with or without a build-number change.
+
+Detail design (fan-out targets, privacy relative to the content-free inbox-wake rule, entitlement role if any, exact CLI, UX copy) SHALL be written when that server update is implemented — see task **12.5**.
+
+#### Scenario: Operator triggers from VPS only
+- **WHEN** an authorized operator on the VPS runs the secured CLI for this feature under the stack’s Linux service account
+- **THEN** the system emits the operator notification `kind` toward registered devices as designed for that release
+- **AND** the trigger is not exposed as a mobile-app or public Internet endpoint
+
+#### Scenario: Message page gates update affordance on build number
+- **WHEN** the app opens the operator message page from that notification
+- **AND** the notification carries a target build number
+- **THEN** the page compares that value to the installed build number and shows the update affordance only when the comparison policy for that release says an update is relevant
+
+#### Scenario: Message may point at static website
+- **WHEN** the operator notification is configured as a consult-message (per the refined payload)
+- **THEN** the in-app page MAY direct the user to the static website for the full message
+- **AND** this MAY occur with or without a change in the advertised build number
