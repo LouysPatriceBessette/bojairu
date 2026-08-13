@@ -22,8 +22,16 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DEVICE_BINDING_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "collectSignals" ->
-                        result.success(DeviceBindingSignals.collect(applicationContext))
+                    "collectSignals" -> {
+                        try {
+                            result.success(DeviceBindingSignals.collect(applicationContext))
+                        } catch (t: Throwable) {
+                            // NoSuchFieldError and similar linkage errors are
+                            // not Exception subclasses; they must not kill
+                            // the main thread (crash loop until data clear).
+                            result.error("collect_failed", t.message, null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }

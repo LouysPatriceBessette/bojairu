@@ -19,7 +19,11 @@ object DeviceBindingSignals {
         signals["build_device"] = Build.DEVICE
         signals["build_product"] = Build.PRODUCT
         signals["build_brand"] = Build.BRAND
-        signals["build_soc_model"] = Build.SOC_MODEL
+        // SOC_MODEL exists only from API 31 (Android 12). Unguarded access
+        // throws NoSuchFieldError on API 30 and below and kills the process.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            signals["build_soc_model"] = Build.SOC_MODEL
+        }
         signals["sdk_int"] = Build.VERSION.SDK_INT.toString()
         signals["android_id"] =
             Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
