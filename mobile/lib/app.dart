@@ -61,9 +61,13 @@ import 'sandbox/sandbox_eight_hour_nudge.dart';
 import 'sandbox/simulation_ribbon.dart';
 
 class BojairuApp extends StatefulWidget {
-  const BojairuApp({super.key, required this.config});
+  const BojairuApp({super.key, required this.config, this.ready});
 
   final AppConfig config;
+
+  /// Production bootstrap: storage + prefs + relay already in flight.
+  /// Tests omit this and load prefs only.
+  final Future<AppPreferences>? ready;
 
   @override
   State<BojairuApp> createState() => _BojairuAppState();
@@ -71,7 +75,7 @@ class BojairuApp extends StatefulWidget {
 
 class _BojairuAppState extends State<BojairuApp>
     with WidgetsBindingObserver {
-  late Future<AppPreferences> _prefs = _loadPrefs();
+  late Future<AppPreferences> _prefs;
   int _prefsLoadGeneration = 0;
 
   /// Reused across preference-driven rebuilds so navigation state is kept.
@@ -83,7 +87,7 @@ class _BojairuAppState extends State<BojairuApp>
   void _retryPrefsLoad() {
     setState(() {
       _prefsLoadGeneration++;
-      _prefs = _loadPrefs();
+      _prefs = _wireAfter(AppPreferences.load());
     });
   }
 
@@ -91,6 +95,12 @@ class _BojairuAppState extends State<BojairuApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _prefs = _wireAfter(widget.ready ?? AppPreferences.load());
+    if (kDebugMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('startup: first_frame');
+      });
+    }
   }
 
   @override
@@ -139,12 +149,15 @@ class _BojairuAppState extends State<BojairuApp>
     }
   }
 
-  Future<AppPreferences> _loadPrefs() async {
-    final prefs = await AppPreferences.load();
+  Future<AppPreferences> _wireAfter(Future<AppPreferences> source) async {
+    final prefs = await source;
     _wireProfileBroadcaster(prefs);
     _wireClosedAppPush(prefs);
     _wireHousingReminderTimezone(prefs);
     _wireMaterialAppLocaleRebuild(prefs);
+    if (kDebugMode) {
+      debugPrint('startup: router_ready');
+    }
     return prefs;
   }
 

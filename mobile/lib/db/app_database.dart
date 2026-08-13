@@ -657,7 +657,8 @@ class AppDatabase extends _$AppDatabase {
 
   /// Opens the native/web SQLite file while platform channels are registered.
   ///
-  /// Call once from [bootstrap] after [WidgetsFlutterBinding.ensureInitialized].
+  /// Call once from [completeAppStartup] after
+  /// [WidgetsFlutterBinding.ensureInitialized] and before handshake polling.
   /// Skipping this and touching the DB after a hot restart can surface
   /// [MissingPluginException] from `path_provider` during relay polling.
   Future<void> warmUpStorage() => customSelect('SELECT 1').get();

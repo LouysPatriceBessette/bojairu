@@ -55,19 +55,6 @@ Future<void> bootstrap() async {
       WidgetsFlutterBinding.ensureInitialized();
       registerPushBackgroundHandler();
 
-      if (kDebugMode && kIsWeb) {
-        await wipeWebDevBrowserStorageOnLaunchIfRequested(
-          clearRelayIdentity: config.apiBaseUrl.host != 'example.invalid',
-        );
-      }
-
-      // Snapshot steal/restore: identity before Drift open and before relay
-      // IdentityKeystore.loadOrCreate in the blocks below.
-      if (kDebugMode && !kIsWeb) {
-        await maybeExportQaDbSnapshotIdentity();
-        await maybeRestoreQaDbSnapshotIdentity();
-      }
-
       final appDb = AppDatabase();
       AppDatabase.bindProcessScope(appDb);
       if (kDebugMode && kIsWeb) {
@@ -75,74 +62,7 @@ Future<void> bootstrap() async {
         debugWebDbWriteHook = () => scheduleDevHostSessionSave(appDb);
       }
       installWebStorageFlushOnPageHide();
-      AppPreferences? earlyPrefs;
-      try {
-        await appDb.warmUpStorage();
-        earlyPrefs = await AppPreferences.load();
-        if (config.simulationLocked) {
-          await SandboxMode.ensureForcedSimulationPrefs(earlyPrefs);
-        }
-        await SandboxLifecycle.maybeRestoreCheckpointOnRealBoot(
-          prefs: earlyPrefs,
-          db: appDb,
-        );
-        if (kDebugMode && config.carDevSeed) {
-          await maybeApplyCarDevSeed(appDb, enabled: true);
-          earlyPrefs = await AppPreferences.load();
-        }
-        if (kDebugMode && !kIsWeb) {
-          await restoreQaE2eEnvironmentIfPresent();
-          await maybeApplyQaAndroidSeed(appDb);
-          await restoreQaE2eEnvironmentIfPresent();
-          await syncQaE2eFlagsFromPrefs();
-        }
-        if (kDebugMode && kIsWeb) {
-          await restoreDevSessionFromHostIfNeeded(appDb);
-          await reconcileDevOnboardingIfNeeded(appDb);
-        }
-        await logLocalStorageStartupDiagnostics(appDb);
-
-        final moduleEntitlement = ModuleEntitlementController();
-        ModuleEntitlementController.install(moduleEntitlement);
-        await moduleEntitlement.load();
-        // Listen to store purchaseStream for the whole process — not only while
-        // Licenses is open (Flutter IAP: listen as early as possible).
-        if (!kIsWeb) {
-          final storeBilling = StoreBillingService(
-            entitlement: moduleEntitlement,
-          );
-          StoreBillingService.install(storeBilling);
-          unawaited(
-            storeBilling.start().catchError((Object error, StackTrace stack) {
-              debugPrint('StoreBillingService.start failed: $error\n$stack');
-              return false;
-            }),
-          );
-        }
-      } catch (error, stack) {
-        debugPrint(
-          'AppDatabase warmUpStorage failed (stop melos, force-quit app, '
-          'then `dart run melos run run:dev`): $error\n$stack',
-        );
-      }
-
-      final early = earlyPrefs;
-      final sandboxActive = early != null && SandboxMode.isActive(early);
-      if (!sandboxActive) {
-        unawaited(_initializePushIfAlreadyAuthorized());
-        if (!kIsWeb) {
-          unawaited(
-            scheduleClosedAppPushKeepAlive().catchError((
-              Object error,
-              StackTrace stack,
-            ) {
-              debugPrint(
-                'Closed-app push WorkManager schedule failed: $error\n$stack',
-              );
-            }),
-          );
-        }
-      }
+      _startupMark('binding_done');
 
       FlutterError.onError = (details) {
         FlutterError.presentError(details);
@@ -158,125 +78,18 @@ Future<void> bootstrap() async {
         return false;
       };
 
-      if (early != null && SandboxMode.isActive(early)) {
-        try {
-          final prefs = early;
-          final identity = IdentityKeystore.secureStorage();
-          final relay = SandboxRelay.instance;
-          final orchestrator = HandshakeOrchestrator(
-            db: appDb,
-            identity: identity,
-            relay: relay,
-            contacts: ContactsRepository(appDb),
-            invitations: ContactInvitationsRepository(appDb),
-            entitlement: null,
-            deviceBinding: DeviceBindingService(),
-          );
-          HandshakeOrchestrator.install(orchestrator);
-          final peerSimulator = PeerSimulator.ensureInstalled(
-            relay: relay,
-            prefs: prefs,
-          );
-          // Bot peers are process-local; prefs + human contacts survive cold
-          // start. Rebuild bots before the first proposal/amendment react.
-          await peerSimulator.restoreInvitedBotsIfNeeded(
-            humanOrchestrator: orchestrator,
-          );
-          if (kDebugMode) {
-            RelayDiagnostics.steadyInboxPollLogging = true;
-          }
-          unawaited(
-            orchestrator.processAllPendingHandshakes().catchError((
-              Object error,
-              StackTrace stack,
-            ) {
-              debugPrint('Initial handshake polling failed: $error\n$stack');
-            }),
-          );
-          unawaited(
-            orchestrator.pollSteadyStateInboxes().catchError((
-              Object error,
-              StackTrace stack,
-            ) {
-              debugPrint('Initial steady inbox poll failed: $error\n$stack');
-            }),
-          );
-          orchestrator.startPolling();
-        } catch (error, stack) {
-          debugPrint('Sandbox relay bootstrap failed: $error\n$stack');
-        }
-      } else if (config.apiBaseUrl.host != 'example.invalid') {
-        try {
-          final identity = IdentityKeystore.secureStorage();
-          final relay = HttpRelayClient(baseUrl: config.apiBaseUrl);
-          EntitlementCoordinator? entitlementCoordinator;
-          if (config.entitlementGateEnabled) {
-            final registry = await PlanParticipantInstallationRegistry.load();
-            entitlementCoordinator = EntitlementCoordinator(
-              config: config,
-              installationStore: ParticipantInstallationStore.secureStorage(),
-              registry: registry,
-            );
-            EntitlementCoordinator.install(entitlementCoordinator);
-            if (config.entitlementEnabled) {
-              unawaited(entitlementCoordinator.ensureRegistered());
-            }
-          }
-          final orchestrator = HandshakeOrchestrator(
-            db: appDb,
-            identity: identity,
-            relay: relay,
-            contacts: ContactsRepository(appDb),
-            invitations: ContactInvitationsRepository(appDb),
-            entitlement: entitlementCoordinator,
-            deviceBinding: DeviceBindingService(),
-          );
-          HandshakeOrchestrator.install(orchestrator);
-          if (kDebugMode) {
-            RelayDiagnostics.steadyInboxPollLogging = true;
-          }
-          unawaited(
-            orchestrator.processAllPendingHandshakes().catchError((
-              Object error,
-              StackTrace stack,
-            ) {
-              debugPrint('Initial handshake polling failed: $error\n$stack');
-            }),
-          );
-          unawaited(
-            orchestrator.pollSteadyStateInboxes().catchError((
-              Object error,
-              StackTrace stack,
-            ) {
-              debugPrint('Initial steady inbox poll failed: $error\n$stack');
-            }),
-          );
-          orchestrator.startPolling();
-          if (kDebugMode) {
-            unawaited(
-              runQaPostSeedActionsIfNeeded().catchError((
-                Object error,
-                StackTrace stack,
-              ) {
-                debugPrint('QA post-seed actions failed: $error\n$stack');
-              }),
-            );
-          }
-        } catch (error, stack) {
-          debugPrint('Relay handshake bootstrap failed: $error\n$stack');
-        }
-      }
+      final ready = completeAppStartup(appDb: appDb, config: config);
+      runApp(BojairuApp(config: config, ready: ready));
 
-      if (sentryDsn.isEmpty) {
-        runApp(BojairuApp(config: config));
-        return;
+      if (sentryDsn.isNotEmpty) {
+        unawaited(
+          SentryFlutter.init((options) {
+            options.dsn = sentryDsn;
+            options.environment = config.environment.name;
+            options.tracesSampleRate = kDebugMode ? 1.0 : 0.1;
+          }),
+        );
       }
-
-      await SentryFlutter.init((options) {
-        options.dsn = sentryDsn;
-        options.environment = config.environment.name;
-        options.tracesSampleRate = kDebugMode ? 1.0 : 0.1;
-      }, appRunner: () => runApp(BojairuApp(config: config)));
     },
     (error, stack) async {
       if (sentryDsn.isNotEmpty) {
@@ -284,6 +97,219 @@ Future<void> bootstrap() async {
       }
     },
   );
+}
+
+/// Opens storage, loads prefs, and starts relay after the first Flutter frame.
+///
+/// Bound [AppDatabase] is still lazy until [AppDatabase.warmUpStorage]; do not
+/// start handshake polling before that returns.
+@visibleForTesting
+Future<AppPreferences> completeAppStartup({
+  required AppDatabase appDb,
+  required AppConfig config,
+}) async {
+  if (kDebugMode && kIsWeb) {
+    await wipeWebDevBrowserStorageOnLaunchIfRequested(
+      clearRelayIdentity: config.apiBaseUrl.host != 'example.invalid',
+    );
+  }
+
+  // Snapshot steal/restore: identity before Drift open and before relay
+  // IdentityKeystore.loadOrCreate in the blocks below.
+  if (kDebugMode && !kIsWeb) {
+    await maybeExportQaDbSnapshotIdentity();
+    await maybeRestoreQaDbSnapshotIdentity();
+  }
+
+  try {
+    await appDb.warmUpStorage();
+  } catch (error, stack) {
+    debugPrint(
+      'AppDatabase warmUpStorage failed (stop melos, force-quit app, '
+      'then `dart run melos run run:dev`): $error\n$stack',
+    );
+    return AppPreferences.load();
+  }
+  _startupMark('warmup_done');
+
+  var prefs = await AppPreferences.load();
+  try {
+    if (config.simulationLocked) {
+      await SandboxMode.ensureForcedSimulationPrefs(prefs);
+    }
+    await SandboxLifecycle.maybeRestoreCheckpointOnRealBoot(
+      prefs: prefs,
+      db: appDb,
+    );
+    if (kDebugMode && config.carDevSeed) {
+      await maybeApplyCarDevSeed(appDb, enabled: true);
+      prefs = await AppPreferences.load();
+    }
+    if (kDebugMode && !kIsWeb) {
+      await restoreQaE2eEnvironmentIfPresent();
+      await maybeApplyQaAndroidSeed(appDb);
+      await restoreQaE2eEnvironmentIfPresent();
+      await syncQaE2eFlagsFromPrefs();
+    }
+    if (kDebugMode && kIsWeb) {
+      await restoreDevSessionFromHostIfNeeded(appDb);
+      await reconcileDevOnboardingIfNeeded(appDb);
+    }
+    await logLocalStorageStartupDiagnostics(appDb);
+
+    final moduleEntitlement = ModuleEntitlementController();
+    ModuleEntitlementController.install(moduleEntitlement);
+    await moduleEntitlement.load();
+    // Listen to store purchaseStream for the whole process — not only while
+    // Licenses is open (Flutter IAP: listen as early as possible).
+    if (!kIsWeb) {
+      final storeBilling = StoreBillingService(
+        entitlement: moduleEntitlement,
+      );
+      StoreBillingService.install(storeBilling);
+      unawaited(
+        storeBilling.start().catchError((Object error, StackTrace stack) {
+          debugPrint('StoreBillingService.start failed: $error\n$stack');
+          return false;
+        }),
+      );
+    }
+  } catch (error, stack) {
+    debugPrint('App startup after storage warm-up failed: $error\n$stack');
+  }
+
+  final sandboxActive = SandboxMode.isActive(prefs);
+  if (!sandboxActive) {
+    unawaited(_initializePushIfAlreadyAuthorized());
+    if (!kIsWeb) {
+      unawaited(
+        scheduleClosedAppPushKeepAlive().catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          debugPrint(
+            'Closed-app push WorkManager schedule failed: $error\n$stack',
+          );
+        }),
+      );
+    }
+  }
+
+  if (sandboxActive) {
+    try {
+      final identity = IdentityKeystore.secureStorage();
+      final relay = SandboxRelay.instance;
+      final orchestrator = HandshakeOrchestrator(
+        db: appDb,
+        identity: identity,
+        relay: relay,
+        contacts: ContactsRepository(appDb),
+        invitations: ContactInvitationsRepository(appDb),
+        entitlement: null,
+        deviceBinding: DeviceBindingService(),
+      );
+      HandshakeOrchestrator.install(orchestrator);
+      final peerSimulator = PeerSimulator.ensureInstalled(
+        relay: relay,
+        prefs: prefs,
+      );
+      // Bot peers are process-local; prefs + human contacts survive cold
+      // start. Rebuild bots before the first proposal/amendment react.
+      await peerSimulator.restoreInvitedBotsIfNeeded(
+        humanOrchestrator: orchestrator,
+      );
+      if (kDebugMode) {
+        RelayDiagnostics.steadyInboxPollLogging = true;
+      }
+      unawaited(
+        orchestrator.processAllPendingHandshakes().catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          debugPrint('Initial handshake polling failed: $error\n$stack');
+        }),
+      );
+      unawaited(
+        orchestrator.pollSteadyStateInboxes().catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          debugPrint('Initial steady inbox poll failed: $error\n$stack');
+        }),
+      );
+      orchestrator.startPolling();
+    } catch (error, stack) {
+      debugPrint('Sandbox relay bootstrap failed: $error\n$stack');
+    }
+  } else if (config.apiBaseUrl.host != 'example.invalid') {
+    try {
+      final identity = IdentityKeystore.secureStorage();
+      final relay = HttpRelayClient(baseUrl: config.apiBaseUrl);
+      EntitlementCoordinator? entitlementCoordinator;
+      if (config.entitlementGateEnabled) {
+        final registry = await PlanParticipantInstallationRegistry.load();
+        entitlementCoordinator = EntitlementCoordinator(
+          config: config,
+          installationStore: ParticipantInstallationStore.secureStorage(),
+          registry: registry,
+        );
+        EntitlementCoordinator.install(entitlementCoordinator);
+        if (config.entitlementEnabled) {
+          unawaited(entitlementCoordinator.ensureRegistered());
+        }
+      }
+      final orchestrator = HandshakeOrchestrator(
+        db: appDb,
+        identity: identity,
+        relay: relay,
+        contacts: ContactsRepository(appDb),
+        invitations: ContactInvitationsRepository(appDb),
+        entitlement: entitlementCoordinator,
+        deviceBinding: DeviceBindingService(),
+      );
+      HandshakeOrchestrator.install(orchestrator);
+      if (kDebugMode) {
+        RelayDiagnostics.steadyInboxPollLogging = true;
+      }
+      unawaited(
+        orchestrator.processAllPendingHandshakes().catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          debugPrint('Initial handshake polling failed: $error\n$stack');
+        }),
+      );
+      unawaited(
+        orchestrator.pollSteadyStateInboxes().catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          debugPrint('Initial steady inbox poll failed: $error\n$stack');
+        }),
+      );
+      orchestrator.startPolling();
+      if (kDebugMode) {
+        unawaited(
+          runQaPostSeedActionsIfNeeded().catchError((
+            Object error,
+            StackTrace stack,
+          ) {
+            debugPrint('QA post-seed actions failed: $error\n$stack');
+          }),
+        );
+      }
+    } catch (error, stack) {
+      debugPrint('Relay handshake bootstrap failed: $error\n$stack');
+    }
+  }
+
+  _startupMark('startup_ready');
+  return prefs;
+}
+
+void _startupMark(String label) {
+  if (!kDebugMode) return;
+  debugPrint('startup: $label');
 }
 
 Future<void> _initializePushIfAlreadyAuthorized() async {
