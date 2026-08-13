@@ -85,10 +85,10 @@ _run_maestro "${ATTEMPT_DIR}/borrower-assert-hub" "${BORROWER_SERIAL}" \
 
 _log_phase "Leave both apps on home for manual exploration"
 adb -s "${OWNER_SERIAL}" shell am start -n \
-  "${COMPARTARENTA_QA_APP_ID}/com.compartarenta.compartarenta.MainActivity" \
+  "${COMPARTARENTA_QA_APP_ID}/app.incoherences.bojairu.MainActivity" \
   >/dev/null 2>&1 || true
 adb -s "${BORROWER_SERIAL}" shell am start -n \
-  "${COMPARTARENTA_QA_APP_ID}/com.compartarenta.compartarenta.MainActivity" \
+  "${COMPARTARENTA_QA_APP_ID}/app.incoherences.bojairu.MainActivity" \
   >/dev/null 2>&1 || true
 
 echo "Scenario PASSED | ${SCENARIO_ID}. Artifacts: ${ARTIFACT_ROOT}"

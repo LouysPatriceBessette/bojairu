@@ -65,7 +65,7 @@ _run_maestro() {
 _warm_start_borrower() {
   echo "  Warm-start Monica so steady inbox polling runs during Louys send..."
   adb -s "${BORROWER_SERIAL}" shell am start -n \
-    "${COMPARTARENTA_QA_APP_ID}/com.compartarenta.compartarenta.MainActivity" \
+    "${COMPARTARENTA_QA_APP_ID}/app.incoherences.bojairu.MainActivity" \
     >/dev/null 2>&1 || true
   if ! qa_wait_for_logcat_on_serial "${BORROWER_SERIAL}" "steady inbox poll:" 90; then
     echo "  Monica warm-start: timed out waiting for steady inbox poll" >&2

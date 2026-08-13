@@ -9,7 +9,7 @@ plugins {
 import java.util.Properties
 
 android {
-    namespace = "com.compartarenta.compartarenta"
+    namespace = "app.incoherences.bojairu"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

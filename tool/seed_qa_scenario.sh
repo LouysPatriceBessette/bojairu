@@ -50,7 +50,7 @@ else
 fi
 ADB=(adb -s "${SERIAL}")
 
-ACTIVITY="${COMPARTARENTA_QA_APP_ID}/com.compartarenta.compartarenta.MainActivity"
+ACTIVITY="${COMPARTARENTA_QA_APP_ID}/app.incoherences.bojairu.MainActivity"
 
 qa_start_seed_activity() {
   local attempt out

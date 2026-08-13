@@ -75,7 +75,7 @@ else
 fi
 
 APP_ID="${COMPARTARENTA_QA_APP_ID}"
-ACTIVITY="${APP_ID}/com.compartarenta.compartarenta.MainActivity"
+ACTIVITY="${APP_ID}/app.incoherences.bojairu.MainActivity"
 ADB=(adb -s "${SERIAL}")
 OUT_DIR="${COMPARTARENTA_QA_DB_SEEDS_DIR}/${SNAPSHOT_NAME}"
 

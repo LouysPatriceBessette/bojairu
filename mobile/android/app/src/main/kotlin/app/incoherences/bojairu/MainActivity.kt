@@ -1,4 +1,4 @@
-package com.compartarenta.compartarenta
+package app.incoherences.bojairu
 
 import android.content.ContentValues
 import android.net.Uri

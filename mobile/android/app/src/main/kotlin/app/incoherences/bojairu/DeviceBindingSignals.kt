@@ -1,4 +1,4 @@
-package com.compartarenta.compartarenta
+package app.incoherences.bojairu
 
 import android.content.Context
 import android.hardware.Sensor
