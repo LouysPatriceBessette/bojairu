@@ -365,6 +365,16 @@
       "date": { "type": "String" }
     }
   },
+  "housingLicenseReadonlyBannerTitle": "Logement en lecture seule",
+  "housingLicenseReadonlyBannerBody": "L’essai et la période de grâce sont terminés, sans abonnement logement. Vous pouvez consulter l’historique, mais pas enregistrer de nouvelle dépense. L’export reste disponible dans Paramètres. Ouvrez Licences pour souscrire.",
+  "housingLicenseGraceBannerTitle": "Période de grâce",
+  "housingLicenseGraceBannerBody": "{days, plural, one{Le logement reste utilisable jusqu’au {date} (1 jour restant). Ouvrez Licences pour souscrire.} other{Le logement reste utilisable jusqu’au {date} ({days} jours restants). Ouvrez Licences pour souscrire.}}",
+  "@housingLicenseGraceBannerBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "housingSettlementDueTitle": "Règlement de dû",
   "housingSettlementDueSubmit": "Proposer le règlement",
   "housingSettlementDueSuccess": "Règlement proposé.",
@@ -1090,6 +1100,31 @@
   "pushNotificationContactInvitationExpiredBody": "Une invitation n’a pas été utilisée et a expiré.",
   "pushNotificationHousingProposalDeadlineTitle": "Échéance de proposition proche",
   "pushNotificationHousingProposalDeadlineBody": "Une offre de plan logement expire bientôt. Ouvrez Logement pour répondre ou vérifier le statut.",
+  "pushNotificationHousingTrialStartedTitle": "Essai logement commencé",
+  "pushNotificationHousingTrialStartedBody": "Vous pouvez utiliser le logement jusqu’au {date}. Les achats se font dans Licences.",
+  "@pushNotificationHousingTrialStartedBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialReminderTitle": "Rappel d’essai logement",
+  "pushNotificationHousingTrialWeekLeftBody": "L’essai logement se termine le {date} (7 jours restants). Ouvrez Licences quand vous serez prêt.",
+  "@pushNotificationHousingTrialWeekLeftBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialDaysLeftBody": "{days, plural, one{L’essai logement se termine le {date} (1 jour restant). Ouvrez Licences quand vous serez prêt.} other{L’essai logement se termine le {date} ({days} jours restants). Ouvrez Licences quand vous serez prêt.}}",
+  "@pushNotificationHousingTrialDaysLeftBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationHousingGraceReminderTitle": "Période de grâce logement",
+  "pushNotificationHousingGraceReminderBody": "{days, plural, one{Il reste 1 jour (jusqu’au {date}) pour souscrire dans Licences. Le logement reste utilisable.} other{Il reste {days} jours (jusqu’au {date}) pour souscrire dans Licences. Le logement reste utilisable.}}",
+  "@pushNotificationHousingGraceReminderBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "notificationHousingPaymentRemindersLabel": "Rappels de paiement",
   "housingOverdueJournalCardBody": "Le paiement de {lineTitle} n'a pas été complété pour cette période.",
   "@housingOverdueJournalCardBody": {

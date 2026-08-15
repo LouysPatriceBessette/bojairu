@@ -956,6 +956,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get housingLicenseReadonlyBannerTitle => 'Housing is read-only';
+
+  @override
+  String get housingLicenseReadonlyBannerBody =>
+      'The trial and grace period ended without a housing subscription. You can still browse history, but you cannot submit a new expense. Export stays available in Settings. Open Licenses to subscribe.';
+
+  @override
+  String get housingLicenseGraceBannerTitle => 'Grace period';
+
+  @override
+  String housingLicenseGraceBannerBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'Housing stays fully usable until $date ($days days left). Open Licenses to subscribe.',
+      one:
+          'Housing stays fully usable until $date (1 day left). Open Licenses to subscribe.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get housingSettlementDueTitle => 'Due settlement';
 
   @override
@@ -2602,6 +2625,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pushNotificationHousingProposalDeadlineBody =>
       'A housing plan offer expires soon. Open Housing to respond or check status.';
+
+  @override
+  String get pushNotificationHousingTrialStartedTitle =>
+      'Housing trial started';
+
+  @override
+  String pushNotificationHousingTrialStartedBody(String date) {
+    return 'You can use housing until $date. Purchases are in Licenses.';
+  }
+
+  @override
+  String get pushNotificationHousingTrialReminderTitle =>
+      'Housing trial reminder';
+
+  @override
+  String pushNotificationHousingTrialWeekLeftBody(String date) {
+    return 'The housing trial ends on $date (7 days left). Open Licenses when you are ready.';
+  }
+
+  @override
+  String pushNotificationHousingTrialDaysLeftBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'The housing trial ends on $date ($days days left). Open Licenses when you are ready.',
+      one:
+          'The housing trial ends on $date (1 day left). Open Licenses when you are ready.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationHousingGraceReminderTitle =>
+      'Housing grace period';
+
+  @override
+  String pushNotificationHousingGraceReminderBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          '$days days left (until $date) to subscribe in Licenses. Housing stays usable.',
+      one:
+          '1 day left (until $date) to subscribe in Licenses. Housing stays usable.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get notificationHousingPaymentRemindersLabel => 'Payment reminders';

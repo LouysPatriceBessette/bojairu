@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
+import 'package:timezone/timezone.dart' as tz;
+import '../data/supported_time_zones.dart';
 import '../navigation/app_navigation.dart';
 import '../db/app_database.dart';
 import '../db/repositories/vehicles_repository.dart';
@@ -82,6 +84,7 @@ class PushNotificationService {
   static const String _housingActiveHubPrefix = 'housing_active_hub:';
   static const String _housingPaymentReminderPrefix = 'housing_payment_reminder|';
   static const String _contactsPayload = 'contacts';
+  static const String _licensesTapPayload = 'licenses';
   static const String _vehicleSharingOfferTapPayload = 'vehicle_sharing_offer';
   static const String _vehicleSharingOfferAcceptTapPayload =
       'vehicle_sharing_offer_accept';
@@ -192,6 +195,10 @@ class PushNotificationService {
   static void dispatchLocalNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
+    if (payload == _licensesTapPayload) {
+      _navigateToLicenses();
+      return;
+    }
     if (payload == _vehicleSharingOfferTapPayload ||
         payload == _vehicleSharingOfferAcceptTapPayload) {
       _navigateToVehicleSharing();
@@ -1405,6 +1412,83 @@ class PushNotificationService {
       '/housing',
       skipPushWhenAlreadyAt: (location) => location.startsWith('/housing'),
       beforeNavigate: _prepareHousingForNotificationTap,
+    );
+  }
+
+  static void _navigateToLicenses() {
+    pushFromNotificationTapWhenReady(
+      '/licenses',
+      skipPushWhenAlreadyAt: (location) => location.startsWith('/licenses'),
+    );
+  }
+
+  static Future<void> cancelLocalNotification(int id) async {
+    if (kIsWeb) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    await _plugin.cancel(id: id);
+  }
+
+  static Future<void> showHousingLicenseReminderNow({
+    required int id,
+    required String title,
+    required String body,
+    required bool playSound,
+  }) async {
+    if (kIsWeb) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    final androidChannel = playSound ? _androidChannel : _androidSilentChannel;
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: _licensesTapPayload,
+    );
+  }
+
+  static Future<void> scheduleHousingLicenseReminder({
+    required int id,
+    required DateTime fireAtUtc,
+    required String title,
+    required String body,
+    required bool playSound,
+  }) async {
+    if (kIsWeb) return;
+    final whenUtc = fireAtUtc.toUtc();
+    if (!whenUtc.isAfter(DateTime.now().toUtc())) return;
+    await _ensureLocalNotificationsInitialized(_plugin);
+    ensureIanaTimeZonesLoaded();
+    final androidChannel = playSound ? _androidChannel : _androidSilentChannel;
+    await _plugin.zonedSchedule(
+      id: id,
+      scheduledDate: tz.TZDateTime.from(whenUtc, tz.UTC),
+      title: title,
+      body: body,
+      payload: _licensesTapPayload,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
     );
   }
 

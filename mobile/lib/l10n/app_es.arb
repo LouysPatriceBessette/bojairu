@@ -365,6 +365,16 @@
       "date": { "type": "String" }
     }
   },
+  "housingLicenseReadonlyBannerTitle": "Vivienda en solo lectura",
+  "housingLicenseReadonlyBannerBody": "El periodo de prueba y el de gracia terminaron sin una suscripción de vivienda. Puede consultar el historial, pero no registrar un gasto nuevo. La exportación sigue disponible en Ajustes. Abra Licencias para suscribirse.",
+  "housingLicenseGraceBannerTitle": "Periodo de gracia",
+  "housingLicenseGraceBannerBody": "{days, plural, one{La vivienda sigue utilizable hasta el {date} (1 día restante). Abra Licencias para suscribirse.} other{La vivienda sigue utilizable hasta el {date} ({days} días restantes). Abra Licencias para suscribirse.}}",
+  "@housingLicenseGraceBannerBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "housingSettlementDueTitle": "Pago de deuda",
   "housingSettlementDueSubmit": "Proponer transferencia de liquidación",
   "housingSettlementDueSuccess": "Transferencia de liquidación propuesta.",
@@ -1073,6 +1083,31 @@
   "pushNotificationContactInvitationExpiredBody": "Una invitación no se usó y ha caducado.",
   "pushNotificationHousingProposalDeadlineTitle": "Plazo de propuesta próximo",
   "pushNotificationHousingProposalDeadlineBody": "Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.",
+  "pushNotificationHousingTrialStartedTitle": "Prueba de vivienda iniciada",
+  "pushNotificationHousingTrialStartedBody": "Puede usar vivienda hasta el {date}. Las compras están en Licencias.",
+  "@pushNotificationHousingTrialStartedBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialReminderTitle": "Recordatorio de prueba de vivienda",
+  "pushNotificationHousingTrialWeekLeftBody": "La prueba de vivienda termina el {date} (quedan 7 días). Abra Licencias cuando esté listo.",
+  "@pushNotificationHousingTrialWeekLeftBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialDaysLeftBody": "{days, plural, one{La prueba de vivienda termina el {date} (1 día restante). Abra Licencias cuando esté listo.} other{La prueba de vivienda termina el {date} ({days} días restantes). Abra Licencias cuando esté listo.}}",
+  "@pushNotificationHousingTrialDaysLeftBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationHousingGraceReminderTitle": "Periodo de gracia de vivienda",
+  "pushNotificationHousingGraceReminderBody": "{days, plural, one{Queda 1 día (hasta el {date}) para suscribirse en Licencias. La vivienda sigue utilizable.} other{Quedan {days} días (hasta el {date}) para suscribirse en Licencias. La vivienda sigue utilizable.}}",
+  "@pushNotificationHousingGraceReminderBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "notificationHousingPaymentRemindersLabel": "Recordatorios de pago",
   "housingOverdueJournalCardBody": "El pago de {lineTitle} no se completó para este período.",
   "@housingOverdueJournalCardBody": {

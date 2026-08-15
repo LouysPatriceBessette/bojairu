@@ -21,7 +21,6 @@ void main() {
     final snap = HousingLifecycleSource.afterTrialExpired(
       trialStartedAt: trialStart,
       trialEndsAt: trialEnd,
-      now: trialEnd.add(const Duration(days: 2)),
     );
     final c = HousingLifecycleSource.candidateFor(
       snap,
@@ -34,12 +33,44 @@ void main() {
     final snap = HousingLifecycleSource.afterTrialExpired(
       trialStartedAt: trialStart,
       trialEndsAt: trialEnd,
-      now: trialEnd.add(const Duration(days: 10)),
     );
     final c = HousingLifecycleSource.candidateFor(
       snap,
       now: trialEnd.add(const Duration(days: 10)),
     );
     expect(c?.state, ModuleEntitlementState.delinquentReadonly);
+  });
+
+  test('snapshot taken at trial start still yields grace later', () {
+    final snap = HousingLifecycleSource.afterTrialExpired(
+      trialStartedAt: trialStart,
+      trialEndsAt: trialEnd,
+    );
+    expect(
+      HousingLifecycleSource.candidateFor(
+        snap,
+        now: trialStart.add(const Duration(days: 1)),
+      )?.state,
+      ModuleEntitlementState.activeTrial,
+    );
+    expect(
+      HousingLifecycleSource.candidateFor(
+        snap,
+        now: trialEnd.add(const Duration(days: 1)),
+      )?.state,
+      ModuleEntitlementState.delinquentGrace,
+    );
+  });
+
+  test('consumed trial starts in grace', () {
+    final started = DateTime.utc(2026, 8, 15);
+    final snap = HousingLifecycleSource.forActiveUse(
+      startedAt: started,
+      trialEligible: false,
+    );
+    expect(
+      HousingLifecycleSource.candidateFor(snap, now: started)?.state,
+      ModuleEntitlementState.delinquentGrace,
+    );
   });
 }

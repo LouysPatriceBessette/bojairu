@@ -400,6 +400,16 @@
       "date": { "type": "String" }
     }
   },
+  "housingLicenseReadonlyBannerTitle": "Housing is read-only",
+  "housingLicenseReadonlyBannerBody": "The trial and grace period ended without a housing subscription. You can still browse history, but you cannot submit a new expense. Export stays available in Settings. Open Licenses to subscribe.",
+  "housingLicenseGraceBannerTitle": "Grace period",
+  "housingLicenseGraceBannerBody": "{days, plural, one{Housing stays fully usable until {date} (1 day left). Open Licenses to subscribe.} other{Housing stays fully usable until {date} ({days} days left). Open Licenses to subscribe.}}",
+  "@housingLicenseGraceBannerBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "housingSettlementDueTitle": "Due settlement",
   "housingSettlementDueSubmit": "Propose settlement transfer",
   "housingSettlementDueSuccess": "Settlement transfer proposed.",
@@ -1224,6 +1234,31 @@
   "pushNotificationContactInvitationExpiredBody": "An invitation was not used and has expired.",
   "pushNotificationHousingProposalDeadlineTitle": "Proposal deadline approaching",
   "pushNotificationHousingProposalDeadlineBody": "A housing plan offer expires soon. Open Housing to respond or check status.",
+  "pushNotificationHousingTrialStartedTitle": "Housing trial started",
+  "pushNotificationHousingTrialStartedBody": "You can use housing until {date}. Purchases are in Licenses.",
+  "@pushNotificationHousingTrialStartedBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialReminderTitle": "Housing trial reminder",
+  "pushNotificationHousingTrialWeekLeftBody": "The housing trial ends on {date} (7 days left). Open Licenses when you are ready.",
+  "@pushNotificationHousingTrialWeekLeftBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationHousingTrialDaysLeftBody": "{days, plural, one{The housing trial ends on {date} (1 day left). Open Licenses when you are ready.} other{The housing trial ends on {date} ({days} days left). Open Licenses when you are ready.}}",
+  "@pushNotificationHousingTrialDaysLeftBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationHousingGraceReminderTitle": "Housing grace period",
+  "pushNotificationHousingGraceReminderBody": "{days, plural, one{1 day left (until {date}) to subscribe in Licenses. Housing stays usable.} other{{days} days left (until {date}) to subscribe in Licenses. Housing stays usable.}}",
+  "@pushNotificationHousingGraceReminderBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
   "notificationHousingPaymentRemindersLabel": "Payment reminders",
   "housingOverdueJournalCardBody": "{lineTitle} was not completed for this period.",
   "@housingOverdueJournalCardBody": {

@@ -79,7 +79,13 @@ class ModuleEntitlementController extends ChangeNotifier {
   }
 
   void setHousingLifecycle(HousingLifecycleSnapshot? snapshot) {
+    if (_housingLifecycle == snapshot) return;
     _housingLifecycle = snapshot;
+    _recompute();
+  }
+
+  /// Re-evaluates trial / grace / read-only against the current clock.
+  void refreshClock() {
     _recompute();
   }
 
@@ -150,6 +156,7 @@ class ModuleEntitlementController extends ChangeNotifier {
       now: now,
     );
 
+    var changed = false;
     for (final module in AppModuleId.values) {
       final candidates = <EntitlementSourceCandidate>[
         ...fromReceipts[module]!,
@@ -162,8 +169,12 @@ class ModuleEntitlementController extends ChangeNotifier {
         if (life != null) candidates.add(life);
       }
       // vehicle / vehicle-sharing: paid or bundle only (no local trial).
-      _effective[module] = ModuleEntitlementEvaluator.evaluate(candidates);
+      final next = ModuleEntitlementEvaluator.evaluate(candidates);
+      if (_effective[module] != next) {
+        _effective[module] = next;
+        changed = true;
+      }
     }
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 }

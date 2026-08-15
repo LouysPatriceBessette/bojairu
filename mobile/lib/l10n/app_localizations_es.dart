@@ -969,6 +969,29 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get housingLicenseReadonlyBannerTitle => 'Vivienda en solo lectura';
+
+  @override
+  String get housingLicenseReadonlyBannerBody =>
+      'El periodo de prueba y el de gracia terminaron sin una suscripción de vivienda. Puede consultar el historial, pero no registrar un gasto nuevo. La exportación sigue disponible en Ajustes. Abra Licencias para suscribirse.';
+
+  @override
+  String get housingLicenseGraceBannerTitle => 'Periodo de gracia';
+
+  @override
+  String housingLicenseGraceBannerBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'La vivienda sigue utilizable hasta el $date ($days días restantes). Abra Licencias para suscribirse.',
+      one:
+          'La vivienda sigue utilizable hasta el $date (1 día restante). Abra Licencias para suscribirse.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get housingSettlementDueTitle => 'Pago de deuda';
 
   @override
@@ -2636,6 +2659,54 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pushNotificationHousingProposalDeadlineBody =>
       'Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.';
+
+  @override
+  String get pushNotificationHousingTrialStartedTitle =>
+      'Prueba de vivienda iniciada';
+
+  @override
+  String pushNotificationHousingTrialStartedBody(String date) {
+    return 'Puede usar vivienda hasta el $date. Las compras están en Licencias.';
+  }
+
+  @override
+  String get pushNotificationHousingTrialReminderTitle =>
+      'Recordatorio de prueba de vivienda';
+
+  @override
+  String pushNotificationHousingTrialWeekLeftBody(String date) {
+    return 'La prueba de vivienda termina el $date (quedan 7 días). Abra Licencias cuando esté listo.';
+  }
+
+  @override
+  String pushNotificationHousingTrialDaysLeftBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'La prueba de vivienda termina el $date ($days días restantes). Abra Licencias cuando esté listo.',
+      one:
+          'La prueba de vivienda termina el $date (1 día restante). Abra Licencias cuando esté listo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationHousingGraceReminderTitle =>
+      'Periodo de gracia de vivienda';
+
+  @override
+  String pushNotificationHousingGraceReminderBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'Quedan $days días (hasta el $date) para suscribirse en Licencias. La vivienda sigue utilizable.',
+      one:
+          'Queda 1 día (hasta el $date) para suscribirse en Licencias. La vivienda sigue utilizable.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get notificationHousingPaymentRemindersLabel =>

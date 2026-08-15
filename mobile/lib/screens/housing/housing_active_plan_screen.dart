@@ -20,6 +20,9 @@ import '../../housing/participation/housing_participation_membership_service.dar
 import '../../housing/proposals/housing_proposal_transport_service.dart';
 import '../../housing/realized_expense/realized_expense_ledger_service.dart';
 import '../../housing/realized_expense/realized_expense_participants.dart';
+import '../../entitlement/housing_license_lifecycle_sync.dart';
+import '../../entitlement/housing_plan_license_access.dart';
+import '../../entitlement/module_entitlement_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../sandbox/sandbox_bot_expense.dart';
@@ -40,6 +43,7 @@ import 'housing_settlement_due_form_screen.dart';
 import 'housing_realized_expense_review_list_screen.dart';
 import 'housing_realized_expense_review_screen.dart';
 import 'widgets/housing_participation_change_banner.dart';
+import 'widgets/housing_license_status_banner.dart';
 import 'package:compartarenta/navigation/app_navigation.dart';
 
 /// Operational hub for an active housing agreement (menu of actions).
@@ -69,6 +73,7 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
   Future<HousingParticipationHubGates>? _hubGatesFuture;
   Future<HousingHubExpenseEntry>? _hubExpenseEntryFuture;
   Future<bool>? _hubRenewalForkFuture;
+  HousingPlanLicenseView? _licenseView;
   bool _renewalForkInProgress = false;
   /// Last resolved banner value; only updated when [_amendmentBannerGeneration] matches.
   bool _hubShowsPendingAmendment = false;
@@ -144,6 +149,10 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed || !mounted) return;
+    ModuleEntitlementController.maybeInstance?.refreshClock();
+    unawaited(
+      HousingLicenseLifecycleSync.apply(db: AppDatabase.maybeProcessScope),
+    );
     _reload();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -286,6 +295,7 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
       _hubGatesFuture = _loadHubGates();
       _hubExpenseEntryFuture = _loadHubExpenseEntry();
       _hubRenewalForkFuture = _loadRenewalForkAvailable();
+      unawaited(_refreshLicenseView());
       unawaited(
         amendmentBannerFuture.then((show) {
           if (!mounted || generation != _amendmentBannerGeneration) return;
@@ -293,6 +303,15 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
         }),
       );
     });
+  }
+
+  Future<void> _refreshLicenseView() async {
+    final view = await HousingLicenseLifecycleSync.viewForPlan(
+      planId: widget.planId,
+      prefs: widget.prefs,
+    );
+    if (!mounted) return;
+    setState(() => _licenseView = view);
   }
 
   Future<HousingParticipationHubGates> _loadHubGates() async {
@@ -584,7 +603,17 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
     if (mounted) _reload();
   }
 
+  int _graceDaysRemaining(HousingPlanLicenseView view) {
+    final end = view.graceEndsAt;
+    if (end == null) return 1;
+    final remaining = end.toUtc().difference(DateTime.now().toUtc());
+    if (remaining.isNegative) return 1;
+    final days = remaining.inDays;
+    return days < 1 ? 1 : days;
+  }
+
   Future<void> _openEnterExpense(BuildContext context) async {
+    if (_licenseView?.allowsNewRealizedExpense == false) return;
     final entry = await (_hubExpenseEntryFuture ?? _loadHubExpenseEntry());
     if (!context.mounted) return;
     switch (entry.mode) {
@@ -737,6 +766,24 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
                                           gates.pendingChangeId!,
                                         ),
                               ),
+                            if (_licenseView?.showReadonlyBanner == true)
+                              HousingLicenseStatusBanner(
+                                readonly: true,
+                                body: l10n.housingLicenseReadonlyBannerBody,
+                              )
+                            else if (_licenseView?.showGraceBanner == true)
+                              HousingLicenseStatusBanner(
+                                readonly: false,
+                                body: l10n.housingLicenseGraceBannerBody(
+                                  _graceDaysRemaining(_licenseView!),
+                                  formatPreferenceDate(
+                                    _licenseView!.graceEndsAt,
+                                    widget.prefs == null
+                                        ? 'YYYY-MM-DD'
+                                        : effectiveDateFormat(widget.prefs!),
+                                  ),
+                                ),
+                              ),
                             if (pending.totalPendingCount > 0)
                               Card(
                                 color: Theme.of(
@@ -797,7 +844,9 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
                                 icon: Icons.smart_toy_outlined,
                                 label: l10n.sandboxBotExpenseTitle,
                                 subtitle: l10n.sandboxBotExpenseSubtitle,
-                                enabled: true,
+                                enabled:
+                                    _licenseView?.allowsNewRealizedExpense ??
+                                    true,
                                 onTap: () => _onSandboxBotExpense(context),
                               ),
                             FutureBuilder<HousingHubExpenseEntry>(
@@ -816,7 +865,9 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
                                 final expenseEnabled =
                                     entry.mode !=
                                         HousingHubExpenseEntryMode.disabled &&
-                                    gates.enterExpenseEnabled;
+                                    gates.enterExpenseEnabled &&
+                                    (_licenseView?.allowsNewRealizedExpense ??
+                                        true);
                                 final prefs = widget.prefs;
                                 String? settlementSubtitle;
                                 if (entry.mode ==
@@ -954,6 +1005,7 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
   }
 
   Future<void> _onSandboxBotExpense(BuildContext context) async {
+    if (_licenseView?.allowsNewRealizedExpense == false) return;
     final prefs = widget.prefs ?? await AppPreferences.load();
     if (!context.mounted) return;
     try {

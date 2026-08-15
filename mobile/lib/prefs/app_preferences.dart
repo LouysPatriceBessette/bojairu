@@ -613,6 +613,18 @@ class AppPreferences extends ChangeNotifier {
   bool isHousingPlanActiveUseStarted(String planId) =>
       housingPlanActiveUseStartedAt(planId) != null;
 
+  /// Plan ids that already started the housing trial / grace clock.
+  List<String> housingPlanIdsWithActiveUseStarted() {
+    const prefix = 'licensing.housing.planActiveUseStarted.';
+    final ids = <String>[];
+    for (final key in _prefs.getKeys()) {
+      if (key.startsWith(prefix)) {
+        ids.add(key.substring(prefix.length));
+      }
+    }
+    return ids;
+  }
+
   Future<void> markHousingPlanActiveUseStarted(String planId) async {
     final key = _housingPlanActiveUseStartedKey(planId);
     if (_prefs.containsKey(key)) return;

@@ -16,7 +16,9 @@ import 'debug/qa_scenario_seed.dart';
 import 'debug/web_dev_db_write_observer.dart';
 import 'debug/web_dev_host_session.dart';
 import 'entitlement/entitlement_coordinator.dart';
+import 'entitlement/housing_license_lifecycle_sync.dart';
 import 'entitlement/module_entitlement_controller.dart';
+import 'entitlement/app_module_id.dart';
 import 'entitlement/participant_installation_store.dart';
 import 'entitlement/plan_participant_installation_registry.dart';
 import 'entitlement/store_billing_service.dart';
@@ -160,6 +162,18 @@ Future<AppPreferences> completeAppStartup({
     final moduleEntitlement = ModuleEntitlementController();
     ModuleEntitlementController.install(moduleEntitlement);
     await moduleEntitlement.load();
+    unawaited(
+      HousingLicenseLifecycleSync.apply(db: AppDatabase.maybeProcessScope),
+    );
+    var housingPaid = moduleEntitlement.isActivePaid(AppModuleId.housing);
+    moduleEntitlement.addListener(() {
+      final paid = moduleEntitlement.isActivePaid(AppModuleId.housing);
+      if (paid == housingPaid) return;
+      housingPaid = paid;
+      unawaited(
+        HousingLicenseLifecycleSync.apply(db: AppDatabase.maybeProcessScope),
+      );
+    });
 
     if (config.entitlementEnabled) {
       final registry = await PlanParticipantInstallationRegistry.load();

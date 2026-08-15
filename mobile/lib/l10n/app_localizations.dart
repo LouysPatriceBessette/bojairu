@@ -1780,6 +1780,30 @@ abstract class AppLocalizations {
   /// **'Available until {date}'**
   String housingActiveHubSettlementAvailableUntil(String date);
 
+  /// No description provided for @housingLicenseReadonlyBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing is read-only'**
+  String get housingLicenseReadonlyBannerTitle;
+
+  /// No description provided for @housingLicenseReadonlyBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The trial and grace period ended without a housing subscription. You can still browse history, but you cannot submit a new expense. Export stays available in Settings. Open Licenses to subscribe.'**
+  String get housingLicenseReadonlyBannerBody;
+
+  /// No description provided for @housingLicenseGraceBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grace period'**
+  String get housingLicenseGraceBannerTitle;
+
+  /// No description provided for @housingLicenseGraceBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{Housing stays fully usable until {date} (1 day left). Open Licenses to subscribe.} other{Housing stays fully usable until {date} ({days} days left). Open Licenses to subscribe.}}'**
+  String housingLicenseGraceBannerBody(int days, String date);
+
   /// No description provided for @housingSettlementDueTitle.
   ///
   /// In en, this message translates to:
@@ -4366,6 +4390,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A housing plan offer expires soon. Open Housing to respond or check status.'**
   String get pushNotificationHousingProposalDeadlineBody;
+
+  /// No description provided for @pushNotificationHousingTrialStartedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing trial started'**
+  String get pushNotificationHousingTrialStartedTitle;
+
+  /// No description provided for @pushNotificationHousingTrialStartedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can use housing until {date}. Purchases are in Licenses.'**
+  String pushNotificationHousingTrialStartedBody(String date);
+
+  /// No description provided for @pushNotificationHousingTrialReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing trial reminder'**
+  String get pushNotificationHousingTrialReminderTitle;
+
+  /// No description provided for @pushNotificationHousingTrialWeekLeftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The housing trial ends on {date} (7 days left). Open Licenses when you are ready.'**
+  String pushNotificationHousingTrialWeekLeftBody(String date);
+
+  /// No description provided for @pushNotificationHousingTrialDaysLeftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{The housing trial ends on {date} (1 day left). Open Licenses when you are ready.} other{The housing trial ends on {date} ({days} days left). Open Licenses when you are ready.}}'**
+  String pushNotificationHousingTrialDaysLeftBody(int days, String date);
+
+  /// No description provided for @pushNotificationHousingGraceReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing grace period'**
+  String get pushNotificationHousingGraceReminderTitle;
+
+  /// No description provided for @pushNotificationHousingGraceReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{1 day left (until {date}) to subscribe in Licenses. Housing stays usable.} other{{days} days left (until {date}) to subscribe in Licenses. Housing stays usable.}}'**
+  String pushNotificationHousingGraceReminderBody(int days, String date);
 
   /// No description provided for @notificationHousingPaymentRemindersLabel.
   ///
