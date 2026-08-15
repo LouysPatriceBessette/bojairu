@@ -12,12 +12,14 @@ import 'store_product_catalog.dart';
 import 'store_receipt_record.dart';
 import 'subscription_product_line.dart';
 
-/// Play Billing (and StoreKit when available) bridge — local persistence only.
+/// Play Billing (and StoreKit when available) bridge.
 ///
-/// Must stay alive for the app process (listen to [InAppPurchase.purchaseStream]
-/// from bootstrap). Creating/disposing this only while [LicensesScreen] is open
-/// misses purchase updates — and without [InAppPurchase.completePurchase]
-/// (Play acknowledge), Google cancels test purchases within minutes.
+/// Purchase tokens are persisted locally and POSTed to the entitlement server
+/// when HTTP is enabled. Must stay alive for the app process (listen to
+/// [InAppPurchase.purchaseStream] from bootstrap). Creating/disposing this
+/// only while Licenses is open misses purchase updates — and without
+/// [InAppPurchase.completePurchase] (Play acknowledge), Google cancels test
+/// purchases within minutes.
 class StoreBillingService extends ChangeNotifier {
   StoreBillingService({
     required ModuleEntitlementController entitlement,

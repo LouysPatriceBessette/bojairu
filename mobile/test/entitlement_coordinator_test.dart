@@ -1,10 +1,16 @@
+import 'dart:convert';
+
 import 'package:compartarenta/config/app_config.dart';
+import 'package:compartarenta/entitlement/entitlement_client.dart';
 import 'package:compartarenta/entitlement/entitlement_coordinator.dart';
 import 'package:compartarenta/entitlement/entitlement_plan_id.dart';
 import 'package:compartarenta/entitlement/participant_installation_store.dart';
 import 'package:compartarenta/entitlement/plan_participant_installation_registry.dart';
+import 'package:compartarenta/entitlement/store_receipt_record.dart';
 import 'package:compartarenta/relay/envelopes.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -201,6 +207,49 @@ void main() {
         ),
         'inst-peer-known',
       );
+    });
+
+    test('uploadGooglePlayReceipt returns server expiry', () async {
+      final httpClient = MockClient((request) async {
+        if (request.url.path.endsWith('/v1/installations/register')) {
+          return http.Response('', 204);
+        }
+        expect(request.url.path, '/v1/licenses/play-token');
+        return http.Response(
+          jsonEncode({
+            'validation_state': 'valid',
+            'product_id': 'bojairu.housing',
+            'granted_modules': ['housing'],
+            'expires_at': '2026-09-15T10:00:00Z',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final coord = EntitlementCoordinator(
+        config: AppConfig(
+          environment: AppEnvironment.dev,
+          apiBaseUrl: Uri.parse('https://sync.incoherences.org'),
+          entitlementBaseUrl: Uri.parse('http://127.0.0.1:8081'),
+        ),
+        installationStore: _FakeInstallationStore('inst-author'),
+        registry: registry,
+        client: EntitlementClient(
+          baseUrl: Uri.parse('http://127.0.0.1:8081'),
+          httpClient: httpClient,
+        ),
+      );
+      addTearDown(coord.close);
+
+      final exp = await coord.uploadGooglePlayReceipt(
+        StoreReceiptRecord(
+          productId: 'bojairu.housing',
+          platform: 'google_play',
+          purchaseTokenOrReceipt: 'tok',
+          purchasedAt: DateTime.utc(2026, 8, 15),
+        ),
+      );
+      expect(exp, DateTime.utc(2026, 9, 15, 10));
     });
   });
 }

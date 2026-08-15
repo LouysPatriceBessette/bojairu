@@ -18,7 +18,7 @@
 - [ ] 3.4 Implement relay-facing authorization for gated housing operations using signed assertions, online checks, or a documented hybrid.
 - [ ] 3.5 Treat store-supported promotional entitlements as valid housing licenses when store state is active.
 - [ ] 3.6 When unpaid license blocks the plan (≥ 2 other active licenses): “Modify plan for remaining participants” flow with ratio redistribution and inactive participant (align with `housing-participation-change-major-flow` mechanics; no differential report in initial release).
-- [ ] 3.7 When entitlement / relay can obtain authoritative Google Play Developer API expiry (`expiryTime` / `expiryTimeMillis`) from uploaded purchase tokens, use that for Licenses renewal/end dates (and stop relying on client-side license-tester period estimates).
+- [x] 3.7 When entitlement / relay can obtain authoritative Google Play Developer API expiry (`expiryTime` / `expiryTimeMillis`) from uploaded purchase tokens, use that for Licenses renewal/end dates (and stop relying on client-side license-tester period estimates).
 
 ## 4. Export and legal documentation
 

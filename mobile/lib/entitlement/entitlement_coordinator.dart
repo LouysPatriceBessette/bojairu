@@ -7,6 +7,7 @@ import 'entitlement_gate.dart';
 import 'entitlement_plan_id.dart';
 import 'participant_installation_store.dart';
 import 'plan_participant_installation_registry.dart';
+import 'store_receipt_record.dart';
 
 /// Maps import tails (`self`, `p0`, …) to full participant ids used by the
 /// registry and roster reporting (`$planId:self`, `$planId:p0`, …).
@@ -188,6 +189,30 @@ class EntitlementCoordinator {
       debugPrint('entitlement: active-use reported for $entitlementPlanId');
     } on Object catch (e, st) {
       debugPrint('entitlement: active-use report failed: $e\n$st');
+    }
+  }
+
+  /// POSTs a Google Play purchase token. Returns server expiry when present.
+  /// Failures (including Play verifier not yet configured) are logged, not thrown.
+  Future<DateTime?> uploadGooglePlayReceipt(StoreReceiptRecord record) async {
+    if (!httpEnabled) return null;
+    if (record.platform != 'google_play') return null;
+    if (record.purchaseTokenOrReceipt.isEmpty) return null;
+    try {
+      await ensureRegistered();
+      final id = await _installationStore.loadOrCreateId();
+      final verified = await _client!.uploadPlayToken(
+        participantInstallationId: id,
+        productId: record.productId,
+        purchaseToken: record.purchaseTokenOrReceipt,
+      );
+      return verified.expiresAt;
+    } on EntitlementClientError catch (e, st) {
+      debugPrint('entitlement: play-token failed: $e\n$st');
+      return null;
+    } on Object catch (e, st) {
+      debugPrint('entitlement: play-token failed: $e\n$st');
+      return null;
     }
   }
 

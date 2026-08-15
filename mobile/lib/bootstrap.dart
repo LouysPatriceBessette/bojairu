@@ -160,6 +160,20 @@ Future<AppPreferences> completeAppStartup({
     final moduleEntitlement = ModuleEntitlementController();
     ModuleEntitlementController.install(moduleEntitlement);
     await moduleEntitlement.load();
+
+    if (config.entitlementEnabled) {
+      final registry = await PlanParticipantInstallationRegistry.load();
+      final coordinator = EntitlementCoordinator(
+        config: config,
+        installationStore: ParticipantInstallationStore.secureStorage(),
+        registry: registry,
+      );
+      EntitlementCoordinator.install(coordinator);
+      moduleEntitlement.playTokenUploader = coordinator.uploadGooglePlayReceipt;
+      unawaited(coordinator.ensureRegistered());
+      unawaited(moduleEntitlement.uploadPendingPlayTokens());
+    }
+
     // Listen to store purchaseStream for the whole process — not only while
     // Licenses is open (Flutter IAP: listen as early as possible).
     if (!kIsWeb) {
@@ -245,15 +259,18 @@ Future<AppPreferences> completeAppStartup({
     try {
       final identity = IdentityKeystore.secureStorage();
       final relay = HttpRelayClient(baseUrl: config.apiBaseUrl);
-      EntitlementCoordinator? entitlementCoordinator;
+      EntitlementCoordinator? entitlementCoordinator =
+          EntitlementCoordinator.maybeInstance;
       if (config.entitlementGateEnabled) {
-        final registry = await PlanParticipantInstallationRegistry.load();
-        entitlementCoordinator = EntitlementCoordinator(
-          config: config,
-          installationStore: ParticipantInstallationStore.secureStorage(),
-          registry: registry,
-        );
-        EntitlementCoordinator.install(entitlementCoordinator);
+        if (entitlementCoordinator == null) {
+          final registry = await PlanParticipantInstallationRegistry.load();
+          entitlementCoordinator = EntitlementCoordinator(
+            config: config,
+            installationStore: ParticipantInstallationStore.secureStorage(),
+            registry: registry,
+          );
+          EntitlementCoordinator.install(entitlementCoordinator);
+        }
         if (config.entitlementEnabled) {
           unawaited(entitlementCoordinator.ensureRegistered());
         }

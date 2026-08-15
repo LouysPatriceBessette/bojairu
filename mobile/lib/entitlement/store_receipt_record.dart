@@ -1,6 +1,10 @@
 import 'dart:convert';
 
-/// Locally persisted store purchase metadata (étape 1 — no server upload).
+/// Locally persisted store purchase metadata.
+///
+/// Google Play tokens are also POSTed to the entitlement server when HTTP is
+/// enabled; [expiresAt] is then the server `expiryTime` when verification
+/// succeeds.
 class StoreReceiptRecord {
   const StoreReceiptRecord({
     required this.productId,
@@ -28,6 +32,27 @@ class StoreReceiptRecord {
     final exp = expiresAt;
     if (exp == null) return true;
     return !exp.isBefore(now);
+  }
+
+  StoreReceiptRecord copyWith({
+    DateTime? purchasedAt,
+    String? orderId,
+    DateTime? expiresAt,
+    bool? autoRenewing,
+    bool? acknowledged,
+    String? rawJson,
+  }) {
+    return StoreReceiptRecord(
+      productId: productId,
+      platform: platform,
+      purchaseTokenOrReceipt: purchaseTokenOrReceipt,
+      purchasedAt: purchasedAt ?? this.purchasedAt,
+      orderId: orderId ?? this.orderId,
+      expiresAt: expiresAt ?? this.expiresAt,
+      autoRenewing: autoRenewing ?? this.autoRenewing,
+      acknowledged: acknowledged ?? this.acknowledged,
+      rawJson: rawJson ?? this.rawJson,
+    );
   }
 
   Map<String, Object?> toJson() => <String, Object?>{

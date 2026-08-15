@@ -2,7 +2,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'store_receipt_record.dart';
 
-/// Persists store receipt metadata on-device only (no entitlement HTTP upload).
+/// Persists store receipt metadata on-device.
+///
+/// Google Play purchase tokens are uploaded separately (entitlement HTTP).
 class LocalStoreReceiptStore {
   LocalStoreReceiptStore({SharedPreferences? prefs}) : _prefs = prefs;
 

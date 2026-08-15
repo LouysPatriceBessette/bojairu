@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// HTTP client for the entitlement service (Phase A housing APIs).
+/// HTTP client for the entitlement service.
 class EntitlementClient {
   EntitlementClient({
     required this.baseUrl,
@@ -93,6 +93,33 @@ class EntitlementClient {
       throw EntitlementClientError._fromResponse('housing_expense_decision', res);
     }
   }
+
+  /// Uploads a Google Play purchase token for server-side
+  /// `purchases.subscriptionsv2.get`.
+  Future<PlayTokenVerification> uploadPlayToken({
+    required String participantInstallationId,
+    required String productId,
+    required String purchaseToken,
+    String platform = 'google_play',
+  }) async {
+    final uri = baseUrl.resolve('/v1/licenses/play-token');
+    final res = await _client
+        .post(
+          uri,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'participant_installation_id': participantInstallationId,
+            'product_id': productId,
+            'purchase_token': purchaseToken,
+            'platform': platform,
+          }),
+        )
+        .timeout(_timeout);
+    if (res.statusCode != 200) {
+      throw EntitlementClientError._fromResponse('licenses_play_token', res);
+    }
+    return PlayTokenVerification.fromResponseBody(res.body);
+  }
 }
 
 class EntitlementClientError implements Exception {
@@ -132,4 +159,53 @@ class EntitlementClientError implements Exception {
   @override
   String toString() =>
       'EntitlementClientError($endpoint, status=$statusCode, code=$code, detail=$detail)';
+}
+
+/// Result of `POST /v1/licenses/play-token`.
+class PlayTokenVerification {
+  const PlayTokenVerification({
+    required this.validationState,
+    required this.productId,
+    required this.grantedModules,
+    this.expiresAt,
+    this.subscriptionState,
+    this.reason,
+  });
+
+  final String validationState;
+  final String productId;
+  final List<String> grantedModules;
+  final DateTime? expiresAt;
+  final String? subscriptionState;
+  final String? reason;
+
+  bool get isValid => validationState == 'valid';
+
+  factory PlayTokenVerification.fromResponseBody(String body) {
+    final json = jsonDecode(body);
+    if (json is! Map) {
+      throw const FormatException('play-token response is not a JSON object');
+    }
+    final map = Map<String, dynamic>.from(json);
+    final modulesRaw = map['granted_modules'];
+    final modules = <String>[];
+    if (modulesRaw is List) {
+      for (final item in modulesRaw) {
+        if (item is String && item.isNotEmpty) modules.add(item);
+      }
+    }
+    DateTime? expiresAt;
+    final expiresRaw = map['expires_at'];
+    if (expiresRaw is String && expiresRaw.isNotEmpty) {
+      expiresAt = DateTime.tryParse(expiresRaw)?.toUtc();
+    }
+    return PlayTokenVerification(
+      validationState: (map['validation_state'] as String?) ?? '',
+      productId: (map['product_id'] as String?) ?? '',
+      grantedModules: modules,
+      expiresAt: expiresAt,
+      subscriptionState: map['subscription_state'] as String?,
+      reason: map['reason'] as String?,
+    );
+  }
 }

@@ -9,14 +9,19 @@ import 'receipt_play_reconcile.dart';
 import 'receipt_to_candidates.dart';
 import 'store_receipt_record.dart';
 
+/// Uploads a Google Play receipt and returns the server expiry when known.
+typedef PlayTokenUploader = Future<DateTime?> Function(StoreReceiptRecord record);
+
 /// Holds one effective [ModuleEntitlementState] per [AppModuleId].
 ///
-/// Étape 1: combines local store receipts + optional housing lifecycle.
-/// Does not POST proofs or license-status to the entitlement server.
+/// Combines local store receipts + optional housing lifecycle. Google Play
+/// tokens are POSTed when [playTokenUploader] is set; Licenses dates then use
+/// the server `expiryTime`.
 class ModuleEntitlementController extends ChangeNotifier {
   ModuleEntitlementController({
     LocalStoreReceiptStore? receiptStore,
     DateTime Function()? clock,
+    this.playTokenUploader,
   })  : _receiptStore = receiptStore ?? LocalStoreReceiptStore(),
         _clock = clock ?? DateTime.now;
 
@@ -34,6 +39,9 @@ class ModuleEntitlementController extends ChangeNotifier {
 
   final LocalStoreReceiptStore _receiptStore;
   final DateTime Function() _clock;
+
+  /// Set after entitlement HTTP is wired (bootstrap). Null = local-only.
+  PlayTokenUploader? playTokenUploader;
 
   final Map<AppModuleId, ModuleEntitlementState> _effective =
       <AppModuleId, ModuleEntitlementState>{
@@ -78,6 +86,36 @@ class ModuleEntitlementController extends ChangeNotifier {
   Future<void> upsertReceipt(StoreReceiptRecord record) async {
     _receipts = await _receiptStore.upsert(record);
     _recompute();
+    await _applyServerExpiryIfUploaded(record);
+  }
+
+  /// Re-POSTs every local Google Play token (e.g. after HTTP client is wired).
+  Future<void> uploadPendingPlayTokens() async {
+    final snapshot = List<StoreReceiptRecord>.from(_receipts);
+    for (final record in snapshot) {
+      await _applyServerExpiryIfUploaded(record);
+    }
+  }
+
+  Future<void> _applyServerExpiryIfUploaded(StoreReceiptRecord record) async {
+    final uploader = playTokenUploader;
+    if (uploader == null) return;
+    if (record.platform != 'google_play') return;
+    if (record.purchaseTokenOrReceipt.isEmpty) return;
+    try {
+      final expiresAt = await uploader(record);
+      if (expiresAt == null) return;
+      if (record.expiresAt != null &&
+          record.expiresAt!.toUtc() == expiresAt.toUtc()) {
+        return;
+      }
+      _receipts = await _receiptStore.upsert(
+        record.copyWith(expiresAt: expiresAt.toUtc()),
+      );
+      _recompute();
+    } on Object catch (e, st) {
+      debugPrint('entitlement: play-token upload skipped: $e\n$st');
+    }
   }
 
   Future<void> replaceReceipts(List<StoreReceiptRecord> rows) async {

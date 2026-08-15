@@ -6,9 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-  });
+  group('LocalStoreReceiptStore', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+    });
 
   test('upsert into empty store does not throw on const-empty decode', () async {
     final store = LocalStoreReceiptStore();
@@ -80,5 +81,30 @@ void main() {
     final neu = rows.firstWhere((r) => r.purchaseTokenOrReceipt == 'new');
     expect(neu.purchasedAt, signup);
     expect(neu.autoRenewing, isTrue);
+  });
+
+  test('replaces expiresAt when a later upsert provides one', () async {
+    final store = LocalStoreReceiptStore();
+    final signup = DateTime.utc(2026, 8, 9, 20);
+    await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'tok',
+        purchasedAt: signup,
+      ),
+    );
+    final serverExpiry = DateTime.utc(2026, 9, 15, 10);
+    final rows = await store.upsert(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'tok',
+        purchasedAt: signup,
+        expiresAt: serverExpiry,
+      ),
+    );
+    expect(rows.single.expiresAt, serverExpiry);
+  });
   });
 }

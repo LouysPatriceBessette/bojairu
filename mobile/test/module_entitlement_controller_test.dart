@@ -9,10 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    ModuleEntitlementController.uninstall();
-  });
+  group('ModuleEntitlementController', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      ModuleEntitlementController.uninstall();
+    });
 
   test('delinquency on housing does not change vehicle', () async {
     final now = DateTime.utc(2026, 8, 8);
@@ -45,5 +46,61 @@ void main() {
       controller.stateOf(AppModuleId.vehicle),
       ModuleEntitlementState.activePaid,
     );
+  });
+
+  test('upsertReceipt applies server expiry from play token uploader', () async {
+    final now = DateTime.utc(2026, 8, 15, 12);
+    final serverExpiry = DateTime.utc(2026, 9, 15, 10);
+    var uploadedProductId = '';
+    var uploadedToken = '';
+    final controller = ModuleEntitlementController(
+      receiptStore: LocalStoreReceiptStore(),
+      clock: () => now,
+      playTokenUploader: (record) async {
+        uploadedProductId = record.productId;
+        uploadedToken = record.purchaseTokenOrReceipt;
+        return serverExpiry;
+      },
+    );
+
+    await controller.upsertReceipt(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'google_play',
+        purchaseTokenOrReceipt: 'play-tok',
+        purchasedAt: now,
+      ),
+    );
+
+    expect(uploadedProductId, 'bojairu.housing');
+    expect(uploadedToken, 'play-tok');
+    expect(controller.receipts.single.expiresAt, serverExpiry);
+    expect(
+      controller.stateOf(AppModuleId.housing),
+      ModuleEntitlementState.activePaid,
+    );
+  });
+
+  test('upsertReceipt skips upload for non-Play receipts', () async {
+    var called = false;
+    final controller = ModuleEntitlementController(
+      receiptStore: LocalStoreReceiptStore(),
+      playTokenUploader: (_) async {
+        called = true;
+        return null;
+      },
+    );
+
+    await controller.upsertReceipt(
+      StoreReceiptRecord(
+        productId: 'bojairu.housing',
+        platform: 'app_store',
+        purchaseTokenOrReceipt: 'ios-tok',
+        purchasedAt: DateTime.utc(2026, 8, 15),
+      ),
+    );
+
+    expect(called, isFalse);
+  });
   });
 }
