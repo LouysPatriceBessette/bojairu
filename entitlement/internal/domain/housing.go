@@ -2,9 +2,11 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/compartarenta/entitlement/internal/config"
+	"github.com/compartarenta/entitlement/internal/license"
 	"github.com/compartarenta/entitlement/internal/store"
 )
 
@@ -20,9 +22,10 @@ const (
 )
 
 type Housing struct {
-	st   *store.Store
-	cfg  config.Config
-	now  func() time.Time
+	st          *store.Store
+	cfg         config.Config
+	now         func() time.Time
+	playEnabled bool
 }
 
 func NewHousing(st *store.Store, cfg config.Config) *Housing {
@@ -30,6 +33,10 @@ func NewHousing(st *store.Store, cfg config.Config) *Housing {
 }
 
 func (h *Housing) SetClock(now func() time.Time) { h.now = now }
+
+func (h *Housing) SetPlayVerification(enabled bool) { h.playEnabled = enabled }
+
+func (h *Housing) PlayVerificationEnabled() bool { return h.playEnabled }
 
 type IntrospectInput struct {
 	Module                    string
@@ -118,6 +125,77 @@ func (h *Housing) RecordActiveUse(ctx context.Context, planID string) error {
 
 func (h *Housing) ReportLicense(ctx context.Context, planID, participantID, state string, expiresAt *time.Time) error {
 	return h.st.UpsertLicenseStatus(ctx, planID, participantID, state, expiresAt, h.now())
+}
+
+func (h *Housing) ApplyPlayResult(ctx context.Context, installationID string, res license.Result, token string, raw []byte) error {
+	if err := h.st.RegisterInstallation(ctx, installationID); err != nil {
+		return err
+	}
+	module := "unknown"
+	if len(res.GrantedModules) > 0 {
+		module = res.GrantedModules[0]
+	}
+	productID := res.ProductID
+	blob := json.RawMessage(`{}`)
+	if len(raw) > 0 {
+		blob = json.RawMessage(raw)
+	}
+	rec := store.PlayReceipt{
+		InstallationID:    installationID,
+		Module:            module,
+		Platform:          license.PlatformGooglePlay,
+		ProductID:         productID,
+		PurchaseToken:     token,
+		ReceiptBlob:       blob,
+		ValidationState:   res.ValidationState,
+		ExpiresAt:         res.ExpiresAt,
+		ValidatedAt:       h.now(),
+		GrantedModules:    res.GrantedModules,
+		SubscriptionState: res.SubscriptionState,
+	}
+	if rec.GrantedModules == nil {
+		rec.GrantedModules = []string{}
+	}
+	if err := h.st.UpsertPlayReceipt(ctx, rec); err != nil {
+		return err
+	}
+	return h.reprojectInstallationHousing(ctx, installationID)
+}
+
+func (h *Housing) reprojectInstallationHousing(ctx context.Context, installationID string) error {
+	rows, err := h.st.PlayReceiptsForInstallation(ctx, installationID)
+	if err != nil {
+		return err
+	}
+	results := make([]license.Result, 0, len(rows))
+	for _, r := range rows {
+		results = append(results, license.Result{
+			ValidationState:   r.ValidationState,
+			Active:            r.ValidationState == license.ValidationValid,
+			ProductID:         r.ProductID,
+			GrantedModules:    r.GrantedModules,
+			ExpiresAt:         r.ExpiresAt,
+			SubscriptionState: r.SubscriptionState,
+		})
+	}
+	paid, expires := license.HousingPaidFromResults(results, h.now())
+	state := LicenseUnpaid
+	if paid {
+		state = LicenseActivePaid
+	}
+	plans, err := h.st.PlansForInstallation(ctx, installationID)
+	if err != nil {
+		return err
+	}
+	for _, planID := range plans {
+		if err := h.st.UpsertLicenseStatus(ctx, planID, installationID, state, expires, h.now()); err != nil {
+			return err
+		}
+		if err := h.RefreshPlanLifecycle(ctx, planID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (h *Housing) RecordExpenseDecision(ctx context.Context, planID, expenseID, participantID, decision string) error {

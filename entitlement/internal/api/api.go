@@ -11,22 +11,35 @@ import (
 
 	"github.com/compartarenta/entitlement/internal/config"
 	"github.com/compartarenta/entitlement/internal/domain"
+	"github.com/compartarenta/entitlement/internal/license"
 	"github.com/compartarenta/entitlement/internal/store"
 	"github.com/compartarenta/entitlement/internal/version"
 )
 
 type Server struct {
-	cfg     config.Config
-	store   *store.Store
-	housing *domain.Housing
+	cfg      config.Config
+	store    *store.Store
+	housing  *domain.Housing
+	verifier license.Verifier
 }
 
 func NewServer(cfg config.Config, st *store.Store) *Server {
 	return &Server{
-		cfg:     cfg,
-		store:   st,
-		housing: domain.NewHousing(st, cfg),
+		cfg:      cfg,
+		store:    st,
+		housing:  domain.NewHousing(st, cfg),
+		verifier: license.Stub{},
 	}
+}
+
+// SetPlayVerifier enables Play-backed verification. Client-reported
+// license-status writes are then rejected.
+func (s *Server) SetPlayVerifier(v license.Verifier) {
+	if v == nil {
+		v = license.Stub{}
+	}
+	s.verifier = v
+	s.housing.SetPlayVerification(true)
 }
 
 func (s *Server) Handler() http.Handler {
@@ -35,6 +48,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/v1/installations/migrate", s.handleMigrateInstallation)
 	mux.HandleFunc("/v1/housing/plan-roster", s.handlePlanRoster)
 	mux.HandleFunc("/v1/housing/license-status", s.handleLicenseStatus)
+	mux.HandleFunc("/v1/licenses/play-token", s.handlePlayToken)
+	mux.HandleFunc("/v1/licenses", s.handleListLicenses)
 	mux.HandleFunc("/v1/housing/expense-decision", s.handleExpenseDecision)
 	mux.HandleFunc("/v1/housing/active-use", s.handleActiveUse)
 	mux.HandleFunc("/v1/introspect/envelope", s.handleIntrospectEnvelope)
@@ -91,10 +106,10 @@ func (s *Server) handleMigrateInstallation(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var req struct {
-		PlanID                        string `json:"plan_id"`
-		OldParticipantInstallationID  string `json:"old_participant_installation_id"`
-		NewParticipantInstallationID  string `json:"new_participant_installation_id"`
-		EnvelopeKind                  int    `json:"envelope_kind"`
+		PlanID                       string `json:"plan_id"`
+		OldParticipantInstallationID string `json:"old_participant_installation_id"`
+		NewParticipantInstallationID string `json:"new_participant_installation_id"`
+		EnvelopeKind                 int    `json:"envelope_kind"`
 	}
 	if !decodeJSON(w, r, &req) {
 		return
@@ -160,6 +175,11 @@ func (s *Server) handlePlanRoster(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLicenseStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "POST only")
+		return
+	}
+	if s.housing.PlayVerificationEnabled() {
+		writeError(w, http.StatusConflict, "play_verification_required",
+			"client-reported license status is not accepted; POST /v1/licenses/play-token")
 		return
 	}
 	var req struct {
@@ -301,13 +321,122 @@ func (s *Server) handlePlanStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"plan_id":                plan.PlanID,
-		"lifecycle_state":        plan.LifecycleState,
-		"trial_started_at":       plan.TrialStartedAt,
-		"trial_ends_at":          plan.TrialEndsAt,
-		"grace_ends_at":          plan.GraceEndsAt,
-		"active_use_started_at":  plan.ActiveUseStartedAt,
+		"plan_id":               plan.PlanID,
+		"lifecycle_state":       plan.LifecycleState,
+		"trial_started_at":      plan.TrialStartedAt,
+		"trial_ends_at":         plan.TrialEndsAt,
+		"grace_ends_at":         plan.GraceEndsAt,
+		"active_use_started_at": plan.ActiveUseStartedAt,
 	})
+}
+
+func (s *Server) handlePlayToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "POST only")
+		return
+	}
+	if !s.housing.PlayVerificationEnabled() {
+		writeError(w, http.StatusServiceUnavailable, "play_verifier_unconfigured",
+			"Play purchase verification is not configured")
+		return
+	}
+	var req struct {
+		ParticipantInstallationID string `json:"participant_installation_id"`
+		ProductID                 string `json:"product_id"`
+		PurchaseToken             string `json:"purchase_token"`
+		Platform                  string `json:"platform"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	pid, ok := validateID(req.ParticipantInstallationID, s.cfg.IDMinLen, s.cfg.IDMaxLen)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_installation_id", "installation id invalid")
+		return
+	}
+	platform := strings.TrimSpace(req.Platform)
+	if platform == "" {
+		platform = license.PlatformGooglePlay
+	}
+	if platform != license.PlatformGooglePlay {
+		writeError(w, http.StatusBadRequest, "platform_unsupported", "only google_play is supported")
+		return
+	}
+	productID := strings.TrimSpace(req.ProductID)
+	token := strings.TrimSpace(req.PurchaseToken)
+	if productID == "" || token == "" {
+		writeError(w, http.StatusBadRequest, "invalid_request", "product_id and purchase_token required")
+		return
+	}
+	if _, known := license.LookupPlayProduct(productID); !known {
+		writeError(w, http.StatusBadRequest, "unknown_product_id", "product_id is not a documented Play SKU")
+		return
+	}
+	res, err := s.verifier.VerifyPurchase(r.Context(), license.Purchase{
+		Platform:      platform,
+		ProductID:     productID,
+		PurchaseToken: token,
+	})
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "play_verify_failed", err.Error())
+		return
+	}
+	if res.ProductID == "" {
+		res.ProductID = productID
+	}
+	blob, _ := json.Marshal(map[string]any{
+		"product_id":         res.ProductID,
+		"subscription_state": res.SubscriptionState,
+		"validation_state":   res.ValidationState,
+		"granted_modules":    res.GrantedModules,
+	})
+	if err := s.housing.ApplyPlayResult(r.Context(), pid, res, token, blob); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	body := map[string]any{
+		"validation_state":   res.ValidationState,
+		"product_id":         res.ProductID,
+		"granted_modules":    res.GrantedModules,
+		"subscription_state": res.SubscriptionState,
+		"reason":             res.Reason,
+	}
+	if res.ExpiresAt != nil {
+		body["expires_at"] = res.ExpiresAt.UTC().Format(time.RFC3339Nano)
+	}
+	writeJSON(w, http.StatusOK, body)
+}
+
+func (s *Server) handleListLicenses(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "GET only")
+		return
+	}
+	pid, ok := validateID(r.URL.Query().Get("participant_installation_id"), s.cfg.IDMinLen, s.cfg.IDMaxLen)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_installation_id", "installation id invalid")
+		return
+	}
+	rows, err := s.store.PlayReceiptsForInstallation(r.Context(), pid)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	items := make([]map[string]any, 0, len(rows))
+	for _, rec := range rows {
+		item := map[string]any{
+			"product_id":         rec.ProductID,
+			"platform":           rec.Platform,
+			"validation_state":   rec.ValidationState,
+			"granted_modules":    rec.GrantedModules,
+			"subscription_state": rec.SubscriptionState,
+		}
+		if rec.ExpiresAt != nil {
+			item["expires_at"] = rec.ExpiresAt.UTC().Format(time.RFC3339Nano)
+		}
+		items = append(items, item)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"receipts": items})
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {

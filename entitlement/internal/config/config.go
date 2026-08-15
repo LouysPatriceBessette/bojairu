@@ -9,27 +9,31 @@ import (
 )
 
 type Config struct {
-	ListenAddr       string
-	DatabaseURL      string
-	ShutdownTimeout  time.Duration
-	TrialDuration    time.Duration
-	GraceDuration    time.Duration
-	InternalToken    string
-	IDMinLen         int
-	IDMaxLen         int
+	ListenAddr                 string
+	DatabaseURL                string
+	ShutdownTimeout            time.Duration
+	TrialDuration              time.Duration
+	GraceDuration              time.Duration
+	InternalToken              string
+	IDMinLen                   int
+	IDMaxLen                   int
+	PlayPackageName            string
+	PlayServiceAccountJSONPath string
 }
 
 func Load() (Config, error) {
 	var errs []error
 	c := Config{
-		ListenAddr:      env("LISTEN_ADDR", "0.0.0.0:8080"),
-		DatabaseURL:     strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		ShutdownTimeout: durEnv(&errs, "SHUTDOWN_TIMEOUT", 30*time.Second),
-		TrialDuration:   durEnv(&errs, "TRIAL_DURATION", 14*24*time.Hour),
-		GraceDuration:   durEnv(&errs, "GRACE_DURATION", 7*24*time.Hour),
-		InternalToken:   strings.TrimSpace(os.Getenv("ENTITLEMENT_INTERNAL_TOKEN")),
-		IDMinLen:        8,
-		IDMaxLen:        64,
+		ListenAddr:                 env("LISTEN_ADDR", "0.0.0.0:8080"),
+		DatabaseURL:                strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		ShutdownTimeout:            durEnv(&errs, "SHUTDOWN_TIMEOUT", 30*time.Second),
+		TrialDuration:              durEnv(&errs, "TRIAL_DURATION", 14*24*time.Hour),
+		GraceDuration:              durEnv(&errs, "GRACE_DURATION", 7*24*time.Hour),
+		InternalToken:              strings.TrimSpace(os.Getenv("ENTITLEMENT_INTERNAL_TOKEN")),
+		IDMinLen:                   8,
+		IDMaxLen:                   64,
+		PlayPackageName:            env("PLAY_PACKAGE_NAME", "app.incoherences.bojairu"),
+		PlayServiceAccountJSONPath: strings.TrimSpace(os.Getenv("PLAY_SERVICE_ACCOUNT_JSON_PATH")),
 	}
 	if c.DatabaseURL == "" {
 		errs = append(errs, errors.New("DATABASE_URL is required"))

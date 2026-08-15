@@ -27,19 +27,33 @@ type Store struct {
 }
 
 type Plan struct {
-	PlanID              string
-	LifecycleState      string
-	TrialStartedAt      *time.Time
-	TrialEndsAt         *time.Time
-	GraceEndsAt         *time.Time
-	ActiveUseStartedAt  *time.Time
-	UpdatedAt           time.Time
+	PlanID             string
+	LifecycleState     string
+	TrialStartedAt     *time.Time
+	TrialEndsAt        *time.Time
+	GraceEndsAt        *time.Time
+	ActiveUseStartedAt *time.Time
+	UpdatedAt          time.Time
 }
 
 type LicenseStatus struct {
 	ParticipantInstallationID string
 	LicenseState              string
 	ExpiresAt                 *time.Time
+}
+
+type PlayReceipt struct {
+	InstallationID    string
+	Module            string
+	Platform          string
+	ProductID         string
+	PurchaseToken     string
+	ReceiptBlob       json.RawMessage
+	ValidationState   string
+	ExpiresAt         *time.Time
+	ValidatedAt       time.Time
+	GrantedModules    []string
+	SubscriptionState string
 }
 
 func New(ctx context.Context, dsn string) (*Store, error) {
@@ -248,6 +262,88 @@ func (s *Store) StoreReceipt(ctx context.Context, installationID, module, platfo
 		INSERT INTO license_receipts (installation_id, module, platform, receipt_blob, validation_state)
 		VALUES ($1,$2,$3,$4,'pending')`, installationID, module, platform, blob)
 	return err
+}
+
+func (s *Store) UpsertPlayReceipt(ctx context.Context, r PlayReceipt) error {
+	blob := r.ReceiptBlob
+	if len(blob) == 0 {
+		blob = json.RawMessage(`{}`)
+	}
+	mods := r.GrantedModules
+	if mods == nil {
+		mods = []string{}
+	}
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO license_receipts (
+			installation_id, module, platform, receipt_blob, validation_state,
+			product_id, purchase_token, expires_at, validated_at, granted_modules,
+			subscription_state
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		ON CONFLICT (platform, purchase_token) WHERE purchase_token IS NOT NULL AND purchase_token <> ''
+		DO UPDATE SET
+			installation_id = EXCLUDED.installation_id,
+			module = EXCLUDED.module,
+			receipt_blob = EXCLUDED.receipt_blob,
+			validation_state = EXCLUDED.validation_state,
+			product_id = EXCLUDED.product_id,
+			expires_at = EXCLUDED.expires_at,
+			validated_at = EXCLUDED.validated_at,
+			granted_modules = EXCLUDED.granted_modules,
+			subscription_state = EXCLUDED.subscription_state`,
+		r.InstallationID, r.Module, r.Platform, blob, r.ValidationState,
+		r.ProductID, r.PurchaseToken, r.ExpiresAt, r.ValidatedAt, mods,
+		r.SubscriptionState)
+	return err
+}
+
+func (s *Store) PlayReceiptsForInstallation(ctx context.Context, installationID string) ([]PlayReceipt, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT installation_id, module, platform, receipt_blob, validation_state,
+		       product_id, purchase_token, expires_at, COALESCE(validated_at, created_at),
+		       granted_modules, COALESCE(subscription_state, '')
+		FROM license_receipts
+		WHERE installation_id = $1 AND purchase_token IS NOT NULL AND purchase_token <> ''`,
+		installationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []PlayReceipt
+	for rows.Next() {
+		var r PlayReceipt
+		if err := rows.Scan(
+			&r.InstallationID, &r.Module, &r.Platform, &r.ReceiptBlob, &r.ValidationState,
+			&r.ProductID, &r.PurchaseToken, &r.ExpiresAt, &r.ValidatedAt,
+			&r.GrantedModules, &r.SubscriptionState,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) PlansForInstallation(ctx context.Context, installationID string) ([]string, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT r.plan_id
+		FROM housing_plan_rosters r
+		JOIN housing_plan_active_revision a
+		  ON a.plan_id = r.plan_id AND a.revision_id = r.revision_id
+		WHERE r.participant_installation_id = $1
+		ORDER BY r.plan_id`, installationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) MigrateInstallation(ctx context.Context, planID, oldID, newID string) error {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/compartarenta/entitlement/internal/api"
 	"github.com/compartarenta/entitlement/internal/config"
+	"github.com/compartarenta/entitlement/internal/license"
 	"github.com/compartarenta/entitlement/internal/store"
 	"github.com/compartarenta/entitlement/internal/version"
 )
@@ -40,6 +41,13 @@ func run() error {
 	defer st.Close()
 
 	srv := api.NewServer(cfg, st)
+	if cfg.PlayServiceAccountJSONPath != "" {
+		play, err := license.NewPlayFromServiceAccountJSON(cfg.PlayServiceAccountJSONPath, cfg.PlayPackageName)
+		if err != nil {
+			return fmt.Errorf("play verifier: %w", err)
+		}
+		srv.SetPlayVerifier(play)
+	}
 	server := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           srv.Handler(),

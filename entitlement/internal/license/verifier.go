@@ -5,16 +5,28 @@ import (
 	"time"
 )
 
-// Verifier validates store purchases. Phase A uses client-reported status;
-// Phase B implements Google Play; Phase C adds Apple.
-type Verifier interface {
-	Verify(ctx context.Context, platform string, receiptJSON []byte) (active bool, expiresAt *time.Time, err error)
+// Purchase is a client-uploaded store token.
+type Purchase struct {
+	Platform      string
+	ProductID     string
+	PurchaseToken string
 }
 
-// Stub accepts client-reported license status via the housing_plan_licenses
-// table and does not validate receipt blobs yet.
+// Verifier validates store purchases against the store API.
+type Verifier interface {
+	VerifyPurchase(ctx context.Context, in Purchase) (Result, error)
+}
+
+// Stub does not call a store. Phase A clients reported license status
+// separately. Phase B replaces this with Play when credentials are configured.
 type Stub struct{}
 
-func (Stub) Verify(context.Context, string, []byte) (bool, *time.Time, error) {
-	return false, nil, nil
+func (Stub) VerifyPurchase(context.Context, Purchase) (Result, error) {
+	return Result{
+		ValidationState: ValidationPending,
+		Reason:          "play_verifier_unconfigured",
+	}, nil
 }
+
+// Clock is overridable in tests.
+type Clock func() time.Time

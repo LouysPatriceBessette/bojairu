@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/compartarenta/entitlement/internal/config"
+	"github.com/compartarenta/entitlement/internal/license"
 )
 
 func TestValidateInstallationIDBounds(t *testing.T) {
@@ -53,4 +55,76 @@ func TestMigrateInstallationRejectsInvalidEnvelopeKind(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
+}
+
+func TestPlayTokenUnconfigured(t *testing.T) {
+	cfg := config.Config{IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	body := `{"participant_installation_id":"inst-alpha-device-001","product_id":"bojairu.housing","purchase_token":"tok","platform":"google_play"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/licenses/play-token", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestPlayTokenRejectsUnknownProduct(t *testing.T) {
+	cfg := config.Config{IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	s.SetPlayVerifier(stubPlayVerifier{})
+	body := `{"participant_installation_id":"inst-alpha-device-001","product_id":"not.a.sku","purchase_token":"tok","platform":"google_play"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/licenses/play-token", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestPlayTokenRejectsApplePlatform(t *testing.T) {
+	cfg := config.Config{IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	s.SetPlayVerifier(stubPlayVerifier{})
+	body := `{"participant_installation_id":"inst-alpha-device-001","product_id":"bojairu.housing","purchase_token":"tok","platform":"apple"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/licenses/play-token", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestLicenseStatusRejectedWhenPlayEnabled(t *testing.T) {
+	cfg := config.Config{IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	s.SetPlayVerifier(stubPlayVerifier{})
+	body := `{"plan_id":"plan-1","participant_installation_id":"inst-alpha-device-001","license_state":"active_paid"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/housing/license-status", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusConflict {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestListLicensesRejectsShortInstallationID(t *testing.T) {
+	cfg := config.Config{IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/licenses?participant_installation_id=short", nil)
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+type stubPlayVerifier struct{}
+
+func (stubPlayVerifier) VerifyPurchase(context.Context, license.Purchase) (license.Result, error) {
+	return license.Result{ValidationState: license.ValidationInvalid, Reason: "unused"}, nil
 }

@@ -150,9 +150,9 @@ capture d’écran.
 **Interdit :** livrer un smoke « landing Bojairũ / `bojairu://` » après un
 seul rebuild conteneur, comme si le HTML live suivait automatiquement.
 
-**Obligatoire :** dès qu’A1 (ou équivalent) est dans le cut, inclure la
-**copie** vers le DocumentRoot dans la procédure redeploy, avec le compte
-qui a le droit d’écrire sous `/var/www/…`.
+**Obligatoire :** dès que la copie de la page d’invite fait partie de
+**cette livraison**, l’inclure vers le DocumentRoot dans la procédure
+redeploy, avec le compte qui a le droit d’écrire sous `/var/www/…`.
 
 ## Formulations
 
@@ -164,10 +164,12 @@ qui a le droit d’écrire sous `/var/www/…`.
 | « Recrée avec les `-f` habituels » | Coller la commande `docker compose …` complète |
 | « Fix LCP / CWV » | « Faire charger plus vite **le gros élément visible en premier** » |
 | **Gantt** (et « coller dans le Gantt ») | **Interdit** dans le chat. Dire **calendrier du projet**, **planning**, **échéancier**, ou **délai à prévoir** |
+| **cut** (périmètre de version / « dans ce cut ») | **cette livraison** / **ce qui est livré maintenant** / **hors de cette livraison**. Le mot anglais *cut* n’est pas une consigne pour l’utilisateur. |
 
 ### Termes à ne plus jamais utiliser (chat)
 
 - **Gantt** — jargon de planning de projet ; remplacer toujours par une formulation concrète (calendrier, planning, échéancier, délai).
+- **cut** — jargon de périmètre de version. Dire **cette livraison**, **ce qui est livré maintenant**, ou **hors de cette livraison**. Ne pas écrire « dans ce cut » dans le chat ni dans un plan destiné à l’utilisateur.
 - **IAP** (et tout sigle de boutique non expliqué) — dire **achat dans l’application** / **achats intégrés Play** (abonnements, produits une fois), jamais « IAP » seul.
 
 (Les exemples ci-dessus illustrent le **style** ; le principe s’applique à

@@ -45,9 +45,15 @@ Gated housing kinds require an optional JSON object on `POST /v1/envelopes`:
 
 When `ENTITLEMENT_INTROSPECT_URL` is unset, gating is disabled (backward compatible).
 
-### Decision: Stub license verifier until Phase B
+### Decision: Play verifier (Phase B) with stub fallback
 
-Clients report `active_paid` / `unpaid` per plan participant via API. The server stores reported state and applies plan-level rules. `LicenseVerifier` interface accepts Play tokens in Phase B without restructuring state.
+When `PLAY_SERVICE_ACCOUNT_JSON_PATH` is set, the service calls Google Play
+`purchases.subscriptionsv2.get` and persists receipts as `valid` / `invalid`.
+Paid housing coverage requires `SUBSCRIPTION_STATE_ACTIVE` and a catalog SKU.
+Client-reported `POST /v1/housing/license-status` is then rejected.
+
+When the path is empty, `LicenseVerifier` remains a stub and clients may still
+report `active_paid` / `unpaid` (local/dev). Apple validation is Phase C.
 
 ### Decision: `participant_installation_id` is an opaque string
 
