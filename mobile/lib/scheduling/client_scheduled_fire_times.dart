@@ -5,12 +5,13 @@ import 'dart:typed_data';
 abstract final class ClientScheduledFireTimes {
   static const domainContactsInvitationExpiry = 'contacts_invitation_expiry';
   static const domainHousingProposalDeadline = 'housing_proposal_deadline';
+  static const domainVehicleSharingDeadline = 'vehicle_sharing_deadline';
 
   static const kindBeforeExpiry = 'before_expiry';
   static const kindExpired = 'expired';
   static const kindBeforeDeadline = 'before_deadline';
 
-  /// Invitation validity → before_expiry offset (spec table).
+  /// Decision-deadline validity → before_expiry offset (recipe A).
   static Duration beforeExpiryLead(Duration validFor) {
     if (validFor <= const Duration(hours: 3)) {
       return const Duration(minutes: 30);
@@ -24,8 +25,8 @@ abstract final class ClientScheduledFireTimes {
     return const Duration(hours: 4);
   }
 
-  /// Returns (kind, fireAt) pairs; omits instants already past [now].
-  static List<({String kind, DateTime fireAt})> invitationExpiryFires({
+  /// Recipe A: soon ping + ping at T. Omits instants already past [nowUtc].
+  static List<({String kind, DateTime fireAt})> actionDeadlineFires({
     required Duration validFor,
     required DateTime expiresAtUtc,
     required DateTime nowUtc,
@@ -43,31 +44,16 @@ abstract final class ClientScheduledFireTimes {
     return out;
   }
 
-  /// Proposal deadline lead times (product table for this cut):
-  /// window ≥ 7d → T−48h + T−24h; else ≥ 48h → T−24h + T−6h; else T−6h + T−2h.
-  static List<DateTime> proposalDeadlineFireAts({
+  /// Invitation expiry uses the same recipe A table as other decision deadlines.
+  static List<({String kind, DateTime fireAt})> invitationExpiryFires({
+    required Duration validFor,
     required DateTime expiresAtUtc,
     required DateTime nowUtc,
-    Duration? windowHint,
-  }) {
-    final expires = expiresAtUtc.toUtc();
-    final now = nowUtc.toUtc();
-    final window = windowHint ?? expires.difference(now);
-    final List<Duration> leads;
-    if (window >= const Duration(days: 7)) {
-      leads = const [Duration(hours: 48), Duration(hours: 24)];
-    } else if (window >= const Duration(hours: 48)) {
-      leads = const [Duration(hours: 24), Duration(hours: 6)];
-    } else {
-      leads = const [Duration(hours: 6), Duration(hours: 2)];
-    }
-    final out = <DateTime>[];
-    for (final lead in leads) {
-      final at = expires.subtract(lead);
-      if (at.isAfter(now)) out.add(at);
-    }
-    return out;
-  }
+  }) => actionDeadlineFires(
+    validFor: validFor,
+    expiresAtUtc: expiresAtUtc,
+    nowUtc: nowUtc,
+  );
 
   static Uint8List scopeKeyFromUtf8(String id) =>
       Uint8List.fromList(utf8.encode(id));

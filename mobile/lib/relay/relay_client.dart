@@ -64,6 +64,7 @@ abstract class RelayClient {
     required Uint8List ciphertext,
     required int kind,
     required Duration ttl,
+    DateTime? expiresAt,
     EntitlementGate? entitlementGate,
   });
 
@@ -162,8 +163,8 @@ class HttpRelayClient implements RelayClient {
     required this.baseUrl,
     http.Client? httpClient,
     Duration timeout = RelayHttpPolicy.requestTimeout,
-  })  : _client = httpClient ?? http.Client(),
-        _timeout = timeout;
+  }) : _client = httpClient ?? http.Client(),
+       _timeout = timeout;
 
   final Uri baseUrl;
   final http.Client _client;
@@ -250,6 +251,7 @@ class HttpRelayClient implements RelayClient {
     required Uint8List ciphertext,
     required int kind,
     required Duration ttl,
+    DateTime? expiresAt,
     EntitlementGate? entitlementGate,
   }) async {
     final uri = baseUrl.resolve('/v1/envelopes');
@@ -261,14 +263,13 @@ class HttpRelayClient implements RelayClient {
       'kind': kind,
       'ttl_seconds': ttl.inSeconds,
     };
+    if (expiresAt != null) {
+      payload['expires_at'] = expiresAt.toUtc().toIso8601String();
+    }
     if (entitlementGate != null) {
       payload['entitlement_gate'] = entitlementGate.toJson();
     }
-    final res = await _post(
-      'envelopes',
-      uri,
-      body: jsonEncode(payload),
-    );
+    final res = await _post('envelopes', uri, body: jsonEncode(payload));
     if (res.statusCode != 200 && res.statusCode != 201) {
       throw RelayClientError._fromResponse('envelopes', res);
     }
@@ -313,9 +314,7 @@ class HttpRelayClient implements RelayClient {
     final res = await _post(
       'envelopes_ack',
       uri,
-      body: jsonEncode({
-        'recipient_identity': RelayRouting.b64(recipient),
-      }),
+      body: jsonEncode({'recipient_identity': RelayRouting.b64(recipient)}),
     );
     if (res.statusCode == 204) return;
     if (res.statusCode == 404) {
@@ -597,8 +596,9 @@ class RelayEnvelopeView {
     return RelayEnvelopeView(
       envelopeId: json['envelope_id'] as String,
       senderIdentity: RelayRouting.unb64(json['sender_identity'] as String),
-      recipientIdentity:
-          RelayRouting.unb64(json['recipient_identity'] as String),
+      recipientIdentity: RelayRouting.unb64(
+        json['recipient_identity'] as String,
+      ),
       ciphertext: RelayRouting.unb64(json['ciphertext'] as String),
       kind: json['kind'] as int,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -625,12 +625,9 @@ class RelayClientError implements Exception {
     String detail = res.reasonPhrase ?? '';
     try {
       final body = jsonDecode(res.body) as Map<String, dynamic>;
-      code = (body['error'] as String?) ??
-          (body['code'] as String?) ??
-          code;
-      detail = (body['message'] as String?) ??
-          (body['detail'] as String?) ??
-          detail;
+      code = (body['error'] as String?) ?? (body['code'] as String?) ?? code;
+      detail =
+          (body['message'] as String?) ?? (body['detail'] as String?) ?? detail;
     } catch (_) {
       // Body wasn't JSON; keep the HTTP status as the code.
     }
@@ -643,7 +640,8 @@ class RelayClientError implements Exception {
   }
 
   bool get isRateLimited => code.startsWith('rate_limited');
-  bool get isNoRouting => code == 'bad_envelope' && detail == 'no_routing_relationship';
+  bool get isNoRouting =>
+      code == 'bad_envelope' && detail == 'no_routing_relationship';
 
   @override
   String toString() =>

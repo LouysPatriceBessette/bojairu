@@ -2661,6 +2661,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.';
 
   @override
+  String get pushNotificationHousingProposalDeadlineExpiredTitle =>
+      'Plazo de propuesta vencido';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineExpiredBody =>
+      'Una oferta de plan de vivienda caducó sin respuesta.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonTitle =>
+      'Oferta de uso a punto de caducar';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonBody =>
+      'Una oferta de uso de vehículo caducará pronto.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredTitle =>
+      'Oferta de uso caducada';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredBody =>
+      'Una oferta de uso de vehículo caducó sin respuesta.';
+
+  @override
   String get pushNotificationHousingTrialStartedTitle =>
       'Prueba de vivienda iniciada';
 

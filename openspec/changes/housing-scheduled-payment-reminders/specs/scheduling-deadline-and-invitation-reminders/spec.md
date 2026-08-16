@@ -4,7 +4,7 @@
 
 The system SHALL **not** rely on on-device local notification scheduling for housing proposal **response deadline** reminders (`housing-plan-proposal-offer-and-responses` task 1.4b). Instead, the relay cron defined in `relay-scheduled-notification-jobs` SHALL fire deadline reminders.
 
-When the author **dispatches** an open `revisionId`, the author's client SHALL register relay fire rows for each recipient (and roles per product table) at lead times before `expiresAt`. When the revision is **invalidated**, **expired**, or the user responds, the registering client SHALL cancel pending fires for that `revisionId`.
+When the author **dispatches** an open `revisionId`, the author's client SHALL register relay fire rows using **recipe A** (same lead times as contacts invitation expiry): `before_expiry` to participants who must respond, and `expired` at `expiresAt` to the author if still unanswered. When the revision is **invalidated**, **expired**, or the user responds, the registering client SHALL cancel pending fires for that `revisionId`.
 
 #### Scenario: Dispatch registers deadline fires
 

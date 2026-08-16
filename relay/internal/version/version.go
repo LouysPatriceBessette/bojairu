@@ -10,7 +10,7 @@ package version
 //
 // Bump together with a new migration file in `relay/migrations/`. The
 // migration filename's leading 4-digit number IS the schema version.
-const Expected = 3
+const Expected = 4
 
 // Build is overwritten via -ldflags at release time with the immutable
 // container image digest the binary was built into. The value is exposed

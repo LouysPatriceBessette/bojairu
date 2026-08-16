@@ -1234,6 +1234,12 @@
   "pushNotificationContactInvitationExpiredBody": "An invitation was not used and has expired.",
   "pushNotificationHousingProposalDeadlineTitle": "Proposal deadline approaching",
   "pushNotificationHousingProposalDeadlineBody": "A housing plan offer expires soon. Open Housing to respond or check status.",
+  "pushNotificationHousingProposalDeadlineExpiredTitle": "Proposal deadline passed",
+  "pushNotificationHousingProposalDeadlineExpiredBody": "A housing plan offer expired without a response.",
+  "pushNotificationVehicleSharingDeadlineSoonTitle": "Sharing offer expiring soon",
+  "pushNotificationVehicleSharingDeadlineSoonBody": "A vehicle sharing offer will expire soon.",
+  "pushNotificationVehicleSharingDeadlineExpiredTitle": "Sharing offer expired",
+  "pushNotificationVehicleSharingDeadlineExpiredBody": "A vehicle sharing offer expired without a response.",
   "pushNotificationHousingTrialStartedTitle": "Housing trial started",
   "pushNotificationHousingTrialStartedBody": "You can use housing until {date}. Purchases are in Licenses.",
   "@pushNotificationHousingTrialStartedBody": {

@@ -118,6 +118,7 @@ class FakeRelayClient implements RelayClient {
     required Uint8List ciphertext,
     required int kind,
     required Duration ttl,
+    DateTime? expiresAt,
     EntitlementGate? entitlementGate,
   }) async {
     _maybeThrowOnce();
@@ -156,15 +157,17 @@ class FakeRelayClient implements RelayClient {
     }
     final id = 'env-${_envelopeCounter++}';
     final now = DateTime.now().toUtc();
-    _envelopes.add(FakeRelayStoredEnvelope(
-      envelopeId: id,
-      sender: senderIdentity,
-      recipient: recipientIdentity,
-      ciphertext: ciphertext,
-      kind: kind,
-      createdAt: now,
-      ttlExpiresAt: now.add(ttl),
-    ));
+    _envelopes.add(
+      FakeRelayStoredEnvelope(
+        envelopeId: id,
+        sender: senderIdentity,
+        recipient: recipientIdentity,
+        ciphertext: ciphertext,
+        kind: kind,
+        createdAt: now,
+        ttlExpiresAt: expiresAt?.toUtc() ?? now.add(ttl),
+      ),
+    );
     _idempotentPostEnvelopeIds[idempotencyMapKey] = id;
     onEnvelopeStored?.call();
     if (timeoutAfterPostOnce) {
@@ -191,7 +194,8 @@ class FakeRelayClient implements RelayClient {
     }
     final out = <RelayEnvelopeView>[];
     for (final env in _envelopes) {
-      if (_eq(env.recipient, recipient)) {
+      if (_eq(env.recipient, recipient) &&
+          env.ttlExpiresAt.isAfter(DateTime.now().toUtc())) {
         out.add(
           RelayEnvelopeView(
             envelopeId: env.envelopeId,
@@ -304,12 +308,16 @@ class FakeRelayClient implements RelayClient {
     _maybeThrowOnce();
   }
 
+  List<ClientScheduledFireTarget> lastScheduledFireTargets =
+      <ClientScheduledFireTarget>[];
+
   @override
   Future<void> upsertClientScheduledFires({
     required Uint8List senderIdentity,
     required List<ClientScheduledFireTarget> targets,
   }) async {
     _maybeThrowOnce();
+    lastScheduledFireTargets = List<ClientScheduledFireTarget>.of(targets);
   }
 
   @override

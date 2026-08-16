@@ -308,16 +308,19 @@ func (s *Store) StoreEnvelope(ctx context.Context, e Envelope) error {
 }
 
 // FetchInbox returns up to `limit` undelivered envelopes addressed to
-// `recipient`, ordered by creation time.
-func (s *Store) FetchInbox(ctx context.Context, recipient []byte, limit int) ([]Envelope, error) {
+// `recipient` whose retention instant is still in the future, ordered
+// by creation time. Expired rows are omitted even before the sweeper
+// deletes them.
+func (s *Store) FetchInbox(ctx context.Context, recipient []byte, limit int, now time.Time) ([]Envelope, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT envelope_id, sender_identity, recipient_identity, ciphertext,
 		       kind, created_at, ttl_expires_at
 		FROM envelopes
 		WHERE recipient_identity = $1 AND delivered_at IS NULL
+		  AND ttl_expires_at > $3
 		ORDER BY created_at ASC
 		LIMIT $2
-	`, recipient, limit)
+	`, recipient, limit, now)
 	if err != nil {
 		return nil, err
 	}

@@ -39,11 +39,10 @@ type Config struct {
 	// limit per envelope"). Default: 65536 bytes (64 KiB).
 	EnvelopeMaxBytes int
 
-	// EnvelopeTTLMin/Max bound the per-envelope TTL value chosen by the
-	// API layer. The relay clamps client-requested TTLs into this range
-	// (`relay-state-schema-and-retention` / "TTL values fall within
-	// documented bounds and are publicly stated"). Defaults: 24h / 168h
-	// (7 days).
+	// EnvelopeTTLMax is the retention cap for envelopes with no product
+	// expiry (default 7 days). EnvelopeTTLMin is retained for env parsing
+	// compatibility; dated envelopes use the client-supplied expires_at
+	// instant and are not raised to this minimum.
 	EnvelopeTTLMin time.Duration
 	EnvelopeTTLMax time.Duration
 
@@ -139,20 +138,20 @@ func Load() (Config, error) {
 	var errs []error
 	routingTTLSeconds := intEnv(&errs, "ROUTING_PUSH_TOKEN_TTL_SECONDS", 1209600)
 	c := Config{
-		PublicListenAddr:     env("PUBLIC_LISTEN_ADDR", "0.0.0.0:8080"),
-		PrivateListenAddr:    env("PRIVATE_LISTEN_ADDR", "127.0.0.1:9090"),
-		DatabaseURL:          os.Getenv("DATABASE_URL"),
-		EnvelopeMaxBytes:     intEnv(&errs, "ENVELOPE_MAX_BYTES", 65536),
-		EnvelopeTTLMin:       durEnv(&errs, "ENVELOPE_TTL_MIN", 24*time.Hour),
-		EnvelopeTTLMax:       durEnv(&errs, "ENVELOPE_TTL_MAX", 168*time.Hour),
-		IdempotencyTTL:       durEnv(&errs, "IDEMPOTENCY_TTL", 24*time.Hour),
-		DisconnectGrace:      durEnv(&errs, "DISCONNECT_GRACE", 5*time.Minute),
-		RoutingInactivityTTL: durEnv(&errs, "ROUTING_INACTIVITY_TTL", 26*7*24*time.Hour),
-		SweeperInterval:      durEnv(&errs, "SWEEPER_INTERVAL", time.Minute),
-		RateLimitPerIdentity: floatEnv(&errs, "RATE_LIMIT_PER_IDENTITY", 5),
-		RateLimitPerIP:       floatEnv(&errs, "RATE_LIMIT_PER_IP", 20),
-		ShutdownTimeout:      durEnv(&errs, "SHUTDOWN_TIMEOUT", 30*time.Second),
-		CORSAllowedOrigins:   listEnv("CORS_ALLOWED_ORIGINS"),
+		PublicListenAddr:          env("PUBLIC_LISTEN_ADDR", "0.0.0.0:8080"),
+		PrivateListenAddr:         env("PRIVATE_LISTEN_ADDR", "127.0.0.1:9090"),
+		DatabaseURL:               os.Getenv("DATABASE_URL"),
+		EnvelopeMaxBytes:          intEnv(&errs, "ENVELOPE_MAX_BYTES", 65536),
+		EnvelopeTTLMin:            durEnv(&errs, "ENVELOPE_TTL_MIN", 24*time.Hour),
+		EnvelopeTTLMax:            durEnv(&errs, "ENVELOPE_TTL_MAX", 168*time.Hour),
+		IdempotencyTTL:            durEnv(&errs, "IDEMPOTENCY_TTL", 24*time.Hour),
+		DisconnectGrace:           durEnv(&errs, "DISCONNECT_GRACE", 5*time.Minute),
+		RoutingInactivityTTL:      durEnv(&errs, "ROUTING_INACTIVITY_TTL", 26*7*24*time.Hour),
+		SweeperInterval:           durEnv(&errs, "SWEEPER_INTERVAL", time.Minute),
+		RateLimitPerIdentity:      floatEnv(&errs, "RATE_LIMIT_PER_IDENTITY", 5),
+		RateLimitPerIP:            floatEnv(&errs, "RATE_LIMIT_PER_IP", 20),
+		ShutdownTimeout:           durEnv(&errs, "SHUTDOWN_TIMEOUT", 30*time.Second),
+		CORSAllowedOrigins:        listEnv("CORS_ALLOWED_ORIGINS"),
 		WakePushDispatchEnabled:   boolEnv(&errs, "WAKE_PUSH_DISPATCH_ENABLED", false),
 		FCMServiceAccountJSONPath: strings.TrimSpace(os.Getenv("FCM_SERVICE_ACCOUNT_JSON_PATH")),
 		APNsAuthKeyPath:           strings.TrimSpace(os.Getenv("APNS_AUTH_KEY_PATH")),

@@ -167,7 +167,7 @@ func TestIntegrationEnvelopeSubmitDeliverDelete(t *testing.T) {
 		t.Fatalf("EnvelopesDelivered want +1 got %v", got)
 	}
 
-	inbox, err := st.FetchInbox(ctx, recipient, 10)
+	inbox, err := st.FetchInbox(ctx, recipient, 10, time.Now().UTC())
 	if err != nil {
 		t.Fatalf("FetchInbox: %v", err)
 	}
@@ -242,11 +242,48 @@ func TestIntegrationSweeperExpiresUndeliveredEnvelope(t *testing.T) {
 		t.Fatalf("metrics.SweeperRuns want +1 got %v", got)
 	}
 
-	inbox, err := st.FetchInbox(ctx, recipient, 10)
+	inbox, err := st.FetchInbox(ctx, recipient, 10, time.Now().UTC())
 	if err != nil {
 		t.Fatalf("FetchInbox: %v", err)
 	}
 	if len(inbox) != 0 {
 		t.Fatalf("after sweep want 0 inbox rows got %d", len(inbox))
+	}
+}
+
+func TestIntegrationInboxOmitsExpiredEnvelope(t *testing.T) {
+	ctx := context.Background()
+	dsn := integrationDSN(t)
+
+	st, err := store.New(ctx, dsn)
+	if err != nil {
+		t.Fatalf("store.New: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	resetRelayData(ctx, t, dsn)
+
+	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
+	envID := bytes.Repeat([]byte{0x88}, 16)
+	sender := bytes.Repeat([]byte{0x11}, 8)
+	recipient := bytes.Repeat([]byte{0x22}, 8)
+
+	if err := st.StoreEnvelope(ctx, store.Envelope{
+		EnvelopeID:        envID,
+		SenderIdentity:    sender,
+		RecipientIdentity: recipient,
+		Ciphertext:        []byte{0xab},
+		Kind:              2,
+		CreatedAt:         now.Add(-4 * time.Hour),
+		TTLExpiresAt:      now.Add(-time.Minute),
+	}); err != nil {
+		t.Fatalf("StoreEnvelope: %v", err)
+	}
+
+	inbox, err := st.FetchInbox(ctx, recipient, 10, now)
+	if err != nil {
+		t.Fatalf("FetchInbox: %v", err)
+	}
+	if len(inbox) != 0 {
+		t.Fatalf("expired envelope still in inbox: %d rows", len(inbox))
 	}
 }

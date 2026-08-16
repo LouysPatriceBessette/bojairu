@@ -1083,6 +1083,12 @@
   "pushNotificationContactInvitationExpiredBody": "Una invitación no se usó y ha caducado.",
   "pushNotificationHousingProposalDeadlineTitle": "Plazo de propuesta próximo",
   "pushNotificationHousingProposalDeadlineBody": "Una oferta de plan de vivienda caduca pronto. Abre Vivienda para responder o comprobar el estado.",
+  "pushNotificationHousingProposalDeadlineExpiredTitle": "Plazo de propuesta vencido",
+  "pushNotificationHousingProposalDeadlineExpiredBody": "Una oferta de plan de vivienda caducó sin respuesta.",
+  "pushNotificationVehicleSharingDeadlineSoonTitle": "Oferta de uso a punto de caducar",
+  "pushNotificationVehicleSharingDeadlineSoonBody": "Una oferta de uso de vehículo caducará pronto.",
+  "pushNotificationVehicleSharingDeadlineExpiredTitle": "Oferta de uso caducada",
+  "pushNotificationVehicleSharingDeadlineExpiredBody": "Una oferta de uso de vehículo caducó sin respuesta.",
   "pushNotificationHousingTrialStartedTitle": "Prueba de vivienda iniciada",
   "pushNotificationHousingTrialStartedBody": "Puede usar vivienda hasta el {date}. Las compras están en Licencias.",
   "@pushNotificationHousingTrialStartedBody": {

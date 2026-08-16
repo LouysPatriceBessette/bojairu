@@ -4391,6 +4391,42 @@ abstract class AppLocalizations {
   /// **'A housing plan offer expires soon. Open Housing to respond or check status.'**
   String get pushNotificationHousingProposalDeadlineBody;
 
+  /// No description provided for @pushNotificationHousingProposalDeadlineExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal deadline passed'**
+  String get pushNotificationHousingProposalDeadlineExpiredTitle;
+
+  /// No description provided for @pushNotificationHousingProposalDeadlineExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A housing plan offer expired without a response.'**
+  String get pushNotificationHousingProposalDeadlineExpiredBody;
+
+  /// No description provided for @pushNotificationVehicleSharingDeadlineSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing offer expiring soon'**
+  String get pushNotificationVehicleSharingDeadlineSoonTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingDeadlineSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A vehicle sharing offer will expire soon.'**
+  String get pushNotificationVehicleSharingDeadlineSoonBody;
+
+  /// No description provided for @pushNotificationVehicleSharingDeadlineExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing offer expired'**
+  String get pushNotificationVehicleSharingDeadlineExpiredTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingDeadlineExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A vehicle sharing offer expired without a response.'**
+  String get pushNotificationVehicleSharingDeadlineExpiredBody;
+
   /// No description provided for @pushNotificationHousingTrialStartedTitle.
   ///
   /// In en, this message translates to:

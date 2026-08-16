@@ -2655,6 +2655,30 @@ class AppLocalizationsFr extends AppLocalizations {
       'Une offre de plan logement expire bientôt. Ouvrez Logement pour répondre ou vérifier le statut.';
 
   @override
+  String get pushNotificationHousingProposalDeadlineExpiredTitle =>
+      'Échéance de proposition passée';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineExpiredBody =>
+      'Une offre de plan logement a expiré sans réponse.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonTitle =>
+      'Offre de partage bientôt expirée';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonBody =>
+      'Une offre de partage véhicule expirera bientôt.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredTitle =>
+      'Offre de partage expirée';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredBody =>
+      'Une offre de partage véhicule n’a pas reçu de réponse et a expiré.';
+
+  @override
   String get pushNotificationHousingTrialStartedTitle =>
       'Essai logement commencé';
 

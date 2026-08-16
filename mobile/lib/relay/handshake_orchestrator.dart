@@ -40,6 +40,8 @@ import '../notifications/contact_notification_service.dart';
 import '../notifications/push_notification_service.dart';
 import '../prefs/app_preferences.dart';
 import '../sandbox/peer_simulator.dart';
+import '../scheduling/action_deadline_reminder_service.dart';
+import '../scheduling/client_scheduled_fire_times.dart';
 import '../vehicle/sharing/vehicle_sharing_offer_transport_service.dart';
 import '../vehicle/sharing/vehicle_sharing_lifecycle_transport_service.dart';
 import '../vehicle/sharing/vehicle_fuel_purchase_transport_service.dart';
@@ -212,9 +214,9 @@ class HandshakeOrchestrator {
     ContactNotificationSink contactNotifications =
         const DefaultContactNotificationSink(),
     Duration pollInterval = RelayHttpPolicy.pollInterval,
-    Duration helloTtl = const Duration(hours: 24),
-    Duration ackTtl = const Duration(hours: 24),
-    Duration steadyTtl = const Duration(hours: 24),
+    Duration helloTtl = const Duration(days: 7),
+    Duration ackTtl = const Duration(days: 7),
+    Duration steadyTtl = const Duration(days: 7),
     DateTime Function() now = DateTime.now,
   }) : _db = db,
        _identity = identity,
@@ -1953,6 +1955,10 @@ class HandshakeOrchestrator {
           vehicleLabel: vehicleLabel,
         );
       }
+      final acceptedLinkId = acceptResult.linkId;
+      if (acceptedLinkId != null && acceptedLinkId.isNotEmpty) {
+        unawaited(_cancelVehicleSharingDeadlineReminders(acceptedLinkId));
+      }
     }
     await _relay.ackEnvelope(
       envelopeId: envelope.envelopeId,
@@ -2092,10 +2098,10 @@ class HandshakeOrchestrator {
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
         final vehicle = await vehicles.getVehicle(link.vehicleId);
-        await PushNotificationService
-            .showLocalVehicleSharingReactivateProposeNotification(
+        await PushNotificationService.showLocalVehicleSharingReactivateProposeNotification(
           ownerDisplayName: sender.displayName,
-          vehicleLabel: vehicle?.displayLabel ??
+          vehicleLabel:
+              vehicle?.displayLabel ??
               (payload['vehicleLabel'] as String?) ??
               link.vehicleId,
         );
@@ -2157,12 +2163,12 @@ class HandshakeOrchestrator {
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
         final vehicle = await vehicles.getVehicle(link.vehicleId);
-        await PushNotificationService
-            .showLocalVehicleSharingReactivateAcceptNotification(
+        await PushNotificationService.showLocalVehicleSharingReactivateAcceptNotification(
           borrowerDisplayName: sender.displayName,
           vehicleLabel: vehicle?.displayLabel ?? link.vehicleId,
         );
       }
+      unawaited(_cancelVehicleSharingDeadlineReminders(link.id));
     } catch (e, st) {
       debugPrint(
         'vehicle_sharing_reactivate_accept import failed for ${contact.id}: '
@@ -2386,8 +2392,7 @@ class HandshakeOrchestrator {
         );
         steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
         if (_ownsDeviceHousingNotifications) {
-          await PushNotificationService
-              .showLocalVehicleUseSessionEndByOwnerNotification(
+          await PushNotificationService.showLocalVehicleUseSessionEndByOwnerNotification(
             ownerDisplayName: senderContact.displayName,
           );
         }
@@ -2674,11 +2679,21 @@ class HandshakeOrchestrator {
     return (contact: contact, peerPub: RelayRouting.unb64(peerPublicMaterial));
   }
 
+  Duration _retentionTtl(DateTime? expiresAt) {
+    if (expiresAt == null) return _steadyTtl;
+    final remaining = expiresAt.toUtc().difference(DateTime.now().toUtc());
+    if (remaining <= Duration.zero) {
+      return const Duration(seconds: 1);
+    }
+    return remaining;
+  }
+
   Future<void> _postVehicleUsageEnvelope({
     required Uint8List frame,
     required Uint8List selfPub,
     required Uint8List peerPub,
     required int kind,
+    DateTime? expiresAt,
   }) async {
     final selfAddr = await RelayRouting.steadyStateAddress(
       firstPub: selfPub,
@@ -2698,7 +2713,8 @@ class HandshakeOrchestrator {
       idempotencyKey: _randomBytes(16),
       ciphertext: frame,
       kind: kind,
-      ttl: _steadyTtl,
+      ttl: _retentionTtl(expiresAt),
+      expiresAt: expiresAt?.toUtc(),
     );
   }
 
@@ -3072,9 +3088,9 @@ class HandshakeOrchestrator {
       throw HandshakeOrchestratorError('unknown');
     }
 
-    final balance = await VehicleUsageBalanceService(vehicles).computeForLink(
-      link: link,
-    );
+    final balance = await VehicleUsageBalanceService(
+      vehicles,
+    ).computeForLink(link: link);
     final breakdown = balance.breakdown;
     if (breakdown == null) {
       throw HandshakeOrchestratorError('unknown');
@@ -3171,11 +3187,23 @@ class HandshakeOrchestrator {
       selfPub: selfPublicKey,
       peerPub: peer.peerPub,
       kind: EnvelopeKind.vehicleSharingReactivatePropose,
+      expiresAt: expiresAt.toUtc(),
     );
     await RelayActivityLogService(_db).append(
       kind: RelayActivityLogKinds.vehicleSharingReactivateProposeSent,
       initiatorKind: RelayActivityLogService.initiatorSelf,
       details: {'linkId': link.id, 'vehicleId': link.vehicleId},
+    );
+    final borrowerAddr = await RelayRouting.steadyStateAddress(
+      firstPub: peer.peerPub,
+      secondPub: selfPublicKey,
+    );
+    unawaited(
+      _registerVehicleSharingDeadlineReminders(
+        linkId: link.id,
+        expiresAt: expiresAt.toUtc(),
+        borrowerRoutingId: borrowerAddr,
+      ),
     );
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
@@ -3193,11 +3221,9 @@ class HandshakeOrchestrator {
       throw HandshakeOrchestratorError('unknown');
     }
     await vehicles.reactivateSharingLink(link.id);
-    final payloadJson = VehicleSharingLifecycleTransportService(_db)
-        .exportReactivateAcceptJson(
-          linkId: link.id,
-          vehicleId: link.vehicleId,
-        );
+    final payloadJson = VehicleSharingLifecycleTransportService(
+      _db,
+    ).exportReactivateAcceptJson(linkId: link.id, vehicleId: link.vehicleId);
     final peer = await _vehicleUsagePeer(link);
     final selfPrivateKey = await _identity.loadOrCreatePrivateKey();
     final selfPublicKey = await _identity.publicKey();
@@ -3349,8 +3375,7 @@ class HandshakeOrchestrator {
       );
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
-        await PushNotificationService
-            .showLocalUsageBalanceFreezeProposeNotification(
+        await PushNotificationService.showLocalUsageBalanceFreezeProposeNotification(
           peerDisplayName: sender.displayName,
           vehicleId: vehicleId,
           linkId: linkId,
@@ -3438,8 +3463,7 @@ class HandshakeOrchestrator {
       );
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
-        await PushNotificationService
-            .showLocalUsageBalanceFreezeDecisionNotification(
+        await PushNotificationService.showLocalUsageBalanceFreezeDecisionNotification(
           peerDisplayName: sender.displayName,
           accepted: accepted,
           vehicleId: link.vehicleId,
@@ -3587,8 +3611,7 @@ class HandshakeOrchestrator {
       );
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
-        await PushNotificationService
-            .showLocalUsageBalanceTransferProposeNotification(
+        await PushNotificationService.showLocalUsageBalanceTransferProposeNotification(
           peerDisplayName: sender.displayName,
           vehicleId: link.vehicleId,
           linkId: link.id,
@@ -3667,8 +3690,7 @@ class HandshakeOrchestrator {
       );
       steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
       if (_ownsDeviceHousingNotifications) {
-        await PushNotificationService
-            .showLocalUsageBalanceTransferDecisionNotification(
+        await PushNotificationService.showLocalUsageBalanceTransferDecisionNotification(
           peerDisplayName: sender.displayName,
           accepted: accepted,
           vehicleId: link.vehicleId,
@@ -4978,6 +5000,15 @@ class HandshakeOrchestrator {
     }
 
     final transport = HousingProposalTransportService(_db);
+    final revisionRow = await (_db.select(
+      _db.proposalRevisions,
+    )..where((t) => t.id.equals(revisionId))).getSingleOrNull();
+    final proposalExpires = revisionRow == null
+        ? null
+        : HousingProposalRevisionState.fromJson(
+            revisionRow.payloadJson,
+          ).responseExpiresAtUtc;
+    final proposalTtl = _retentionTtl(proposalExpires);
     final selfPriv = await _identity.loadOrCreatePrivateKey();
     final selfPub = await _identity.publicKey();
     final relayReachableContacts = (await _contacts.list())
@@ -5049,7 +5080,8 @@ class HandshakeOrchestrator {
               idempotencyKey: _randomBytes(16),
               ciphertext: frame,
               kind: EnvelopeKind.housingProposal,
-              ttl: _steadyTtl,
+              ttl: proposalTtl,
+              expiresAt: proposalExpires,
               planId: planId,
               selfParticipantId: '$planId:self',
             );
@@ -5107,7 +5139,7 @@ class HandshakeOrchestrator {
 
       final wakeIds = await routingWakeRecipientIdentities();
       if (wakeIds.isEmpty) return;
-      final recipientIds = <Uint8List>[...wakeIds];
+      final decisionMakerIds = <Uint8List>[];
       final selfPub = await _identity.publicKey();
       final participants = (await _db.listParticipants())
           .where((p) => p.id.startsWith('$planId:'))
@@ -5120,7 +5152,7 @@ class HandshakeOrchestrator {
         if (peerB64 == null || peerB64.isEmpty) continue;
         try {
           final peerPub = RelayRouting.unb64(peerB64);
-          recipientIds.add(
+          decisionMakerIds.add(
             await RelayRouting.steadyStateAddress(
               firstPub: peerPub,
               secondPub: selfPub,
@@ -5128,11 +5160,14 @@ class HandshakeOrchestrator {
           );
         } catch (_) {}
       }
+      final validFor = expires.difference(DateTime.now().toUtc());
       await ProposalDeadlineReminderService(relay: _relay).registerFires(
         senderIdentity: wakeIds.first,
         revisionId: revisionId,
         expiresAtUtc: expires,
-        recipientRoutingIds: recipientIds,
+        validFor: validFor,
+        decisionMakerRoutingIds: decisionMakerIds,
+        waiterRoutingIds: wakeIds,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -5165,6 +5200,7 @@ class HandshakeOrchestrator {
     String? expenseId,
     String? revisionId,
     String? decisionKind,
+    DateTime? expiresAt,
   }) async {
     final gate = await _entitlement?.gateFor(
       planId: planId,
@@ -5181,6 +5217,7 @@ class HandshakeOrchestrator {
       ciphertext: ciphertext,
       kind: kind,
       ttl: ttl,
+      expiresAt: expiresAt?.toUtc(),
       entitlementGate: gate,
     );
   }
@@ -5444,6 +5481,49 @@ class HandshakeOrchestrator {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('proposal deadline cancel: $e');
+      }
+    }
+  }
+
+  Future<void> _registerVehicleSharingDeadlineReminders({
+    required String linkId,
+    required DateTime expiresAt,
+    required Uint8List borrowerRoutingId,
+  }) async {
+    try {
+      final wakeIds = await routingWakeRecipientIdentities();
+      if (wakeIds.isEmpty) return;
+      final validFor = expiresAt.toUtc().difference(DateTime.now().toUtc());
+      if (validFor > Duration.zero) {
+        await ActionDeadlineReminderService(relay: _relay).register(
+          senderIdentity: wakeIds.first,
+          domain: ClientScheduledFireTimes.domainVehicleSharingDeadline,
+          scopeKeyBytes: ClientScheduledFireTimes.scopeKeyFromUtf8(linkId),
+          expiresAtUtc: expiresAt.toUtc(),
+          validFor: validFor,
+          decisionMakerRoutingIds: [borrowerRoutingId],
+          waiterRoutingIds: wakeIds,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('vehicle sharing deadline register: $e');
+      }
+    }
+  }
+
+  Future<void> _cancelVehicleSharingDeadlineReminders(String linkId) async {
+    try {
+      final wakeIds = await routingWakeRecipientIdentities();
+      if (wakeIds.isEmpty) return;
+      await ActionDeadlineReminderService(relay: _relay).cancel(
+        senderIdentity: wakeIds.first,
+        domain: ClientScheduledFireTimes.domainVehicleSharingDeadline,
+        scopeKeyBytes: ClientScheduledFireTimes.scopeKeyFromUtf8(linkId),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('vehicle sharing deadline cancel: $e');
       }
     }
   }
@@ -6184,7 +6264,8 @@ class HandshakeOrchestrator {
       idempotencyKey: _randomBytes(16),
       ciphertext: frame,
       kind: EnvelopeKind.vehicleSharingOffer,
-      ttl: _steadyTtl,
+      ttl: _retentionTtl(link?.expiresAt),
+      expiresAt: link?.expiresAt?.toUtc(),
     );
     await RelayActivityLogService(_db).append(
       kind: RelayActivityLogKinds.vehicleSharingOfferSent,
@@ -6195,6 +6276,16 @@ class HandshakeOrchestrator {
         if (link != null) 'vehicleId': link.vehicleId,
       },
     );
+    final offerExpires = link?.expiresAt;
+    if (offerExpires != null) {
+      unawaited(
+        _registerVehicleSharingDeadlineReminders(
+          linkId: linkId,
+          expiresAt: offerExpires,
+          borrowerRoutingId: peerAddr,
+        ),
+      );
+    }
     steadyStateInboxTick.value = steadyStateInboxTick.value + 1;
   }
 

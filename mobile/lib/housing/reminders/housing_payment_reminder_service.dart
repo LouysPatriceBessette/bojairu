@@ -95,9 +95,9 @@ class HousingPaymentReminderService {
   }
 
   Future<bool> _hasAnyOpenAgreementPeriodPlan() async {
-    final housing = await (_db.select(_db.plans)
-          ..where((t) => t.type.equals('housing')))
-        .get();
+    final housing = await (_db.select(
+      _db.plans,
+    )..where((t) => t.type.equals('housing'))).get();
     for (final plan in housing) {
       if (await _agreements.isPlanAgreementPeriodOpen(plan.id)) {
         return true;
@@ -114,9 +114,9 @@ class HousingPaymentReminderService {
   }) async {
     if (!await _agreements.isPlanAgreementPeriodOpen(planId)) return;
 
-    final planRow = await (_db.select(_db.plans)
-          ..where((t) => t.id.equals(planId)))
-        .getSingleOrNull();
+    final planRow = await (_db.select(
+      _db.plans,
+    )..where((t) => t.id.equals(planId))).getSingleOrNull();
     if (planRow == null) return;
 
     final agreement = await _db.getAgreementForPlan(planId);
@@ -268,6 +268,15 @@ class HousingPaymentReminderService {
           if (handled) await _safeAck(recipient, d.fireId);
           continue;
         }
+        if (d.domain == ClientScheduledFireTimes.domainVehicleSharingDeadline) {
+          if (_prefs.notificationsEnabled) {
+            await PushNotificationService.showLocalVehicleSharingDeadlineNotification(
+              reminderKind: d.reminderKind,
+            );
+          }
+          await _safeAck(recipient, d.fireId);
+          continue;
+        }
         await _safeAck(recipient, d.fireId);
       }
     }
@@ -416,9 +425,9 @@ class HousingPaymentReminderService {
   }
 
   Future<String?> _packageIdForPlan(String planId) async {
-    final row = await (_db.select(_db.proposalPackages)
-          ..where((t) => t.planId.equals(planId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.proposalPackages,
+    )..where((t) => t.planId.equals(planId))).getSingleOrNull();
     return row?.id;
   }
 }

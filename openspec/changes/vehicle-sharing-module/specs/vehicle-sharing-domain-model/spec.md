@@ -39,7 +39,16 @@ Before posting a vehicle-sharing offer, the Propriétaire SHALL choose a **respo
 #### Scenario: Local expiry of pending offers
 - **WHEN** wall-clock passes `expiresAt` while the link is still pending
 - **THEN** the local installation marks the link `expired` and MUST NOT treat it as accept-able
-- **THEN** relay-enforced TTL, cross-device expiry sync beyond the offer JSON field, and deadline reminder scheduling are **deferred** (no relay Go/binary change required for the client-local behavior above)
+- **THEN** this local refusal remains the fallback if the peer already holds the offer JSON
+
+### Requirement: Relay does not deliver expired sharing offers
+When posting a vehicle sharing offer or reactivation proposal, the client SHALL supply the product deadline as plaintext `expires_at` on `POST /v1/envelopes`. The relay SHALL retain the envelope until that instant and SHALL NOT return it on inbox poll afterwards. Envelopes without `expires_at` SHALL be retained at most seven days.
+
+Decision-deadline reminders for these offers SHALL use the same recipe A lead times as contacts invitations (soon ping to the Emprunteur; at-deadline ping to the Propriétaire if still unanswered).
+
+#### Scenario: Inbox omits an expired offer
+- **WHEN** an offer envelope's `expires_at` is in the past and still undelivered
+- **THEN** `GET /v1/inbox/{recipient}` does not include that envelope
 
 ### Requirement: No reverse discovery path for Emprunteurs
 The system MUST NOT provide a flow where an Emprunteur browses or requests access to unspecified vehicles from a Propriétaire's fleet. The **only** entry path is: **Propriétaire offers this vehicle → Emprunteur accepts or declines**.

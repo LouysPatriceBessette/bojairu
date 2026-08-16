@@ -154,4 +154,11 @@ func TestLoadMigrationsSortsByVersionPrefix(t *testing.T) {
 	if !strings.Contains(string(raw3), "UPDATE schema_version SET version = 3") {
 		t.Errorf("0003 migration must bump schema_version to 3")
 	}
+	raw4, err := fs.ReadFile(schemaFS, "schema/0004_envelope_expiry_and_vehicle_deadline.sql")
+	if err != nil {
+		t.Fatalf("read 0004: %v", err)
+	}
+	if !strings.Contains(string(raw4), "UPDATE schema_version SET version = 4") {
+		t.Errorf("0004 migration must bump schema_version to 4")
+	}
 }

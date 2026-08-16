@@ -29,12 +29,12 @@ type PendingReminderDelivery struct {
 	TargetID             []byte
 	RecipientRoutingID   []byte
 	Domain               string
-	ScopeKey           []byte
-	ReminderKind       string
-	PeriodKey          []byte
-	PeriodDueAt        *time.Time
+	ScopeKey             []byte
+	ReminderKind         string
+	PeriodKey            []byte
+	PeriodDueAt          *time.Time
 	RecurrencePeriodDays *int
-	FiredAt            time.Time
+	FiredAt              time.Time
 }
 
 // UpsertRecipientTimezone stores the IANA zone for a routing identity.
@@ -529,14 +529,15 @@ type ClientScheduledFireTarget struct {
 }
 
 var allowedClientFireDomains = map[string]bool{
-	"contacts_invitation_expiry":  true,
-	"housing_proposal_deadline":   true,
+	"contacts_invitation_expiry": true,
+	"housing_proposal_deadline":  true,
+	"vehicle_sharing_deadline":   true,
 }
 
 var allowedClientFireKinds = map[string]bool{
-	"before_expiry":    true,
-	"expired":          true,
-	"before_deadline":  true,
+	"before_expiry":   true,
+	"expired":         true,
+	"before_deadline": true,
 }
 
 // UpsertClientScheduledFires replaces targets+pending fires for client wall-clock domains.

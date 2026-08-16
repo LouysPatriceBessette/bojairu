@@ -243,10 +243,10 @@ var errEntitlementDenied = errors.New("entitlement denied")
 // ---------------------------------------------------------------------------
 
 type participantInstallationMigrateRequest struct {
-	EnvelopeKind                  int    `json:"envelope_kind"`
-	PlanID                        string `json:"plan_id"`
-	OldParticipantInstallationID  string `json:"old_participant_installation_id"`
-	NewParticipantInstallationID  string `json:"new_participant_installation_id"`
+	EnvelopeKind                 int    `json:"envelope_kind"`
+	PlanID                       string `json:"plan_id"`
+	OldParticipantInstallationID string `json:"old_participant_installation_id"`
+	NewParticipantInstallationID string `json:"new_participant_installation_id"`
 }
 
 func (s *Server) handleParticipantInstallationMigrate(w http.ResponseWriter, r *http.Request) {
@@ -313,6 +313,7 @@ type envelopeRequest struct {
 	Ciphertext        string            `json:"ciphertext"`
 	Kind              int               `json:"kind"`
 	TTLSeconds        int               `json:"ttl_seconds"`
+	ExpiresAt         *time.Time        `json:"expires_at"`
 	EntitlementGate   *entitlement.Gate `json:"entitlement_gate,omitempty"`
 }
 
@@ -352,7 +353,6 @@ func (s *Server) handleEnvelopes(w http.ResponseWriter, r *http.Request) {
 		s.rejectBadFraming(w, r, "envelopes", "kind_out_of_range")
 		return
 	}
-	ttl := s.clampTTL(time.Duration(req.TTLSeconds) * time.Second)
 
 	if !s.identityLim.Allow("identity:" + hex.EncodeToString(sender)) {
 		metrics.RateLimitRejections.WithLabelValues("identity").Inc()
@@ -381,6 +381,11 @@ func (s *Server) handleEnvelopes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := s.now()
+	ttlAt, err := s.envelopeRetentionUntil(req, now)
+	if err != nil {
+		s.rejectBadFraming(w, r, "envelopes", err.Error())
+		return
+	}
 	storedID, replay, err := s.store.LookupOrReserveIdempotency(
 		r.Context(), sender, idemKey, envelopeID, s.cfg.IdempotencyTTL, now)
 	if err != nil {
@@ -403,7 +408,7 @@ func (s *Server) handleEnvelopes(w http.ResponseWriter, r *http.Request) {
 		Ciphertext:        ciphertext,
 		Kind:              req.Kind,
 		CreatedAt:         now,
-		TTLExpiresAt:      now.Add(ttl),
+		TTLExpiresAt:      ttlAt,
 	})
 	if err != nil {
 		s.writeInternal(w, r, "envelopes", err)
@@ -413,7 +418,7 @@ func (s *Server) handleEnvelopes(w http.ResponseWriter, r *http.Request) {
 	metrics.EnvelopesAccepted.Inc()
 	writeJSON(w, http.StatusCreated, envelopeResponse{
 		EnvelopeID:   base64.RawURLEncoding.EncodeToString(storedID),
-		TTLExpiresAt: now.Add(ttl),
+		TTLExpiresAt: ttlAt,
 		Replay:       false,
 	})
 
@@ -531,7 +536,7 @@ func (s *Server) handleInbox(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = n
 	}
-	rows, err := s.store.FetchInbox(r.Context(), recipient, limit)
+	rows, err := s.store.FetchInbox(r.Context(), recipient, limit, s.now())
 	if err != nil {
 		s.writeInternal(w, r, "inbox", err)
 		return
@@ -805,6 +810,27 @@ func (s *Server) clampTTL(d time.Duration) time.Duration {
 		return s.cfg.EnvelopeTTLMax
 	}
 	return d
+}
+
+var errExpiresAtNotFuture = errors.New("expires_at_not_future")
+
+// envelopeRetentionUntil is the delivery cutoff stored as ttl_expires_at.
+// A plaintext expires_at is a product deadline: keep until that instant
+// (capped at EnvelopeTTLMax). With no expires_at, keep EnvelopeTTLMax
+// (7 days). ttl_seconds is ignored.
+func (s *Server) envelopeRetentionUntil(req envelopeRequest, now time.Time) (time.Time, error) {
+	maxAt := now.Add(s.cfg.EnvelopeTTLMax)
+	if req.ExpiresAt == nil {
+		return maxAt, nil
+	}
+	at := req.ExpiresAt.UTC()
+	if !at.After(now) {
+		return time.Time{}, errExpiresAtNotFuture
+	}
+	if at.After(maxAt) {
+		return maxAt, nil
+	}
+	return at, nil
 }
 
 const envelopeJSONOverhead = 2048

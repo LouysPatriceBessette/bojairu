@@ -10,7 +10,7 @@ The relay refuses to start when the `schema_version` table does not match the bi
 
 | Table | Purpose | Retention |
 | --- | --- | --- |
-| `envelopes` | Encrypted ciphertext awaiting delivery | Until ack or `ttl_expires_at` |
+| `envelopes` | Encrypted ciphertext awaiting delivery | Until ack or `ttl_expires_at` (`expires_at` on POST, else 7 days) |
 | `idempotency_entries` | Send deduplication | Configured idempotency TTL |
 | `routing_relationships` | Admission graph for envelope routing | Active / disconnecting + inactivity TTL |
 

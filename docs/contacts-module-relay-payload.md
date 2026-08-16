@@ -77,18 +77,25 @@ included as a plaintext field.
 
 ```
 {
-  "recipient": "<routing-id>",
-  "sender":    "<routing-id>",
+  "sender_identity": "<routing-id>",
+  "recipient_identity": "<routing-id>",
+  "idempotency_key": "<opaque>",
+  "ciphertext": "<base64url of the encrypted frame>",
+  "kind": <int>,
   "ttl_seconds": <int>,
-  "body_b64":  "<base64url of the encrypted frame>"
+  "expires_at": "<RFC3339 UTC, optional>"
 }
 ```
 
-- `recipient` and `sender` are routing ids.
-- `ttl_seconds` is bounded by the spec (currently ≤ 24 h for hello,
-  ≤ 7 days for steady-state envelopes).
-- `body_b64` is the AEAD ciphertext + tag (see § 4).
-- No other field is sent.
+- `sender_identity` and `recipient_identity` are routing ids.
+- `expires_at` is plaintext delivery mechanics (not ciphertext). When
+  present, the relay keeps the envelope until that instant, then must
+  not return it on inbox poll (and the sweeper deletes it). When
+  omitted, retention is **7 days**.
+- `ttl_seconds` is ignored for retention on current relays; clients may
+  still send it for older binaries.
+- No user-facing payload fields are sent in the clear besides this
+  delivery cutoff.
 
 ### 3.3 `GET /v1/inbox/{recipient}`
 

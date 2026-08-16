@@ -17,6 +17,7 @@ import '../housing/reminders/payment_reminder_journal_id.dart';
 import '../firebase_options.dart';
 import '../prefs/app_preferences.dart';
 import '../relay/handshake_orchestrator.dart';
+import '../scheduling/client_scheduled_fire_times.dart';
 import '../vehicle/vehicle_owner_contact.dart';
 import 'closed_app_push_registration_service.dart';
 import 'notification_localizations.dart';
@@ -83,7 +84,8 @@ class PushNotificationService {
       'housing_participation_change:';
   static const String _planPeerEstablishmentPrefix = 'plan_peer_establishment:';
   static const String _housingActiveHubPrefix = 'housing_active_hub:';
-  static const String _housingPaymentReminderPrefix = 'housing_payment_reminder|';
+  static const String _housingPaymentReminderPrefix =
+      'housing_payment_reminder|';
   static const String _contactsPayload = 'contacts';
   static const String _licensesTapPayload = 'licenses';
   static const int _operatorNoticeNotificationId = 0x4F4E0001;
@@ -246,8 +248,7 @@ class PushNotificationService {
       return;
     }
     if (payload.startsWith(_vehicleTrafficViolationTapPrefix)) {
-      final rest =
-          payload.substring(_vehicleTrafficViolationTapPrefix.length);
+      final rest = payload.substring(_vehicleTrafficViolationTapPrefix.length);
       final parts = rest.split('|');
       final vehicleId = parts.isNotEmpty ? parts[0].trim() : '';
       final violationId = parts.length >= 2 ? parts[1].trim() : '';
@@ -264,7 +265,9 @@ class PushNotificationService {
       return;
     }
     if (payload.startsWith(_vehicleDetailTapPrefix)) {
-      final vehicleId = payload.substring(_vehicleDetailTapPrefix.length).trim();
+      final vehicleId = payload
+          .substring(_vehicleDetailTapPrefix.length)
+          .trim();
       if (vehicleId.isNotEmpty) {
         _navigateToVehicleDetail(vehicleId);
       } else {
@@ -279,10 +282,7 @@ class PushNotificationService {
       final linkId = parts.length >= 2 ? parts[1].trim() : '';
       if (vehicleId.isNotEmpty && linkId.isNotEmpty) {
         unawaited(
-          _navigateToVehicleUsageBalance(
-            vehicleId: vehicleId,
-            linkId: linkId,
-          ),
+          _navigateToVehicleUsageBalance(vehicleId: vehicleId, linkId: linkId),
         );
       } else {
         _navigateToVehicleSharing();
@@ -418,6 +418,7 @@ class PushNotificationService {
     HousingNavigationIntent.requestOpenAcceptedExpensesJournal(planId);
     _navigateToHousing();
   }
+
   /// Foreground wake must poll the **installed** orchestrator (same DB + tick).
   ///
   /// [runWakeInboxPollOnce] opens a second [AppDatabase] and a non-installed
@@ -651,8 +652,8 @@ class PushNotificationService {
     var openAsAmendment = isInForceAmendment;
     if (planId != null && planId.isNotEmpty) {
       final db = AppDatabase.processScope;
-      openAsAmendment = openAsAmendment ||
-          await pendingRevisionIsAmendment(db, planId);
+      openAsAmendment =
+          openAsAmendment || await pendingRevisionIsAmendment(db, planId);
       if (openAsAmendment) {
         payload = '$_housingAmendmentPrefix$planId';
       } else {
@@ -722,8 +723,9 @@ class PushNotificationService {
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -766,8 +768,9 @@ class PushNotificationService {
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -799,8 +802,9 @@ class PushNotificationService {
     if (kIsWeb) return;
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -827,7 +831,9 @@ class PushNotificationService {
   }) async {
     final prefs = await AppPreferences.load();
     final l10n = l10nForNotificationLocale(prefs: prefs);
-    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    final name = ownerDisplayName.trim().isEmpty
+        ? '—'
+        : ownerDisplayName.trim();
     final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
     await _showVehicleSharingSimpleNotification(
       title: l10n.pushNotificationVehicleSharingRevokeTitle,
@@ -842,7 +848,9 @@ class PushNotificationService {
   }) async {
     final prefs = await AppPreferences.load();
     final l10n = l10nForNotificationLocale(prefs: prefs);
-    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    final name = ownerDisplayName.trim().isEmpty
+        ? '—'
+        : ownerDisplayName.trim();
     final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
     await _showVehicleSharingSimpleNotification(
       title: l10n.pushNotificationVehicleSharingReactivateProposeTitle,
@@ -860,8 +868,9 @@ class PushNotificationService {
   }) async {
     final prefs = await AppPreferences.load();
     final l10n = l10nForNotificationLocale(prefs: prefs);
-    final name =
-        borrowerDisplayName.trim().isEmpty ? '—' : borrowerDisplayName.trim();
+    final name = borrowerDisplayName.trim().isEmpty
+        ? '—'
+        : borrowerDisplayName.trim();
     final vehicle = vehicleLabel.trim().isEmpty ? '—' : vehicleLabel.trim();
     await _showVehicleSharingSimpleNotification(
       title: l10n.pushNotificationVehicleSharingReactivateAcceptTitle,
@@ -873,12 +882,32 @@ class PushNotificationService {
     );
   }
 
+  static Future<void> showLocalVehicleSharingDeadlineNotification({
+    required String reminderKind,
+  }) async {
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    final expired = reminderKind == ClientScheduledFireTimes.kindExpired;
+    await _showVehicleSharingSimpleNotification(
+      title: expired
+          ? l10n.pushNotificationVehicleSharingDeadlineExpiredTitle
+          : l10n.pushNotificationVehicleSharingDeadlineSoonTitle,
+      body: expired
+          ? l10n.pushNotificationVehicleSharingDeadlineExpiredBody
+          : l10n.pushNotificationVehicleSharingDeadlineSoonBody,
+      payload: _vehicleSharingOfferTapPayload,
+    );
+  }
+
   static Future<void> showLocalVehicleUseSessionEndByOwnerNotification({
     required String ownerDisplayName,
   }) async {
     final prefs = await AppPreferences.load();
     final l10n = l10nForNotificationLocale(prefs: prefs);
-    final name = ownerDisplayName.trim().isEmpty ? '—' : ownerDisplayName.trim();
+    final name = ownerDisplayName.trim().isEmpty
+        ? '—'
+        : ownerDisplayName.trim();
     await _showVehicleSharingSimpleNotification(
       title: l10n.pushNotificationVehicleUseSessionEndByOwnerTitle,
       body: l10n.pushNotificationVehicleUseSessionEndByOwnerBody(name),
@@ -948,7 +977,8 @@ class PushNotificationService {
     DateTime? periodDueAt,
   }) async {
     final prefs = await AppPreferences.load();
-    if (!prefs.notificationsEnabled || !prefs.notificationHousingPaymentReminders) {
+    if (!prefs.notificationsEnabled ||
+        !prefs.notificationHousingPaymentReminders) {
       return;
     }
 
@@ -1045,6 +1075,7 @@ class PushNotificationService {
 
   static Future<void> showLocalHousingProposalDeadlineNotification({
     required String revisionId,
+    String reminderKind = ClientScheduledFireTimes.kindBeforeExpiry,
   }) async {
     final prefs = await AppPreferences.load();
     if (!prefs.notificationsEnabled ||
@@ -1052,13 +1083,18 @@ class PushNotificationService {
       return;
     }
     final l10n = l10nForNotificationLocale(prefs: prefs);
+    final expired = reminderKind == ClientScheduledFireTimes.kindExpired;
     final displayTitle = notificationQaPrefix(
       13,
-      l10n.pushNotificationHousingProposalDeadlineTitle,
+      expired
+          ? l10n.pushNotificationHousingProposalDeadlineExpiredTitle
+          : l10n.pushNotificationHousingProposalDeadlineTitle,
     );
     final displayBody = notificationQaPrefix(
       13,
-      l10n.pushNotificationHousingProposalDeadlineBody,
+      expired
+          ? l10n.pushNotificationHousingProposalDeadlineExpiredBody
+          : l10n.pushNotificationHousingProposalDeadlineBody,
     );
     if (kIsWeb) return;
     await _ensureLocalNotificationsInitialized(_plugin);
@@ -1151,12 +1187,14 @@ class PushNotificationService {
     if (!shouldDisplayHousingDecisionNotification(prefs)) return;
 
     final l10n = l10nForNotificationLocale(prefs: prefs);
-    final isTransfer = expenseKind == RealizedExpenseKind.transfer ||
+    final isTransfer =
+        expenseKind == RealizedExpenseKind.transfer ||
         expenseKind == RealizedExpenseKind.reimbursement ||
         expenseKind == RealizedExpenseKind.advance;
     final sender = senderDisplayName.trim();
     final payer = (payerDisplayName ?? '').trim();
-    final usePeerPayerCopy = !localUserIsPayer && payer.isNotEmpty && sender.isNotEmpty;
+    final usePeerPayerCopy =
+        !localUserIsPayer && payer.isNotEmpty && sender.isNotEmpty;
     final String title;
     final String body;
     if (isTransfer) {
@@ -1243,23 +1281,22 @@ class PushNotificationService {
 
     final l10n = l10nForNotificationLocale(prefs: prefs);
     final title = l10n.pushNotificationHousingParticipationChangeTitle;
-    final body =
-        senderDisplayName.trim().isEmpty
-            ? l10n.pushNotificationHousingParticipationChangeBody
-            : l10n.pushNotificationHousingParticipationChangeBodyFrom(
-              senderDisplayName.trim(),
-            );
+    final body = senderDisplayName.trim().isEmpty
+        ? l10n.pushNotificationHousingParticipationChangeBody
+        : l10n.pushNotificationHousingParticipationChangeBodyFrom(
+            senderDisplayName.trim(),
+          );
     const qaNumber = 9;
     final displayTitle = notificationQaPrefix(qaNumber, title);
     final displayBody = notificationQaPrefix(qaNumber, body);
 
     final tapPayload =
         changeId != null &&
-                changeId.isNotEmpty &&
-                planId != null &&
-                planId.isNotEmpty
-            ? '$_housingParticipationChangePrefix$changeId|$planId'
-            : _housingTapPayload;
+            changeId.isNotEmpty &&
+            planId != null &&
+            planId.isNotEmpty
+        ? '$_housingParticipationChangePrefix$changeId|$planId'
+        : _housingTapPayload;
 
     if (kIsWeb) {
       await housing_browser.showHousingBrowserNotification(
@@ -1355,17 +1392,18 @@ class PushNotificationService {
         : l10n.pushNotificationHousingDecisionTitle;
     final body = senderDisplayName.trim().isEmpty
         ? (isAmendment
-            ? l10n.pushNotificationHousingAmendmentDecisionBody
-            : l10n.pushNotificationHousingDecisionBody)
+              ? l10n.pushNotificationHousingAmendmentDecisionBody
+              : l10n.pushNotificationHousingDecisionBody)
         : (isAmendment
-            ? l10n.pushNotificationHousingAmendmentDecisionBodyFrom(
-                senderDisplayName.trim(),
-              )
-            : l10n.pushNotificationHousingDecisionBodyFrom(
-                senderDisplayName.trim(),
-              ));
+              ? l10n.pushNotificationHousingAmendmentDecisionBodyFrom(
+                  senderDisplayName.trim(),
+                )
+              : l10n.pushNotificationHousingDecisionBodyFrom(
+                  senderDisplayName.trim(),
+                ));
 
-    final hasSettledRevision = planId != null &&
+    final hasSettledRevision =
+        planId != null &&
         planId.isNotEmpty &&
         revisionId != null &&
         revisionId.isNotEmpty;
@@ -1376,8 +1414,8 @@ class PushNotificationService {
     final tapPayload = hasSettledRevision
         ? '$_housingDecisionPrefix$planId|$revisionId'
         : (planId != null && planId.isNotEmpty
-            ? '$_housingAmendmentPrefix$planId'
-            : _housingTapPayload);
+              ? '$_housingAmendmentPrefix$planId'
+              : _housingTapPayload);
 
     if (kIsWeb) {
       await housing_browser.showHousingBrowserNotification(
@@ -1603,9 +1641,7 @@ class PushNotificationService {
   }
 
   static void _navigateToVehiclePendingCorrections(String vehicleId) {
-    pushFromNotificationTapWhenReady(
-      '/vehicle/$vehicleId/pending-corrections',
-    );
+    pushFromNotificationTapWhenReady('/vehicle/$vehicleId/pending-corrections');
   }
 
   static void _navigateToVehiclePendingCorrection({
@@ -1625,8 +1661,7 @@ class PushNotificationService {
   static String vehicleUsageBalanceTapPayload({
     required String vehicleId,
     required String linkId,
-  }) =>
-      '$_vehicleUsageBalanceTapPrefix$vehicleId|$linkId';
+  }) => '$_vehicleUsageBalanceTapPrefix$vehicleId|$linkId';
 
   static Future<void> _refreshUsageBalanceUiAfterNotificationTap(
     BuildContext context,
@@ -1642,8 +1677,9 @@ class PushNotificationService {
     required String linkId,
   }) async {
     try {
-      final link = await VehiclesRepository(AppDatabase.processScope)
-          .getSharingLink(linkId);
+      final link = await VehiclesRepository(
+        AppDatabase.processScope,
+      ).getSharingLink(linkId);
       if (link == null || link.vehicleId != vehicleId) {
         _navigateToVehicleSharing();
         return;
@@ -1678,40 +1714,33 @@ class PushNotificationService {
   static String vehicleMaintenanceTapPayload({
     required String vehicleId,
     required String eventId,
-  }) =>
-      '$_vehicleMaintenanceTapPrefix$vehicleId|$eventId';
+  }) => '$_vehicleMaintenanceTapPrefix$vehicleId|$eventId';
 
   @visibleForTesting
   static String vehicleMaintenanceJournalLocation({
     required String vehicleId,
     required String eventId,
-  }) =>
-      '/vehicle/$vehicleId/maintenance-log/$eventId';
+  }) => '/vehicle/$vehicleId/maintenance-log/$eventId';
 
   /// Payload / route for owner tap on borrower traffic-violation notification.
   @visibleForTesting
   static String vehicleTrafficViolationTapPayload({
     required String vehicleId,
     required String violationId,
-  }) =>
-      '$_vehicleTrafficViolationTapPrefix$vehicleId|$violationId';
+  }) => '$_vehicleTrafficViolationTapPrefix$vehicleId|$violationId';
 
   @visibleForTesting
   static String vehicleTrafficViolationJournalLocation({
     required String vehicleId,
     required String violationId,
-  }) =>
-      '/vehicle/$vehicleId/violation-log/$violationId';
+  }) => '/vehicle/$vehicleId/violation-log/$violationId';
 
   static void _navigateToVehicleMaintenanceDetail({
     required String vehicleId,
     required String eventId,
   }) {
     pushFromNotificationTapWhenReady(
-      vehicleMaintenanceJournalLocation(
-        vehicleId: vehicleId,
-        eventId: eventId,
-      ),
+      vehicleMaintenanceJournalLocation(vehicleId: vehicleId, eventId: eventId),
     );
   }
 
@@ -1749,14 +1778,16 @@ class PushNotificationService {
       return;
     }
 
-    final payload = correctionReadingId != null && correctionReadingId.isNotEmpty
+    final payload =
+        correctionReadingId != null && correctionReadingId.isNotEmpty
         ? '$_vehicleSessionGapTapPrefix$vehicleId|$correctionReadingId'
         : '$_vehicleSessionGapTapPrefix$vehicleId|';
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -1802,8 +1833,9 @@ class PushNotificationService {
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -1852,8 +1884,9 @@ class PushNotificationService {
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,
@@ -1894,8 +1927,9 @@ class PushNotificationService {
 
     await _ensureLocalNotificationsInitialized(_plugin);
     final playSound = prefs.notificationSoundEnabled;
-    final androidChannel =
-        playSound ? _vehicleSharingChannel : _vehicleSharingSilentChannel;
+    final androidChannel = playSound
+        ? _vehicleSharingChannel
+        : _vehicleSharingSilentChannel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
       title: title,

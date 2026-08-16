@@ -91,22 +91,44 @@ func TestDecodeCiphertextRejectsOversize(t *testing.T) {
 	}
 }
 
-func TestClampTTL(t *testing.T) {
+func TestEnvelopeRetentionUntil(t *testing.T) {
 	s := &Server{
 		cfg: config.Config{
 			EnvelopeTTLMin: 24 * time.Hour,
 			EnvelopeTTLMax: 168 * time.Hour,
 		},
 	}
-	if got := s.clampTTL(0); got != 24*time.Hour {
-		t.Errorf("below-min not clamped: %s", got)
-	}
-	if got := s.clampTTL(72 * time.Hour); got != 72*time.Hour {
-		t.Errorf("in-range not preserved: %s", got)
-	}
-	if got := s.clampTTL(500 * time.Hour); got != 168*time.Hour {
-		t.Errorf("above-max not clamped: %s", got)
-	}
+	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
+
+	t.Run("no expires_at uses seven days", func(t *testing.T) {
+		got, err := s.envelopeRetentionUntil(envelopeRequest{}, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := now.Add(168 * time.Hour)
+		if !got.Equal(want) {
+			t.Fatalf("got %s want %s", got, want)
+		}
+	})
+
+	t.Run("expires_at three hours is kept", func(t *testing.T) {
+		at := now.Add(3 * time.Hour)
+		got, err := s.envelopeRetentionUntil(envelopeRequest{ExpiresAt: &at}, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !got.Equal(at) {
+			t.Fatalf("got %s want %s", got, at)
+		}
+	})
+
+	t.Run("past expires_at is rejected", func(t *testing.T) {
+		at := now.Add(-time.Minute)
+		_, err := s.envelopeRetentionUntil(envelopeRequest{ExpiresAt: &at}, now)
+		if !errors.Is(err, errExpiresAtNotFuture) {
+			t.Fatalf("err %v", err)
+		}
+	})
 }
 
 func TestClassifyEndpoint(t *testing.T) {

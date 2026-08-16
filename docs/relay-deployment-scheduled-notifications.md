@@ -16,7 +16,7 @@ Payment reminder reconciliation uses the existing scheduling HTTP API:
 - `POST /v1/scheduling/timezone` — upsert recipient IANA timezone (recomputes pending housing fires).
 - `POST /v1/scheduling/housing/reconcile` — upsert/cancel housing payment targets (domain `housing_payment`).
 - `POST /v1/scheduling/housing/cancel` — partial cancel by scope/period.
-- `POST /v1/scheduling/fires/upsert` — authenticated client wall-clock `fires[]` upsert for domains `contacts_invitation_expiry` and `housing_proposal_deadline` (past `fire_at` skipped server-side).
+- `POST /v1/scheduling/fires/upsert` — authenticated client wall-clock `fires[]` upsert for domains `contacts_invitation_expiry`, `housing_proposal_deadline`, and `vehicle_sharing_deadline` (past `fire_at` skipped server-side).
 - `POST /v1/scheduling/fires/cancel` — cancel pending fires by domain + `scope_key`(s).
 - `GET /v1/scheduling/pending-deliveries` — client fetch after wake push.
 - `POST /v1/scheduling/ack-delivery` — mark a fired row consumed.
@@ -39,3 +39,4 @@ Client domains that supply wall-clock `fires[]` (same schema as housing payment)
 |--------|---------------|-------------|
 | `contacts_invitation_expiry` | Inviter on invitation create | used / revoked / extend (re-register) |
 | `housing_proposal_deadline` | Proposer on proposal dispatch | response / invalidate / expire |
+| `vehicle_sharing_deadline` | Propriétaire on offer / reactivate dispatch | accept |

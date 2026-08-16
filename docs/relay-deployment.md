@@ -359,7 +359,7 @@ Loaded from `/srv/compartarenta-relay/env/.env` at deploy time.
 | `PUBLIC_LISTEN_ADDR`     | bind address for the relay protocol + health             | manifest (default `0.0.0.0:8080`) |
 | `PRIVATE_LISTEN_ADDR`    | bind address for `/metrics`                              | manifest (default `127.0.0.1:9090`) |
 | `ENVELOPE_MAX_BYTES`     | ciphertext cap per envelope                              | manifest (recommended `262144` / 256 KiB) |
-| `ENVELOPE_TTL_MIN/MAX`   | per-envelope TTL clamp range                             | manifest                       |
+| `ENVELOPE_TTL_MIN/MAX`   | `MAX` is the 7-day cap (and default) when `expires_at` is omitted. Dated envelopes use plaintext `expires_at` and are not raised to `MIN`. | manifest |
 | `IDEMPOTENCY_TTL`        | idempotency entry lifetime                               | manifest                       |
 | `DISCONNECT_GRACE`       | grace window on disconnecting routing rows               | manifest                       |
 | `ROUTING_INACTIVITY_TTL` | long-inactivity TTL for routing rows                     | manifest                       |

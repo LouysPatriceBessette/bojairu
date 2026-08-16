@@ -1100,6 +1100,12 @@
   "pushNotificationContactInvitationExpiredBody": "Une invitation n’a pas été utilisée et a expiré.",
   "pushNotificationHousingProposalDeadlineTitle": "Échéance de proposition proche",
   "pushNotificationHousingProposalDeadlineBody": "Une offre de plan logement expire bientôt. Ouvrez Logement pour répondre ou vérifier le statut.",
+  "pushNotificationHousingProposalDeadlineExpiredTitle": "Échéance de proposition passée",
+  "pushNotificationHousingProposalDeadlineExpiredBody": "Une offre de plan logement a expiré sans réponse.",
+  "pushNotificationVehicleSharingDeadlineSoonTitle": "Offre de partage bientôt expirée",
+  "pushNotificationVehicleSharingDeadlineSoonBody": "Une offre de partage véhicule expirera bientôt.",
+  "pushNotificationVehicleSharingDeadlineExpiredTitle": "Offre de partage expirée",
+  "pushNotificationVehicleSharingDeadlineExpiredBody": "Une offre de partage véhicule n’a pas reçu de réponse et a expiré.",
   "pushNotificationHousingTrialStartedTitle": "Essai logement commencé",
   "pushNotificationHousingTrialStartedBody": "Vous pouvez utiliser le logement jusqu’au {date}. Les achats se font dans Licences.",
   "@pushNotificationHousingTrialStartedBody": {

@@ -2627,6 +2627,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'A housing plan offer expires soon. Open Housing to respond or check status.';
 
   @override
+  String get pushNotificationHousingProposalDeadlineExpiredTitle =>
+      'Proposal deadline passed';
+
+  @override
+  String get pushNotificationHousingProposalDeadlineExpiredBody =>
+      'A housing plan offer expired without a response.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonTitle =>
+      'Sharing offer expiring soon';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineSoonBody =>
+      'A vehicle sharing offer will expire soon.';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredTitle =>
+      'Sharing offer expired';
+
+  @override
+  String get pushNotificationVehicleSharingDeadlineExpiredBody =>
+      'A vehicle sharing offer expired without a response.';
+
+  @override
   String get pushNotificationHousingTrialStartedTitle =>
       'Housing trial started';
 
