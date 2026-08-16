@@ -63,28 +63,22 @@
     # unrelated services", do NOT reference a wildcard cert that also
     # covers unrelated sites on this VPS.
 
-    # --- Static landing page on / ---
-    # Hand-authored HTML + assets describing the application and linking
-    # to the app stores. The page is documented as a public-facing
-    # marketing surface; it contains NO operational state of the relay
-    # (no envelope IDs, no metrics, no schema version, no telemetry that
-    # calls /v1/...). The audit checklist's A.4.b item verifies this.
-    #
-    # In addition to the marketing root, the DocumentRoot also serves the
-    # invitation-link landing page at /contact/invite/ . The reference
-    # version of this landing page lives in the source repository under
-    # `relay/deploy/landing/contact/invite/` (HTML + invite.js). To deploy:
+    # --- Static files (invite HTML only; no homepage at /) ---
+    # DocumentRoot has no index.html. Options -Indexes → GET / is 403.
+    # The invitation page is /contact/invite/ . Reference copy:
+    # `relay/deploy/landing/contact/invite/` (HTML + invite.js). Deploy:
     #
     #   sudo mkdir -p /var/www/compartarenta-relay-landing/contact/invite
     #   sudo cp -r relay/deploy/landing/contact/invite/* \
     #       /var/www/compartarenta-relay-landing/contact/invite/
     #
-    # This page is purely static — it reads the `?v=…&c=…` payload of the
+    # That page is purely static — it reads the `?v=…&c=…` payload of the
     # invitation URL on the client and offers two paths:
     #   (1) tap a `bojairu://contact/invite?…` deep link, and
     #   (2) copy the full deep link and paste it into the app's
     #       "Scan / enter a code" screen.
-    # It never sends the payload to the relay.
+    # It never sends the payload to the relay. No operational state
+    # (no envelope IDs, metrics, schema version, or /v1/ telemetry).
     DocumentRoot /var/www/compartarenta-relay-landing
     <Directory /var/www/compartarenta-relay-landing>
         Require all granted

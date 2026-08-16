@@ -24,9 +24,11 @@ set +a
 ss_out=$(ss -ltn 2>/dev/null | grep -E ':8081\b' || true)
 echo "$ss_out" | grep -qE '127\.0\.0\.1:8081' || fail
 
-# Public HTTPS:8081 must fail / be unreachable (expect HTTP 000)
+# Public HTTPS:8081 must fail / be unreachable (expect HTTP 000).
+# curl -w already prints 000 on connect failure and exits non-zero;
+# `|| echo 000` would concatenate to 000000 and fail this check.
 pub_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
-  "https://${PUBLIC_HOST}:8081/healthz" 2>/dev/null || echo "000")
+  "https://${PUBLIC_HOST}:8081/healthz" 2>/dev/null || true)
 [[ "$pub_code" == "000" || -z "$pub_code" ]] || fail
 
 hz=$(curl -sS --connect-timeout 3 http://127.0.0.1:8081/healthz) || fail

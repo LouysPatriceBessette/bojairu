@@ -74,7 +74,7 @@ proposal/accept/reject) are pinned by capability
 | [`Dockerfile`](./Dockerfile) | Reproducible image build. |
 | [`compose.yml`](./compose.yml) | Dev/reference deployment manifest. |
 | [`.env.example`](./.env.example) | Documented configuration template. **Real secrets never live in this repo.** |
-| [`deploy/apache2/relay-vhost.conf.template`](./deploy/apache2/relay-vhost.conf.template) | Reference Apache vhost: TLS, static landing page on `/`, reverse-proxy to the relay on `/v1/`, `/healthz`, `/readyz`. |
+| [`deploy/apache2/relay-vhost.conf.template`](./deploy/apache2/relay-vhost.conf.template) | Reference Apache vhost: TLS, invite HTML at `/contact/invite/` (no homepage at `/`), reverse-proxy to the relay on `/v1/`, `/healthz`, `/readyz`. |
 
 The audit posture (checklist, deployment runbook, audit log) lives one
 level up in [`../docs/`](../docs):

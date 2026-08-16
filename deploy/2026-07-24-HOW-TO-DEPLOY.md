@@ -564,7 +564,7 @@ done
 **Expected:**
 
 ```
-/: 200
+/: 403
 /healthz: 200
 /readyz: 200
 /metrics: 403
@@ -574,7 +574,12 @@ done
 /pprof: 403
 ```
 
-#### A.2.1.6 Landing root — no ops leakage
+`/` is **not** a marketing homepage. This host’s DocumentRoot has no
+`index.html`; Apache `-Indexes` returns **403**. **404** is also
+acceptable. **200** on `/` is a finding (unexpected page). Public HTML
+is `/contact/invite/` only (A.2.1.7). Captured 2026-08-16 (`v0.5.0`).
+
+#### A.2.1.6 Root URL — no ops leakage
 
 ```bash
 curl -s "https://${PUBLIC_HOST}/" \
@@ -1058,6 +1063,12 @@ LISTEN 0      4096       127.0.0.1:8081      0.0.0.0:*
 000
 unreachable_from_public
 ```
+
+The two-line `000` + `unreachable_from_public` is from this **manual**
+`curl || echo` pair. `audit-2.5-entitlement.sh` must **not** append a
+second `000` (`|| echo 000` after `curl -w '%{http_code}'`): that
+becomes `000000` and the script fails even when 8081 is correctly
+unreachable. The script uses `|| true` and accepts `000` or empty.
 
 ```bash
 curl -sS http://127.0.0.1:8081/healthz | jq .

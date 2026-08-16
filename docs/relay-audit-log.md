@@ -90,6 +90,16 @@ or append at the bottom — pick one convention and keep it. This file uses
 - **Operator:** operator-on-call
 - **Notes:** Bojairũ scheme/landing + FCM service-account path hardening; wake dispatch enabled; living HOW-TO deploy/audit (`deploy/2026-07-24-HOW-TO-DEPLOY.md`).
 
+### v0.5.0
+
+- **Tag:** v0.5.0
+- **Relay image digest:** sha256:a8465960a3b86ae6362631c58cedc3a712c4f27330bf89d96ed9702ba42e99e9
+- **Entitlement image digest:** sha256:037fdf1b86e4bfb8129778ecee9c846200c5a468f3dfd5e34baf5c25b87a9c1a
+- **Deployed at:** 2026-08-16T20:09Z
+- **Git commit:** e6b9f05c2bd2cb8be98e8fae629edb9cbabd09dd
+- **Operator:** operator-on-call
+- **Notes:** Envelope expiry (`expires_at`, relay schema 4) and vehicle-sharing deadline domain; Play purchase verifier on entitlement (schema 2, host JSON bind); `operator-notice` in the relay image.
+
 ---
 
 ## Self-audits
@@ -172,6 +182,17 @@ Cadence: at least once every **90 days**. Missed deadline → open a Finding.
 - **Summary:** §2.0–§2.6 PASS (public surface, digests, DB, metrics, entitlement loopback, FCM `project_id=bojairu`, wake flags, stats file). First full audit against the living HOW-TO; Appendix A expected outputs filled from this run.
 - **Findings:** Finding 2026-07-24 — daily-stats-host-cron-remnant (resolved same day).
 
+### Self-audit — v0.5.0
+
+- **Date:** 2026-08-16T21:12Z
+- **Tag:** v0.5.0
+- **Relay image digest:** sha256:a8465960a3b86ae6362631c58cedc3a712c4f27330bf89d96ed9702ba42e99e9
+- **Entitlement image digest:** sha256:037fdf1b86e4bfb8129778ecee9c846200c5a468f3dfd5e34baf5c25b87a9c1a
+- **Operator:** operator-on-call
+- **Procedure:** deploy/2026-07-24-HOW-TO-DEPLOY.md §2
+- **Summary:** §2.1–§2.6 PASS on this host after two audit-script/doc alignments (not production bind changes). Relay `schema_version` 4; entitlement `schema_version` 2, `build` `e6b9f05c2bd2cb8be98e8fae629edb9cbabd09dd`. Public HTML is `/contact/invite/` only (`/` → 403). Play service-account JSON is mounted (smoke §11; §2.5 does not verify Play). FCM `project_id=bojairu` via §2.6.
+- **Findings:** Finding 2026-08-16 — public-root-no-index (accepted). Finding 2026-08-16 — audit-2.5-public-8081-000000 (resolved same day).
+
 ---
 
 ## Findings
@@ -205,6 +226,39 @@ Append one block per finding. Status starts as `open`, then `resolved`
 - **Status:** resolved
 - **Resolution:** Removed the host-script remnant. Re-check:
   `crontab -l | grep daily-stats` shows only via-docker.
+
+### Finding 2026-08-16 — public-root-no-index
+
+- **Date:** 2026-08-16
+- **Auditor:** operator-on-call
+- **Item:** 2.1 / public surface
+- **Observed:** `GET https://sync.incoherences.org/` → HTTP 403.
+  DocumentRoot `/var/www/compartarenta-relay-landing/` has no
+  `index.html`. Invite HTML is only at `/contact/invite/` (Bojairũ /
+  `bojairu://`).
+- **Expected (until this finding):** HTTP 200 (HOW-TO A.2.1.5 from
+  2026-07-24).
+- **Status:** accepted
+- **Resolution:** Operator decision 2026-08-16: no marketing homepage
+  on the relay sub-domain. Public HTML is `/contact/invite/` only.
+  `audit-2.1-public-surface.sh` and HOW-TO A.2.1.5 now expect 403 or
+  404 on `/`. `docs/relay-deployment.md` updated to match.
+
+### Finding 2026-08-16 — audit-2.5-public-8081-000000
+
+- **Date:** 2026-08-16
+- **Auditor:** operator-on-call
+- **Item:** 2.5 / entitlement
+- **Observed:** `audit-2.5-entitlement.sh` printed FAILED.
+  Step-through showed `public8081=000000`. Live bind is
+  `127.0.0.1:8081`; public `https://sync.incoherences.org:8081/healthz`
+  does not connect. `curl -w '%{http_code}'` already writes `000` and
+  exits non-zero; the script also ran `|| echo 000`.
+- **Expected:** HTTP `000` (or empty) meaning 8081 is not reachable
+  from the public internet.
+- **Status:** resolved
+- **Resolution:** Replaced `|| echo "000"` with `|| true` in
+  `deploy/audit-2.5-entitlement.sh`. Production listen/bind unchanged.
 
 ---
 

@@ -31,17 +31,20 @@ case "$http_code" in
 esac
 
 # Path enumeration
+# `/` has no marketing homepage (DocumentRoot has no index.html;
+# Apache `-Indexes` → 403). 404 is also acceptable. 200 is a finding.
 code_root=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_HOST}/")
 code_hz=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_HOST}/healthz")
 code_rz=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_HOST}/readyz")
-[[ "$code_root" == "200" && "$code_hz" == "200" && "$code_rz" == "200" ]] || fail
+[[ "$code_root" == "403" || "$code_root" == "404" ]] || fail
+[[ "$code_hz" == "200" && "$code_rz" == "200" ]] || fail
 
 for path in /metrics /admin /debug /debug/pprof /pprof; do
   c=$(curl -s -o /dev/null -w "%{http_code}" "https://${PUBLIC_HOST}${path}")
   [[ "$c" -ge 400 ]] || fail
 done
 
-# Landing root: no ops leakage
+# `/` body (403/404 page): no ops leakage
 if curl -s "https://${PUBLIC_HOST}/" \
   | head -c 200000 \
   | grep -qiE 'envelope_id|sender_identity|recipient_identity|relay_envelopes_|queue_depth|ttl_expires_at|operator_action|"build"|"schema_version"|/v1/'; then

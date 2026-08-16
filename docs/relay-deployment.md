@@ -43,8 +43,8 @@ they are not renamed in this batch.
               ┌──────────────────────────┐
               │  Apache 2 (host)         │  ← TLS for the dedicated
               │  vhost: relay sub-domain │    relay sub-domain only
-              │  + static landing page   │  ← page d'accueil at /
-              │  on /                    │  ← proxies /v1/, /healthz,
+              │  + static invite HTML    │  ← /contact/invite/ only
+              │    (no index at /)       │  ← proxies /v1/, /healthz,
               │                          │    /readyz to the relay
               └────────────┬─────────────┘
                            │ HTTP / 8080  (loopback only, no TLS)
@@ -220,7 +220,7 @@ The default `sshd` jail on Ubuntu 24.04 is sufficient. Tune
 `bantime` / `findtime` / `maxretry` per the operator's preference;
 record any deviation from defaults in `docs/relay-audit-log.md`.
 
-## Reverse proxy: Apache vhost + static landing page
+## Reverse proxy: Apache vhost + static invite page
 
 ### Sub-domain name is a placeholder
 
@@ -251,8 +251,9 @@ What the spec **does** require, regardless of the name you pick:
    unrelated services".
 3. It SHALL serve **only** the relay's documented public surface: the
    protocol endpoints under `/v1/*`, the health endpoints, and the
-   documented static landing page at `/`. No other application is
-   reachable via the same sub-domain.
+   static invitation page at `/contact/invite/`. There is **no**
+   marketing homepage at `/` (expect HTTP 403 or 404). No other
+   application is reachable via the same sub-domain.
 
 Whatever name you pick, replace every occurrence of
 `relay.example.tld` in your local copy of the Apache vhost template
@@ -275,9 +276,8 @@ Apache:
   certificate (no wildcard reuse with unrelated sites on this VPS, per
   `relay-deployment-topology` / "TLS material is not shared with
   unrelated services"),
-- serves a **static landing page** at `/` (hand-authored HTML
-  describing the application and linking to the app stores — see
-  notes below),
+- serves the **static invitation page** at `/contact/invite/` (see
+  notes below); `/` has no `index.html` (HTTP 403 with `-Indexes`),
 - reverse-proxies `/v1/*`, `/healthz`, `/readyz` to the relay binary
   on `127.0.0.1:8080`,
 - blocks `/metrics`, `/admin`, `/debug`, `/pprof` at the proxy as
@@ -321,28 +321,29 @@ expiry) is operator-side; recommended pattern: a Prometheus alert on
 that emails the operator when `certbot certificates` reports a date
 less than 14 days away.
 
-### Static landing page
+### Static invitation page
 
-The page at `/` is documented as **part of the relay's public surface**
-of the same project (description of the app + links to the stores),
-not as an unrelated co-tenant service. The spec line "The sub-domain
-SHALL serve only the relay" is preserved in spirit: the landing page
-describes the same application that owns the protocol endpoints; it
-does not host an unrelated service.
+The HTML at `/contact/invite/` is **part of the relay's public
+surface** (deep-link landing for a connection invitation). There is
+**no** marketing homepage at `/`. The spec line "The sub-domain SHALL
+serve only the relay" is preserved: this page belongs to the same
+application as the protocol endpoints; it does not host an unrelated
+service.
 
-Constraints on the landing page content (verified by audit item
-A.4.b):
+Constraints on that page (verified by audit §2.1 / HOW-TO A.2.1.6–A.2.1.7):
 
 - Hand-authored static HTML + assets. No server-side language.
 - No embedded telemetry, analytics, or scripts that call the relay's
   `/v1/...` endpoints.
 - No operational state on the page (no envelope IDs, no metrics
-  values, no schema version, no build hash, no internal links).
+  values, no schema version, no build hash).
+- Product name **Bojairũ** and scheme `bojairu://` only (no legacy
+  Compartarenta names or schemes).
 
-Place it at `/var/www/compartarenta-relay-landing/` (or wherever the
-vhost's `DocumentRoot` points). Versioning the landing page in this
-repo is recommended but optional; if it lives elsewhere, record where
-it lives in `docs/relay-audit-log.md`.
+Place it at `/var/www/compartarenta-relay-landing/contact/invite/`
+(DocumentRoot remains the parent directory so `/` has no index and
+returns 403). The reference copy lives in
+[`relay/deploy/landing/contact/invite/`](../relay/deploy/landing/contact/invite/).
 
 ## Required environment
 
