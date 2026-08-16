@@ -25,6 +25,7 @@ import 'housing_browser_notification_stub.dart'
     if (dart.library.html) 'housing_browser_notification_web.dart'
     as housing_browser;
 import 'wake_inbox_background_poll.dart';
+import 'operator_notice_payload.dart';
 import '../housing/realized_expense/realized_expense_status.dart';
 
 /// FCM + local notifications for housing proposals (and future message types).
@@ -85,6 +86,7 @@ class PushNotificationService {
   static const String _housingPaymentReminderPrefix = 'housing_payment_reminder|';
   static const String _contactsPayload = 'contacts';
   static const String _licensesTapPayload = 'licenses';
+  static const int _operatorNoticeNotificationId = 0x4F4E0001;
   static const String _vehicleSharingOfferTapPayload = 'vehicle_sharing_offer';
   static const String _vehicleSharingOfferAcceptTapPayload =
       'vehicle_sharing_offer_accept';
@@ -197,6 +199,11 @@ class PushNotificationService {
     if (payload == null || payload.isEmpty) return;
     if (payload == _licensesTapPayload) {
       _navigateToLicenses();
+      return;
+    }
+    final operatorNotice = OperatorNoticePayload.tryParseLocalPayload(payload);
+    if (operatorNotice != null) {
+      _navigateToOperatorNotice(operatorNotice);
       return;
     }
     if (payload == _vehicleSharingOfferTapPayload ||
@@ -435,6 +442,12 @@ class PushNotificationService {
       unawaited(_handleWakeForegroundMessage());
       return;
     }
+    if (isOperatorNoticeRemoteMessage(message)) {
+      unawaited(
+        showOperatorNoticeFromRemote(message, isBackgroundIsolate: false),
+      );
+      return;
+    }
     if (!isHousingProposalRemoteMessage(message)) return;
     unawaited(
       showRemoteMessageAsLocalNotification(message, isBackgroundIsolate: false),
@@ -444,6 +457,85 @@ class PushNotificationService {
   /// Data-only wake from the relay (`v` is ignored for forward compatibility).
   static bool isWakeForInboxRemoteMessage(RemoteMessage message) {
     return message.data['kind'] == 'wake_for_inbox';
+  }
+
+  /// Operator VPS notice (`kind=operator_notice`). Not an inbox wake.
+  static bool isOperatorNoticeRemoteMessage(RemoteMessage message) {
+    return OperatorNoticePayload.tryParse(
+          Map<String, dynamic>.from(message.data),
+        ) !=
+        null;
+  }
+
+  /// Data-only FCM does not create a tray item; show a local notification.
+  static Future<void> showOperatorNoticeFromRemote(
+    RemoteMessage message, {
+    required bool isBackgroundIsolate,
+  }) async {
+    if (kIsWeb) return;
+    final payload = OperatorNoticePayload.tryParse(
+      Map<String, dynamic>.from(message.data),
+    );
+    if (payload == null) return;
+    if (isBackgroundIsolate && message.notification != null) {
+      return;
+    }
+
+    final prefs = await AppPreferences.load();
+    if (!prefs.notificationsEnabled) return;
+
+    final l10n = l10nForNotificationLocale(prefs: prefs);
+    const qaNumber = 21;
+    final displayTitle = notificationQaPrefix(
+      qaNumber,
+      l10n.pushNotificationOperatorNoticeTitle,
+    );
+    final displayBody = notificationQaPrefix(
+      qaNumber,
+      l10n.pushNotificationOperatorNoticeBody,
+    );
+
+    final plugin = isBackgroundIsolate
+        ? FlutterLocalNotificationsPlugin()
+        : _plugin;
+
+    if (isBackgroundIsolate) {
+      await plugin.initialize(
+        settings: const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
+        ),
+      );
+      final android = plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await android?.createNotificationChannel(_androidChannel);
+      await android?.createNotificationChannel(_androidSilentChannel);
+    } else {
+      await _ensureLocalNotificationsInitialized(_plugin);
+    }
+
+    final playSound = prefs.notificationSoundEnabled;
+    final androidChannel = playSound ? _androidChannel : _androidSilentChannel;
+    await plugin.show(
+      id: _operatorNoticeNotificationId,
+      title: displayTitle,
+      body: displayBody,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannel.id,
+          androidChannel.name,
+          channelDescription: androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: playSound,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: playSound),
+      ),
+      payload: payload.localTapPayload,
+    );
   }
 
   static bool isHousingProposalRemoteMessage(RemoteMessage message) {
@@ -1422,6 +1514,14 @@ class PushNotificationService {
     );
   }
 
+  static void _navigateToOperatorNotice(OperatorNoticePayload payload) {
+    pushFromNotificationTapWhenReady(
+      payload.routeLocation,
+      skipPushWhenAlreadyAt: (location) =>
+          location.startsWith('/operator-notice'),
+    );
+  }
+
   static Future<void> cancelLocalNotification(int id) async {
     if (kIsWeb) return;
     await _ensureLocalNotificationsInitialized(_plugin);
@@ -1913,6 +2013,11 @@ class PushNotificationService {
   }
 
   static void _handleOpenData(Map<String, dynamic> data) {
+    final operatorNotice = OperatorNoticePayload.tryParse(data);
+    if (operatorNotice != null) {
+      _navigateToOperatorNotice(operatorNotice);
+      return;
+    }
     final kind = data['kind'] as String?;
     if (kind != null && _housingKinds.contains(kind)) {
       _navigateToHousing();

@@ -4433,6 +4433,48 @@ abstract class AppLocalizations {
   /// **'{days, plural, one{1 day left (until {date}) to subscribe in Licenses. Housing stays usable.} other{{days} days left (until {date}) to subscribe in Licenses. Housing stays usable.}}'**
   String pushNotificationHousingGraceReminderBody(int days, String date);
 
+  /// No description provided for @pushNotificationOperatorNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer message'**
+  String get pushNotificationOperatorNoticeTitle;
+
+  /// No description provided for @pushNotificationOperatorNoticeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app to read a short message.'**
+  String get pushNotificationOperatorNoticeBody;
+
+  /// No description provided for @operatorNoticeScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer message'**
+  String get operatorNoticeScreenTitle;
+
+  /// No description provided for @operatorNoticeNewVersionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is available.'**
+  String get operatorNoticeNewVersionAvailable;
+
+  /// No description provided for @operatorNoticeUpdateTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to update your application.'**
+  String get operatorNoticeUpdateTapHint;
+
+  /// No description provided for @operatorNoticeDeveloperMessagePublished.
+  ///
+  /// In en, this message translates to:
+  /// **'A message from the app developer has been published.'**
+  String get operatorNoticeDeveloperMessagePublished;
+
+  /// No description provided for @operatorNoticeReadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the message'**
+  String get operatorNoticeReadMessage;
+
   /// No description provided for @notificationHousingPaymentRemindersLabel.
   ///
   /// In en, this message translates to:

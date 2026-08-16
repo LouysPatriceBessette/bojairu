@@ -2709,6 +2709,31 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationOperatorNoticeTitle => 'Mensaje del desarrollador';
+
+  @override
+  String get pushNotificationOperatorNoticeBody =>
+      'Abra la aplicación para leer un mensaje breve.';
+
+  @override
+  String get operatorNoticeScreenTitle => 'Mensaje del desarrollador';
+
+  @override
+  String get operatorNoticeNewVersionAvailable =>
+      'Hay una nueva versión disponible.';
+
+  @override
+  String get operatorNoticeUpdateTapHint =>
+      'Pulse para actualizar la aplicación.';
+
+  @override
+  String get operatorNoticeDeveloperMessagePublished =>
+      'Se ha publicado un mensaje del desarrollador de la aplicación.';
+
+  @override
+  String get operatorNoticeReadMessage => 'Leer el mensaje';
+
+  @override
   String get notificationHousingPaymentRemindersLabel =>
       'Recordatorios de pago';
 

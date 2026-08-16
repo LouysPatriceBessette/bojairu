@@ -1205,3 +1205,56 @@ via-docker — cleaned the same day; re-check showed **only** via-docker:
 ```
 7 0 * * * /srv/compartarenta-relay/source/relay/scripts/daily-stats-append-via-docker.sh >> /srv/compartarenta-stats/cron.log 2>&1
 ```
+
+---
+
+## Operator notice (optional; after this relay binary is live)
+
+Not part of every deploy. Use only when you need to notify Android
+devices that still have a valid FCM token. The running relay **image**
+must include the `operator-notice` subcommand (this delivery). Until
+that image is recreated, the command will fail.
+
+Run as `compartarenta-relay` (no `sudo` if you are already that user).
+The container is `FROM scratch` (no shell): `exec` must call `/relay`.
+
+This is **not** a public HTTP API and **not** an entitlement command.
+Long text stays on the locale pages
+https://bojairu.app/fr/message , https://bojairu.app/en/message , and
+https://bojairu.app/es/mensaje . Android / FCM only (no APNs).
+
+At least one of `--target-build` or `--consult-site` is required.
+Default is dry-run. `--confirm` actually sends.
+
+Dry-run (example `versionCode` **39** — use the number you mean):
+
+```bash
+cd /srv/compartarenta-relay
+
+docker compose --env-file env/.env \
+  -f source/deploy/compose.production-stack.yml \
+  -f docker-compose.secrets.yml \
+  exec -T relay /relay operator-notice --consult-site --target-build=39 --dry-run
+```
+
+Send:
+
+```bash
+cd /srv/compartarenta-relay
+
+docker compose --env-file env/.env \
+  -f source/deploy/compose.production-stack.yml \
+  -f docker-compose.secrets.yml \
+  exec -T relay /relay operator-notice --consult-site --target-build=39 --confirm
+```
+
+`--consult-site` alone (no Play update affordance):
+
+```bash
+cd /srv/compartarenta-relay
+
+docker compose --env-file env/.env \
+  -f source/deploy/compose.production-stack.yml \
+  -f docker-compose.secrets.yml \
+  exec -T relay /relay operator-notice --consult-site --dry-run
+```

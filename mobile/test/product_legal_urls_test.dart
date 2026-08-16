@@ -115,4 +115,23 @@ void main() {
       ),
     );
   });
+
+  test('developerMessageUrlForLocale uses FR / EN / ES paths', () {
+    expect(
+      developerMessageUrlForLocale(const Locale('fr')),
+      Uri.parse('https://bojairu.app/fr/message'),
+    );
+    expect(
+      developerMessageUrlForLocale(const Locale('en')),
+      Uri.parse('https://bojairu.app/en/message'),
+    );
+    expect(
+      developerMessageUrlForLocale(const Locale('es')),
+      Uri.parse('https://bojairu.app/es/mensaje'),
+    );
+    expect(
+      developerMessageUrlForLocale(const Locale('de')),
+      Uri.parse('https://bojairu.app/en/message'),
+    );
+  });
 }

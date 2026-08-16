@@ -1,7 +1,33 @@
 import 'dart:ui';
 
 /// Public legal / FAQ pages on `bojairu.app`.
-const _legalSiteOrigin = 'https://bojairu.app';
+const kBojairuMarketingSiteOrigin = 'https://bojairu.app';
+
+const _legalSiteOrigin = kBojairuMarketingSiteOrigin;
+
+/// Production Google Play listing for package `app.incoherences.bojairu`.
+final Uri googlePlayStoreListingUri = Uri.parse(
+  'https://play.google.com/store/apps/details?id=app.incoherences.bojairu',
+);
+
+/// Locale-aware developer message page (Message manuel, `consult_site=1`).
+Uri developerMessageUrlForLocale(Locale locale) {
+  final path = switch (locale.languageCode) {
+    'fr' => '/fr/message',
+    'es' => '/es/mensaje',
+    _ => '/en/message',
+  };
+  return Uri.parse('$_legalSiteOrigin$path');
+}
+
+/// Official Get-it-on-Google-Play badge already shipped with the invite landing.
+String googlePlayBadgeAssetForLocale(Locale locale) {
+  return switch (locale.languageCode) {
+    'fr' => 'assets/brand/store-badges/google-play-fr-ca.svg',
+    'es' => 'assets/brand/store-badges/google-play-es.svg',
+    _ => 'assets/brand/store-badges/google-play-en.svg',
+  };
+}
 
 /// FAQ fragment ids on the marketing site (must match site `<details id="…">`).
 abstract final class ProductFaqAnchors {

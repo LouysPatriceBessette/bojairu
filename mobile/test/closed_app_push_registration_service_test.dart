@@ -135,5 +135,18 @@ void main() {
       );
       expect(PushNotificationService.isWakeForInboxRemoteMessage(msg), isTrue);
     });
+
+    test('operator_notice kind is detected and is not a wake', () {
+      final msg = RemoteMessage(
+        data: const {
+          'kind': 'operator_notice',
+          'v': '1',
+          'consult_site': '1',
+          'target_build': '39',
+        },
+      );
+      expect(PushNotificationService.isOperatorNoticeRemoteMessage(msg), isTrue);
+      expect(PushNotificationService.isWakeForInboxRemoteMessage(msg), isFalse);
+    });
   });
 }

@@ -73,6 +73,44 @@ type RoutingPushTokenRow struct {
 	PushToken string
 }
 
+// ListDistinctActiveFCMTokens returns unique non-expired FCM device tokens.
+// The same physical token can be registered under several routing ids; the
+// operator notice fans out once per token so the tray is not duplicated.
+func (s *Store) ListDistinctActiveFCMTokens(ctx context.Context, now time.Time) ([]string, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT push_token
+		FROM routing_push_tokens
+		WHERE provider = 'fcm' AND expires_at > $1
+		ORDER BY push_token
+	`, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var token string
+		if err := rows.Scan(&token); err != nil {
+			return nil, err
+		}
+		out = append(out, token)
+	}
+	return out, rows.Err()
+}
+
+// DeleteRoutingPushTokensByProviderToken removes every row for one device
+// token (all routing ids). Used when FCM reports a permanent token error.
+func (s *Store) DeleteRoutingPushTokensByProviderToken(ctx context.Context, provider, pushToken string) (int64, error) {
+	tag, err := s.pool.Exec(ctx, `
+		DELETE FROM routing_push_tokens
+		WHERE provider = $1 AND push_token = $2
+	`, provider, pushToken)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
 // ListRoutingPushTokensForRecipient returns all non-expired tokens for a recipient.
 func (s *Store) ListRoutingPushTokensForRecipient(ctx context.Context, recipient []byte, now time.Time) ([]RoutingPushTokenRow, error) {
 	rows, err := s.pool.Query(ctx, `
@@ -166,9 +204,9 @@ func (s *Store) CountRoutingPushTokens(ctx context.Context) (int64, error) {
 
 // DailyActiveSnapshot holds aggregate inbox activity for a UTC day window.
 type DailyActiveSnapshot struct {
-	ActiveTotal  int64
-	ByCountry    map[string]int64
-	ByProvider   map[string]int64
+	ActiveTotal int64
+	ByCountry   map[string]int64
+	ByProvider  map[string]int64
 }
 
 // DailyActiveSnapshotForRange counts rows whose last_seen_at falls in

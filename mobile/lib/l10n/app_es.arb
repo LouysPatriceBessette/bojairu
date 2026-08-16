@@ -1108,6 +1108,13 @@
       "date": { "type": "String" }
     }
   },
+  "pushNotificationOperatorNoticeTitle": "Mensaje del desarrollador",
+  "pushNotificationOperatorNoticeBody": "Abra la aplicación para leer un mensaje breve.",
+  "operatorNoticeScreenTitle": "Mensaje del desarrollador",
+  "operatorNoticeNewVersionAvailable": "Hay una nueva versión disponible.",
+  "operatorNoticeUpdateTapHint": "Pulse para actualizar la aplicación.",
+  "operatorNoticeDeveloperMessagePublished": "Se ha publicado un mensaje del desarrollador de la aplicación.",
+  "operatorNoticeReadMessage": "Leer el mensaje",
   "notificationHousingPaymentRemindersLabel": "Recordatorios de pago",
   "housingOverdueJournalCardBody": "El pago de {lineTitle} no se completó para este período.",
   "@housingOverdueJournalCardBody": {

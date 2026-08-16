@@ -292,28 +292,49 @@ The system SHALL require the relay deployment documentation, the relay state sch
 - **WHEN** the change ships
 - **THEN** the relay deployment documentation describes the loopback-only stats endpoint, the cron job that calls it at 00:07 UTC, the location and format of the append-only stats file, and the operating-system user that owns both the relay process and the cron job
 
-### Requirement: Operator manual notification trigger (deferred)
-**Status:** deferred until the next coordinated **relay + entitlement** server update. Not part of V1 closed-app wake delivery.
+### Requirement: Operator manual notification trigger
+The product SHALL support an **operator-only** command that manually triggers a notification to open an in-app message page. The trigger SHALL be invocable **only** from the production VPS under the secured Linux account that operates the relay (and entitlement) stack (`compartarenta-relay`) — not from the mobile app and not via a public unauthenticated HTTP surface. Entitlement is **not** involved: FCM device tokens already live on the relay.
 
-The product SHALL support an **operator-only** command that manually triggers a notification to open an in-app message page. The trigger SHALL be invocable **only** from the production VPS under the secured Linux account that operates the relay (and entitlement) stack — not from the mobile app and not via a public unauthenticated HTTP surface.
+The notification SHALL use a **new push `kind`**, `operator_notice`, distinct from inbox wake (`wake_for_inbox`). The FCM message SHALL be **data-only** (Android `priority` HIGH) with string fields:
 
-The notification SHALL use a **new push `kind`** (distinct from inbox wake). An illustrative minimal operator payload shape (to be refined at implementation) is `{ "version": <number>, "message": <boolean> }` alongside schema/`kind` fields designed then.
+- `v` = `1`
+- `kind` = `operator_notice`
+- `consult_site` = `1` or `0`
+- `target_build` = decimal Play/app build number, **omitted** when the operator did not pass `--target-build`
 
-The in-app message page SHALL compare the installed app **build number** to the build number carried with the notification and SHALL show or hide an update affordance accordingly. The same mechanism MAY present a message that directs the user to consult content on the **static website**, with or without a build-number change.
+The payload SHALL **not** carry a long message body. Full copy lives on the static site, locale-specific:
 
-Detail design (fan-out targets, privacy relative to the content-free inbox-wake rule, entitlement role if any, exact CLI, UX copy) SHALL be written when that server update is implemented — see task **12.5**.
+- French: `https://bojairu.app/fr/message`
+- English: `https://bojairu.app/en/message`
+- Spanish: `https://bojairu.app/es/mensaje`
+
+This kind is **not** a content-free inbox wake: it is allowed to carry the two operator flags above, and nothing else of user content.
+
+Fan-out SHALL target **distinct non-expired FCM tokens** (Android only). The same physical token registered under several routing ids SHALL be notified **once**. APNs SHALL not be used for this kind.
+
+CLI (second process in the running relay container; scratch image has no shell):
+
+```
+/relay operator-notice [--target-build=N] [--consult-site] [--dry-run | --confirm]
+```
+
+At least one of `--target-build` or `--consult-site` is required. Default is dry-run (count tokens, do not send). `--confirm` sends. The command SHALL NOT bind HTTP listeners. `WAKE_PUSH_DISPATCH_ENABLED` is not required; `FCM_SERVICE_ACCOUNT_JSON_PATH` is required to send.
+
+The in-app page is **Message manuel** (developer name). The user-visible AppBar title SHALL be the localized equivalent of « Message du développeur ». When `target_build` is present, the page SHALL show the Google Play update block **only when** `installed < target_build` (Play badge is the tap target). When `consult_site=1`, the page SHALL offer **Lire le message** (localized) opening the locale URL above, with or without a build-number change.
+
+A successful `--confirm` SHALL append one `operator_actions` row (`action=operator_notice`) with token **counts**, not token values.
 
 #### Scenario: Operator triggers from VPS only
-- **WHEN** an authorized operator on the VPS runs the secured CLI for this feature under the stack’s Linux service account
-- **THEN** the system emits the operator notification `kind` toward registered devices as designed for that release
+- **WHEN** an authorized operator on the VPS runs `/relay operator-notice` under the stack’s Linux service account
+- **THEN** the system emits `kind=operator_notice` toward distinct registered FCM tokens as designed for that release
 - **AND** the trigger is not exposed as a mobile-app or public Internet endpoint
 
 #### Scenario: Message page gates update affordance on build number
 - **WHEN** the app opens the operator message page from that notification
 - **AND** the notification carries a target build number
-- **THEN** the page compares that value to the installed build number and shows the update affordance only when the comparison policy for that release says an update is relevant
+- **THEN** the page compares that value to the installed build number and shows the update affordance only when the installed build is strictly lower than the target
 
 #### Scenario: Message may point at static website
-- **WHEN** the operator notification is configured as a consult-message (per the refined payload)
-- **THEN** the in-app page MAY direct the user to the static website for the full message
+- **WHEN** the operator notification is configured with `consult_site=1`
+- **THEN** the in-app page directs the user to the locale-specific static-site message URL
 - **AND** this MAY occur with or without a change in the advertised build number

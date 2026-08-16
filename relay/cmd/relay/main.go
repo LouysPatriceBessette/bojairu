@@ -1,5 +1,8 @@
 // Command relay is the Compartarenta relay server entry point.
 //
+// Subcommands (do not bind listeners):
+//   - operator-notice: VPS-only FCM fan-out of kind operator_notice.
+//
 // The process binds listeners:
 //   - PublicListenAddr: the relay protocol + /healthz + /readyz.
 //   - PrivateListenAddr: /metrics. The deployment manifest does not
@@ -8,15 +11,15 @@
 //     loopback-only daily aggregates. Set STATS_LISTEN_ADDR=- to disable.
 //
 // On startup the relay:
-//   1. Loads configuration from env vars (no secrets in source).
-//   2. Connects to PostgreSQL and applies any pending migrations.
-//   3. Verifies the on-disk schema version matches the binary's expected
-//      version; otherwise it refuses to start
-//      (`relay-state-schema-and-retention` /
-//      "Schema migrations are versioned and reviewable").
-//   4. Starts the periodic sweeper that enforces TTL-based deletion.
-//   5. Serves HTTP until SIGTERM/SIGINT, then drains in-flight requests
-//      up to ShutdownTimeout.
+//  1. Loads configuration from env vars (no secrets in source).
+//  2. Connects to PostgreSQL and applies any pending migrations.
+//  3. Verifies the on-disk schema version matches the binary's expected
+//     version; otherwise it refuses to start
+//     (`relay-state-schema-and-retention` /
+//     "Schema migrations are versioned and reviewable").
+//  4. Starts the periodic sweeper that enforces TTL-based deletion.
+//  5. Serves HTTP until SIGTERM/SIGINT, then drains in-flight requests
+//     up to ShutdownTimeout.
 package main
 
 import (
@@ -35,6 +38,7 @@ import (
 	"github.com/compartarenta/relay/internal/config"
 	"github.com/compartarenta/relay/internal/logging"
 	"github.com/compartarenta/relay/internal/metrics"
+	"github.com/compartarenta/relay/internal/operatornotice"
 	"github.com/compartarenta/relay/internal/push"
 	"github.com/compartarenta/relay/internal/remindercron"
 	"github.com/compartarenta/relay/internal/stats"
@@ -44,6 +48,16 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "operator-notice" {
+		ctx, cancel := signal.NotifyContext(context.Background(),
+			os.Interrupt, syscall.SIGTERM)
+		defer cancel()
+		if err := operatornotice.RunCLI(ctx, os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

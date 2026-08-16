@@ -20,6 +20,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await runClosedAppPushRegistrationRefreshOnce();
     return;
   }
+  if (PushNotificationService.isOperatorNoticeRemoteMessage(message)) {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    try {
+      await PushNotificationService.showOperatorNoticeFromRemote(
+        message,
+        isBackgroundIsolate: true,
+      );
+    } catch (e, st) {
+      log('firebaseMessagingBackgroundHandler operator_notice', error: e, stackTrace: st);
+    }
+    return;
+  }
   if (!PushNotificationService.isHousingProposalRemoteMessage(message)) {
     return;
   }

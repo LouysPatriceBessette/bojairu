@@ -657,3 +657,56 @@ See [`relay-deployment-scheduled-notifications.md`](./relay-deployment-scheduled
 for `REMINDER_CRON_ENABLED`, scheduling HTTP endpoints, and operator verification
 steps for migration `0003_scheduled_notifications.sql`.
 
+## Operator notice (optional FCM; Android only)
+
+Not part of every deploy. After a relay image that includes the
+`operator-notice` subcommand is running, the operator may notify every
+device that still has a **non-expired FCM token**.
+
+This is **not** an inbox wake (`wake_for_inbox`). It is a separate
+data-only `kind=operator_notice` (Message manuel). Long copy stays on
+the locale pages `https://bojairu.app/fr/message`,
+`https://bojairu.app/en/message`, and `https://bojairu.app/es/mensaje`;
+the FCM payload carries only `v`, `kind`, optional `target_build`, and
+`consult_site`.
+
+- **Who:** Linux user `compartarenta-relay` on the VPS. Do **not** use
+  `sudo -u compartarenta-relay` if the shell is already that user.
+- **Where:** second process inside the running `relay` container
+  (`FROM scratch` — no shell). `docker compose exec` runs `/relay …`.
+- **Not:** a public HTTP API, an entitlement endpoint, or an in-app
+  button. APNs is not used.
+- **Send flag:** `--confirm`. Default (and `--dry-run`) only prints how
+  many distinct FCM tokens would be notified.
+- **FCM JSON:** `FCM_SERVICE_ACCOUNT_JSON_PATH` must be set to send.
+  `WAKE_PUSH_DISPATCH_ENABLED` is **not** required for this command.
+
+At least one of `--target-build` or `--consult-site` is required.
+
+Dry-run (replace `39` with the Play `versionCode` you mean, or omit
+`--target-build` and keep `--consult-site`):
+
+```bash
+cd /srv/compartarenta-relay
+
+docker compose --env-file env/.env \
+  -f source/deploy/compose.production-stack.yml \
+  -f docker-compose.secrets.yml \
+  exec -T relay /relay operator-notice --consult-site --target-build=39 --dry-run
+```
+
+Send the same notice:
+
+```bash
+cd /srv/compartarenta-relay
+
+docker compose --env-file env/.env \
+  -f source/deploy/compose.production-stack.yml \
+  -f docker-compose.secrets.yml \
+  exec -T relay /relay operator-notice --consult-site --target-build=39 --confirm
+```
+
+The living HOW-TO also records this command:
+[`deploy/2026-07-24-HOW-TO-DEPLOY.md`](../deploy/2026-07-24-HOW-TO-DEPLOY.md)
+(section **Operator notice**).
+

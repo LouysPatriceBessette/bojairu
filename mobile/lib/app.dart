@@ -13,6 +13,8 @@ import 'prefs/app_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/licenses/licenses_screen.dart';
+import 'screens/operator_notice_screen.dart';
+import 'notifications/operator_notice_payload.dart';
 import 'screens/settings/activity_log_settings_screen.dart';
 import 'screens/settings/about_settings_screen.dart';
 import 'screens/settings/device_data_export_import_screen.dart';
@@ -467,6 +469,21 @@ GoRouter _createRouter(AppConfig config, AppPreferences prefs) {
       GoRoute(
         path: '/licenses',
         builder: (context, state) => const LicensesScreen(),
+      ),
+      GoRoute(
+        path: '/operator-notice',
+        builder: (context, state) {
+          final q = state.uri.queryParameters;
+          final parsed = OperatorNoticePayload.tryParse({
+            'kind': OperatorNoticePayload.kind,
+            'target_build': q['target_build'] ?? '',
+            'consult_site': q['consult_site'] ?? '0',
+          });
+          return OperatorNoticeScreen(
+            targetBuild: parsed?.targetBuild,
+            consultSite: parsed?.consultSite ?? false,
+          );
+        },
       ),
       GoRoute(
         path: '/settings',

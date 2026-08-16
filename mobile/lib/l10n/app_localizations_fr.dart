@@ -2703,6 +2703,31 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationOperatorNoticeTitle => 'Message du développeur';
+
+  @override
+  String get pushNotificationOperatorNoticeBody =>
+      'Ouvrez l’application pour lire un court message.';
+
+  @override
+  String get operatorNoticeScreenTitle => 'Message du développeur';
+
+  @override
+  String get operatorNoticeNewVersionAvailable =>
+      'Une nouvelle version est disponible.';
+
+  @override
+  String get operatorNoticeUpdateTapHint =>
+      'Cliquez pour mettre votre application à jour.';
+
+  @override
+  String get operatorNoticeDeveloperMessagePublished =>
+      'Un message du développeur de l’application a été publié.';
+
+  @override
+  String get operatorNoticeReadMessage => 'Lire le message';
+
+  @override
   String get notificationHousingPaymentRemindersLabel => 'Rappels de paiement';
 
   @override

@@ -66,9 +66,42 @@ type fcmAndroid struct {
 	Priority string `json:"priority"`
 }
 
+const (
+	// KindWakeForInbox is the data-only closed-app wake (no user-visible copy).
+	KindWakeForInbox = "wake_for_inbox"
+	// KindOperatorNotice is the operator-triggered Android notice (VPS CLI).
+	KindOperatorNotice = "operator_notice"
+)
+
 // SendWake posts one FCM data message. recipientB64 is base64url (no padding)
 // of the opaque routing id, matching the public relay API encoding.
 func (f *FCMDataWake) SendWake(ctx context.Context, deviceToken string, recipientB64 string) error {
+	return f.sendData(ctx, deviceToken, map[string]string{
+		"v":         "1",
+		"kind":      KindWakeForInbox,
+		"recipient": recipientB64,
+	})
+}
+
+// SendOperatorNotice posts one data-only operator notice. Long copy stays on
+// the static site; this payload carries only kind, optional target build, and
+// whether the in-app page should offer the site link.
+func (f *FCMDataWake) SendOperatorNotice(ctx context.Context, deviceToken, targetBuild string, consultSite bool) error {
+	data := map[string]string{
+		"v":            "1",
+		"kind":         KindOperatorNotice,
+		"consult_site": "0",
+	}
+	if consultSite {
+		data["consult_site"] = "1"
+	}
+	if b := strings.TrimSpace(targetBuild); b != "" {
+		data["target_build"] = b
+	}
+	return f.sendData(ctx, deviceToken, data)
+}
+
+func (f *FCMDataWake) sendData(ctx context.Context, deviceToken string, data map[string]string) error {
 	if f == nil || f.TokenSrc == nil {
 		return fmt.Errorf("fcm sender not configured")
 	}
@@ -78,12 +111,8 @@ func (f *FCMDataWake) SendWake(ctx context.Context, deviceToken string, recipien
 	}
 	body := fcmV1Request{
 		Message: fcmV1Message{
-			Token: deviceToken,
-			Data: map[string]string{
-				"v":         "1",
-				"kind":      "wake_for_inbox",
-				"recipient": recipientB64,
-			},
+			Token:   deviceToken,
+			Data:    data,
 			Android: &fcmAndroid{Priority: "HIGH"},
 		},
 	}
@@ -102,7 +131,11 @@ func (f *FCMDataWake) SendWake(ctx context.Context, deviceToken string, recipien
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 
-	resp, err := f.HTTPClient.Do(req)
+	client := f.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -125,7 +158,16 @@ func (e *PermanentTokenError) Error() string { return "permanent token error: " 
 // SendWakeClassify is like SendWake but maps common FCM invalid-token errors
 // to [PermanentTokenError].
 func (f *FCMDataWake) SendWakeClassify(ctx context.Context, deviceToken string, recipientB64 string) error {
-	err := f.SendWake(ctx, deviceToken, recipientB64)
+	return classifyPermanentToken(f.SendWake(ctx, deviceToken, recipientB64))
+}
+
+// SendOperatorNoticeClassify is like SendOperatorNotice but maps common FCM
+// invalid-token errors to [PermanentTokenError].
+func (f *FCMDataWake) SendOperatorNoticeClassify(ctx context.Context, deviceToken, targetBuild string, consultSite bool) error {
+	return classifyPermanentToken(f.SendOperatorNotice(ctx, deviceToken, targetBuild, consultSite))
+}
+
+func classifyPermanentToken(err error) error {
 	if err == nil {
 		return nil
 	}

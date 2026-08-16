@@ -7,7 +7,9 @@
 > (`fcm_wake_push_emulator_physical`) are **implemented and validated in the repo /
 > on VPS**. Production enablement (`WAKE_PUSH_DISPATCH_ENABLED`) is **on** for
 > current Android QA. Tasks **7.4**, **10.5 (iOS only)**, **11.2**, **11.3 (APNs
-> only)**, **11.6**, and **12.3–12.4** remain **open or deferred**. Privacy
+> only)**, **11.6**, and **12.3–12.4** remain **open or deferred**. Task **12.5**
+> (operator FCM notice CLI) is **implemented in the repo** (needs the next relay
+> image recreate on the VPS). Privacy
 > sign-off for transport routing tokens + `last_seen_at` is **recorded** (task 1.1;
 > see `design.md` § 1). APNs code exists in relay but is **out of scope** for
 > current functional QA (FCM-only).
@@ -113,4 +115,4 @@
 - [x] 12.2 After V1 stabilizes, opt Housing plan offer and response notifications into wake dispatch on the client side (no relay change required). *(See `AppPreferences.hasWakeEligibleCategoryEnabled` — `notificationHousingPlanSubmission` + `notificationHousingDecisionChange`; test in `closed_app_push_registration_service_test.dart`.)*
 - [ ] 12.3 Reassess the TTL default after one quarter of production data on active-device counts.
 - [ ] 12.4 Decide whether iOS degraded-mode generic alert should ship by default based on field-test data.
-- [ ] 12.5 **Operator manual notification trigger (deferred to next relay + entitlement server update).** Implement a VPS-only CLI (or equivalent operator command) runnable solely on the production host under the secured Linux account that operates the relay/entitlement stack (not from the mobile app, not from a public HTTP API). The command SHALL emit a new push `kind` that opens an in-app message page. That page SHALL compare the installed app build number to a build number carried with the notification and SHALL show or hide an update affordance accordingly; alternatively the message MAY direct the user to consult copy on the static website (with or without a build-number change). Illustrative minimal payload shape (to refine at implementation): `{ "version": <number>, "message": <boolean> }` plus the usual schema/`kind` fields as designed then. Full UX, routing fan-out, entitlement involvement (if any), and privacy/audit wording SHALL be specified when that server update is planned — not in this V1 cut.
+- [x] 12.5 **Operator manual notification trigger.** VPS-only CLI `relay operator-notice` (not from the app, not a public HTTP API). FCM data-only `kind=operator_notice` with optional `target_build` and `consult_site`; long copy stays on `https://bojairu.app`. Fan-out is distinct non-expired FCM tokens (Android only; no APNs). In-app page shows the Play update affordance only when the installed build is strictly below the target. Spec detail: `specs/closed-app-push-delivery/spec.md`. Ops command: `deploy/2026-07-24-HOW-TO-DEPLOY.md` (Operator notice) and `docs/relay-deployment.md`.
