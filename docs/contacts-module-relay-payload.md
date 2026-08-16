@@ -185,19 +185,38 @@ These payloads are visible to the receiving client only.
 
 ### 5.3 profile_update
 
+Frame `kind` byte `0x03` (`EnvelopeKind.profileUpdate`). Appearance
+notices are **not** a separate envelope kind: they are an optional
+field on this same encrypted JSON. Framing version remains `0x01`
+(§ 4). The JSON object itself has no `v` key (unlike hello / ack).
+
 ```json
 {
-  "v": 1,
-  "kind": "profile_update",
-  "self_display_name": "<UTF-8 string>",
-  "self_avatar_id": "<avatar palette key>"
+  "display_name": "<UTF-8 string>",
+  "avatar_id": "<avatar palette key>",
+  "how_i_label_you": "<UTF-8 string, optional>"
 }
 ```
 
-- Broadcast to every connected contact whenever the local user changes
-  their display name or avatar.
+- `display_name` / `avatar_id` are the sender’s **canonical** self
+  identity. Broadcast to every connected contact when the local user
+  changes their display name or avatar (Settings).
+- `how_i_label_you` is the **appearance notice** (informational only;
+  no accept/reject). It is how the **sender** currently lists the
+  **recipient** on the sender’s device (`Contacts.localDisplayLabel`).
+  The string lives only inside ciphertext — never in relay headers
+  (`contact-peer-display-ownership`).
+- **Omitted** key: this envelope is not an appearance notice; the
+  recipient MUST NOT clear a previously stored “their label for me”.
+- **Present, including `""`**: notice. Empty string means the sender
+  cleared their local label for the recipient; the recipient stores
+  null for `Contacts.theirLabelForMe`.
+- **Present but not a JSON string** (number, object, array, boolean):
+  decrypt MUST fail (`EnvelopeDecryptionError`); the recipient acks
+  and drops the envelope.
 - The receiver updates the corresponding Contact row in place; no
-  state transition.
+  handshake state transition. Canonical rename vs local override
+  (scenario F) is handled on the recipient after decrypt.
 
 ### 5.4 disconnect
 

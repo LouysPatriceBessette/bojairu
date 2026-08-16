@@ -1,3 +1,4 @@
+import 'package:compartarenta/contacts/contact_display.dart';
 import 'package:compartarenta/contacts/contact_invitations_repository.dart';
 import 'package:compartarenta/db/app_database.dart';
 import 'package:compartarenta/db/repositories/contacts_repository.dart';
@@ -82,6 +83,64 @@ void main() {
       );
       final visible = await repo.list();
       expect(visible.map((c) => c.id).toList(), ['contact:handshake:deadbeef']);
+    });
+
+    test('setLocalDisplayLabel then clear restores canonical list name', () async {
+      final repo = ContactsRepository(db);
+      await repo.upsertLocalOnly(
+        id: 'c-label',
+        displayName: 'Fafoin',
+        avatarId: 'mdi:0',
+      );
+      await repo.setLocalDisplayLabel('c-label', 'Éric');
+      var row = await repo.get('c-label');
+      expect(row!.localDisplayLabel, 'Éric');
+      expect(row.effectiveDisplayName, 'Éric');
+      expect(row.displayName, 'Fafoin');
+
+      await repo.setLocalDisplayLabel('c-label', '  ');
+      row = await repo.get('c-label');
+      expect(row!.localDisplayLabel, isNull);
+      expect(row.effectiveDisplayName, 'Fafoin');
+
+      await repo.setLocalDisplayLabel('c-label', 'Erik');
+      await repo.clearLocalDisplayLabel('c-label');
+      row = await repo.get('c-label');
+      expect(row!.localDisplayLabel, isNull);
+      expect(row.effectiveDisplayName, 'Fafoin');
+    });
+
+    test('setTheirLabelForMe stores appearance notice; empty clears', () async {
+      final repo = ContactsRepository(db);
+      await repo.upsertLocalOnly(
+        id: 'c-theirs',
+        displayName: 'Gilles',
+        avatarId: 'mdi:1',
+      );
+      await repo.setTheirLabelForMe('c-theirs', 'Éric');
+      expect((await repo.get('c-theirs'))!.theirLabelForMe, 'Éric');
+      await repo.setTheirLabelForMe('c-theirs', '  ');
+      expect((await repo.get('c-theirs'))!.theirLabelForMe, isNull);
+    });
+
+    test('clearTheirLabelForMeWhenMatchesCanonical drops redundant rows',
+        () async {
+      final repo = ContactsRepository(db);
+      await repo.upsertLocalOnly(
+        id: 'c-match',
+        displayName: 'Gilles',
+        avatarId: 'mdi:1',
+      );
+      await repo.upsertLocalOnly(
+        id: 'c-keep',
+        displayName: 'Monica',
+        avatarId: 'mdi:2',
+      );
+      await repo.setTheirLabelForMe('c-match', 'Louys');
+      await repo.setTheirLabelForMe('c-keep', 'Erik');
+      await repo.clearTheirLabelForMeWhenMatchesCanonical('Louys');
+      expect((await repo.get('c-match'))!.theirLabelForMe, isNull);
+      expect((await repo.get('c-keep'))!.theirLabelForMe, 'Erik');
     });
   });
 

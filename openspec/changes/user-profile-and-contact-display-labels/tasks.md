@@ -1,6 +1,9 @@
 > **Status:** Client-side implementation complete for Sections 1–5 (including
-> peer-appearance matrix **4.1**, already manually tested). Relay
-> appearance-notice envelopes (Section 6) remain open as deferred follow-up.
+> peer-appearance matrix **4.1**, already manually tested). Appearance notices
+> reuse encrypted `profile_update` (`how_i_label_you`); documented in
+> `docs/contacts-module-relay-payload.md` § 5.3 (tasks **6.1–6.2**, **7.1–7.3**).
+
+## 1. Data model
 
 ## 1. Data model
 
@@ -25,22 +28,22 @@
 ## 4. Profile — peer view matrix
 
 - [x] 4.1 Profile screen: **How others label you** compact table (columns: contact, their label for me). *(Product copy: EN `settingsProfileAppearancesTitle` / FR « Comment les autres vous nomment » — not “how I appear to others”.) **Won't do further (2026-07-13):** already implemented and manually tested.*
-- [x] 4.2 Ingest appearance notices (or equivalent) to populate the matrix; handle offline / TTL drops gracefully. _(Placeholder copy only until relay notices land.)_
+- [x] 4.2 Ingest appearance notices (or equivalent) to populate the matrix; handle offline / TTL drops gracefully. *(Inbound `how_i_label_you` on `profile_update` → `Contacts.theirLabelForMe`; omitted key does not clear a prior notice.)*
 
 ## 5. Notifications — canonical name changes
 
 - [x] 5.1 On inbound profile-update changing peer canonical name, compare to local display label; implement silent match vs prompt with **Align** / **Keep my label**.
 - [x] 5.2 Localization for all new strings (EN baseline per repo rules; FR/ES follow `ui-localization-fr-en-es`).
 
-## 6. Relay / crypto (deferred follow-up commit)
+## 6. Relay / crypto
 
-- [ ] 6.1 Define or extend encrypted envelope type for **appearance notices** (informational only), with schema versioning and rejection of malformed payloads.
-- [ ] 6.2 Document payload in `docs/contacts-module-relay-payload.md` (or successor) once shape is fixed.
+- [x] 6.1 Define or extend encrypted envelope type for **appearance notices** (informational only), with schema versioning and rejection of malformed payloads. *(Extended `profile_update` / kind `0x03`, framing `0x01`; optional `how_i_label_you`; non-string rejected as `EnvelopeDecryptionError`.)*
+- [x] 6.2 Document payload in `docs/contacts-module-relay-payload.md` (or successor) once shape is fixed. *(§ 5.3, 2026-08-16.)*
 
-_Client-side handling of existing `profile-update` envelopes (canonical rename vs local label, dialog) is implemented in the app; the items above cover **new** relay traffic for peer-appearance matrix sync._
+_Client-side handling of existing `profile-update` envelopes (canonical rename vs local label, dialog) is implemented in the app; appearance-notice traffic is the optional `how_i_label_you` field on that same kind — not a new relay envelope kind._
 
 ## 7. Tests
 
-- [ ] 7.1 Unit tests: effective name resolution (override, clear, missing canonical).
-- [ ] 7.2 Unit tests: scenario F branching (equal vs unequal override).
-- [ ] 7.3 Widget or integration tests: Settings save triggers profile-update fan-out (mock relay).
+- [x] 7.1 Unit tests: effective name resolution (override, clear, missing canonical). *(`contact_display_test.dart`, `contacts_repository_test.dart`.)*
+- [x] 7.2 Unit tests: scenario F branching (equal vs unequal override). *(`contact_appearance_notice_test.dart`.)*
+- [x] 7.3 Widget or integration tests: Settings save triggers profile-update fan-out (mock relay). *(`broadcastProfileUpdate` on `HandshakeOrchestrator` with `FakeRelayClient` — same path Settings → prefs listener uses.)*

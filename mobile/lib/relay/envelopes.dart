@@ -782,14 +782,13 @@ class EnvelopeCodec {
       aad: Uint8List.fromList(frame.sublist(0, 46)),
     );
     final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
-    final hasHow = json.containsKey('how_i_label_you');
-    final howRaw = hasHow ? (json['how_i_label_you'] as String? ?? '') : '';
+    final how = parseProfileUpdateHowILabelYou(json);
     return ProfileUpdateEnvelope(
       senderLongTermPublicKey: senderPub,
       displayName: (json['display_name'] as String?) ?? '',
       avatarId: (json['avatar_id'] as String?) ?? '',
-      hasHowILabelYou: hasHow,
-      howILabelYou: howRaw,
+      hasHowILabelYou: how.present,
+      howILabelYou: how.value,
     );
   }
 
@@ -2432,6 +2431,23 @@ class EnvelopeDecryptionError implements Exception {
 
   @override
   String toString() => 'EnvelopeDecryptionError($reason)';
+}
+
+/// Reads optional `how_i_label_you` from decrypted profile_update JSON.
+///
+/// Omitted key → not an appearance notice. Empty string → sender cleared
+/// their local label. Non-string value → [EnvelopeDecryptionError].
+({bool present, String value}) parseProfileUpdateHowILabelYou(
+  Map<String, dynamic> json,
+) {
+  if (!json.containsKey('how_i_label_you')) {
+    return (present: false, value: '');
+  }
+  final raw = json['how_i_label_you'];
+  if (raw != null && raw is! String) {
+    throw const EnvelopeDecryptionError('malformed_how_i_label_you');
+  }
+  return (present: true, value: (raw as String?) ?? '');
 }
 
 // ---------- internal helpers ----------

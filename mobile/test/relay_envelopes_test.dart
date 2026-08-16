@@ -336,6 +336,58 @@ void main() {
       expect(decoded.howILabelYou, 'Boss');
     });
 
+    test('profile_update empty how_i_label_you is a clear-label notice', () async {
+      final aliceKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => i + 1)),
+      );
+      final bobKeystore = InMemoryIdentityKeystore(
+        seed: Uint8List.fromList(List<int>.generate(32, (i) => 0x40 + i)),
+      );
+      final alicePriv = await aliceKeystore.loadOrCreatePrivateKey();
+      final alicePub = await aliceKeystore.publicKey();
+      final bobPriv = await bobKeystore.loadOrCreatePrivateKey();
+      final bobPub = await bobKeystore.publicKey();
+
+      final frame = await EnvelopeCodec.encryptProfileUpdate(
+        envelope: ProfileUpdateEnvelope(
+          senderLongTermPublicKey: alicePub,
+          displayName: 'Alice',
+          avatarId: 'cat',
+          hasHowILabelYou: true,
+          howILabelYou: '',
+        ),
+        senderLongTermPrivateKey: alicePriv,
+        peerLongTermPublicKey: bobPub,
+      );
+      final decoded = await EnvelopeCodec.decryptProfileUpdate(
+        frame: frame,
+        receiverLongTermPrivateKey: bobPriv,
+      );
+      expect(decoded.hasHowILabelYou, isTrue);
+      expect(decoded.howILabelYou, isEmpty);
+    });
+
+    test('parseProfileUpdateHowILabelYou rejects non-string values', () {
+      expect(
+        () => parseProfileUpdateHowILabelYou({'how_i_label_you': 12}),
+        throwsA(
+          isA<EnvelopeDecryptionError>().having(
+            (e) => e.reason,
+            'reason',
+            'malformed_how_i_label_you',
+          ),
+        ),
+      );
+      expect(
+        parseProfileUpdateHowILabelYou({'display_name': 'A'}),
+        (present: false, value: ''),
+      );
+      expect(
+        parseProfileUpdateHowILabelYou({'how_i_label_you': null}),
+        (present: true, value: ''),
+      );
+    });
+
     test('disconnect round-trips an empty payload', () async {
       final aliceKeystore = InMemoryIdentityKeystore(
         seed: Uint8List.fromList(List<int>.generate(32, (i) => i + 1)),
