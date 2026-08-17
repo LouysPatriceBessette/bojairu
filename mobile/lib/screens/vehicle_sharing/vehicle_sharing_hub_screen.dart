@@ -38,7 +38,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       const [];
   Map<String, String> _contactLabels = const {};
   bool _loading = true;
-  bool _entitled = false;
+  bool _canBorrow = false;
   HandshakeOrchestrator? _steadyOrch;
   int _reloadGeneration = 0;
 
@@ -64,15 +64,9 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
   Future<void> _reload() async {
     final gen = ++_reloadGeneration;
     if (mounted) setState(() => _loading = true);
-    final entitled = await _access.refreshAndHasVehicleSharingEntitlement();
+    await _access.refreshAndHasVehicleSharingEntitlement();
     if (!mounted || gen != _reloadGeneration) return;
-    if (!entitled) {
-      setState(() {
-        _entitled = false;
-        _loading = false;
-      });
-      return;
-    }
+    final canBorrow = _access.canLogAsBorrower;
     final repo = VehiclesRepository(AppDatabase.processScope);
     final contacts = await ContactsRepository(AppDatabase.processScope).list();
     final labels = {for (final c in contacts) c.id: c.displayName};
@@ -111,7 +105,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
       _pendingOffers = pending;
       _pendingReactivates = pendingReactivates;
       _contactLabels = labels;
-      _entitled = true;
+      _canBorrow = canBorrow;
       _loading = false;
     });
   }
@@ -192,17 +186,6 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
           title: Text(l10n.homeModuleVehicleSharing),
         ),
         body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (!_entitled) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: BackButton(
-            onPressed: () => exitVehicleSharingModule(context),
-          ),
-          title: Text(l10n.homeModuleVehicleSharing),
-        ),
-        body: Center(child: Text(l10n.vehicleSharingLicensingRequired)),
       );
     }
     return Scaffold(
@@ -289,6 +272,7 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                           _contactLabels,
                           l10n,
                         ),
+                        actionsEnabled: _canBorrow,
                       ),
                     ),
                   if (_pendingOffers.isNotEmpty) ...[
@@ -316,7 +300,9 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                               ),
                             ),
                             FilledButton(
-                              onPressed: () => _acceptOffer(entry.link),
+                              onPressed: _canBorrow
+                                  ? () => _acceptOffer(entry.link)
+                                  : null,
                               child: qaVehicleSharingSemantics(
                                 identifier: kQaVehicleSharingPendingAccept,
                                 button: true,
@@ -346,7 +332,9 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                           children: [
                             Expanded(child: Text(entry.vehicleLabel)),
                             FilledButton(
-                              onPressed: () => _acceptReactivate(entry.link),
+                              onPressed: _canBorrow
+                                  ? () => _acceptReactivate(entry.link)
+                                  : null,
                               child: Text(l10n.vehicleSharingAccept),
                             ),
                           ],
@@ -392,11 +380,13 @@ class _AccessibleCard extends StatefulWidget {
     required this.vehicle,
     required this.link,
     required this.ownerLabel,
+    required this.actionsEnabled,
   });
 
   final Vehicle vehicle;
   final VehicleSharingLink link;
   final String ownerLabel;
+  final bool actionsEnabled;
 
   @override
   State<_AccessibleCard> createState() => _AccessibleCardState();
@@ -410,7 +400,8 @@ class _AccessibleCardState extends State<_AccessibleCard> {
       widget.link.status == VehicleSharingLinkStatus.active.wire;
 
   bool get _sessionActionsEnabled =>
-      _linkActive || (_sessionOpen && !_loadingSession);
+      widget.actionsEnabled &&
+      (_linkActive || (_sessionOpen && !_loadingSession));
 
   @override
   void initState() {
@@ -490,10 +481,14 @@ class _AccessibleCardState extends State<_AccessibleCard> {
                       label: qaVehicleSharingSemantics(
                         identifier: kQaVehicleSharingOtherActions,
                         button: true,
-                        onTap: () => _openOtherActions(context, usageContext),
+                        onTap: widget.actionsEnabled
+                            ? () => _openOtherActions(context, usageContext)
+                            : null,
                         child: Text(l10n.vehicleSharingOtherActions),
                       ),
-                      onPressed: () => _openOtherActions(context, usageContext),
+                      onPressed: widget.actionsEnabled
+                          ? () => _openOtherActions(context, usageContext)
+                          : null,
                     ),
                   ],
                 ),

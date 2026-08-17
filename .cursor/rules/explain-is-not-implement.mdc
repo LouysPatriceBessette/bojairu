@@ -1,0 +1,46 @@
+---
+description: Do not implement a correction unless the user explicitly asked to change code this turn
+alwaysApply: true
+---
+
+# Explain is not implement
+
+## Hard rule
+
+A request to **explain**, **describe**, or **report** current behavior is **not**
+a request to change product code, tests, or specs.
+
+Do **not** patch, revert-and-replace, or “fix while we’re here” in the same
+turn as an explanation, even if the cause is obvious and a one-line change
+would match what you think they want.
+
+## What counts as a correction request
+
+Only when **this** user message clearly asks to change the product, for
+example: « corrige », « implémente », « applique », « fais le changement »,
+or an equivalent after they have specified the desired behavior.
+
+## Mixed messages (this turn’s failure mode)
+
+If the same message both says something is wrong **and** asks you to **tell**
+them how it works today:
+
+1. **Answer the question only.**
+2. Do **not** edit. Wait until they specify the desired behavior **and** ask
+   you to implement.
+
+« On doit corriger cela » plus « dis-moi ce qui déclenche… » is **explain
+only**.
+
+## Relation to other rules
+
+- Complements `ui-ux-no-initiative.mdc` (no product guesses) and
+  `no-blind-patching-evidence-first.mdc` (no speculative patches).
+- The “bug fix without asking” allowance in `ui-ux-no-initiative.mdc` does
+  **not** apply when the user asked for an explanation.
+
+## Founder incident — 17 Aug 2026 (home tiles)
+
+User asked what hid Véhicule / Partage de véhicule on Accueil. Agent explained
+**and** changed `showVehicleHomeTile` in the same turn. User: explanation was
+the ask; the patch was unsolicited initiative.

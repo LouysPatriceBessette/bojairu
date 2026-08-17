@@ -17,7 +17,7 @@ void main() {
     expect(c?.state, ModuleEntitlementState.activeTrial);
   });
 
-  test('in grace after trial → delinquentGrace', () {
+  test('after trial without purchase → delinquentReadonly (no grace)', () {
     final snap = HousingLifecycleSource.afterTrialExpired(
       trialStartedAt: trialStart,
       trialEndsAt: trialEnd,
@@ -26,10 +26,10 @@ void main() {
       snap,
       now: trialEnd.add(const Duration(days: 2)),
     );
-    expect(c?.state, ModuleEntitlementState.delinquentGrace);
+    expect(c?.state, ModuleEntitlementState.delinquentReadonly);
   });
 
-  test('after grace → delinquentReadonly', () {
+  test('well after trial → delinquentReadonly', () {
     final snap = HousingLifecycleSource.afterTrialExpired(
       trialStartedAt: trialStart,
       trialEndsAt: trialEnd,
@@ -41,7 +41,7 @@ void main() {
     expect(c?.state, ModuleEntitlementState.delinquentReadonly);
   });
 
-  test('snapshot taken at trial start still yields grace later', () {
+  test('snapshot taken at trial start still yields readonly after trial', () {
     final snap = HousingLifecycleSource.afterTrialExpired(
       trialStartedAt: trialStart,
       trialEndsAt: trialEnd,
@@ -58,11 +58,11 @@ void main() {
         snap,
         now: trialEnd.add(const Duration(days: 1)),
       )?.state,
-      ModuleEntitlementState.delinquentGrace,
+      ModuleEntitlementState.delinquentReadonly,
     );
   });
 
-  test('consumed trial starts in grace', () {
+  test('consumed trial starts read-only', () {
     final started = DateTime.utc(2026, 8, 15);
     final snap = HousingLifecycleSource.forActiveUse(
       startedAt: started,
@@ -70,7 +70,7 @@ void main() {
     );
     expect(
       HousingLifecycleSource.candidateFor(snap, now: started)?.state,
-      ModuleEntitlementState.delinquentGrace,
+      ModuleEntitlementState.delinquentReadonly,
     );
   });
 }

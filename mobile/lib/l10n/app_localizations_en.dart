@@ -2699,6 +2699,72 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationTrialEndedTitle => 'The trial period has ended.';
+
+  @override
+  String get pushNotificationHousingTrialEndedBody =>
+      'The Housing module is now read-only. Purchases are in Licenses.';
+
+  @override
+  String get pushNotificationVehicleTrialStartedTitle =>
+      'Vehicle trial started';
+
+  @override
+  String pushNotificationVehicleTrialStartedBody(String date) {
+    return 'You can use the vehicle until $date. Purchases are in Licenses.';
+  }
+
+  @override
+  String get pushNotificationVehicleTrialReminderTitle =>
+      'Vehicle trial reminder';
+
+  @override
+  String pushNotificationVehicleTrialWeekLeftBody(String date) {
+    return 'The vehicle trial ends on $date (7 days left). Open Licenses when you are ready.';
+  }
+
+  @override
+  String pushNotificationVehicleTrialDaysLeftBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'The vehicle trial ends on $date ($days days left). Open Licenses when you are ready.',
+      one:
+          'The vehicle trial ends on $date (1 day left). Open Licenses when you are ready.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationVehicleTrialEndedBody =>
+      'The Vehicle module is now read-only. Purchases are in Licenses.';
+
+  @override
+  String get pushNotificationVehicleGraceReminderTitle =>
+      'Vehicle grace period';
+
+  @override
+  String pushNotificationVehicleGraceReminderBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          '$days days left (until $date) to subscribe in Licenses. Vehicle stays usable.',
+      one:
+          '1 day left (until $date) to subscribe in Licenses. Vehicle stays usable.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingDisabledTitle => 'Sharing disabled.';
+
+  @override
+  String get pushNotificationVehicleSharingDisabledBody =>
+      'The Sharing module requires valid Vehicle and Vehicle sharing licenses. Purchases are in Licenses.';
+
+  @override
   String get pushNotificationOperatorNoticeTitle => 'Developer message';
 
   @override

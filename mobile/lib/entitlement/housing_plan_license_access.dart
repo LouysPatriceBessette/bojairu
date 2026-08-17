@@ -63,9 +63,15 @@ HousingPlanLicenseView housingPlanLicenseView({
   final life = snap == null
       ? null
       : HousingLifecycleSource.candidateFor(snap, now: utc);
+  final receiptGrace = !paid &&
+      entitlement?.stateOf(AppModuleId.housing) ==
+          ModuleEntitlementState.delinquentGrace;
+  final localState = life?.state ?? ModuleEntitlementState.free;
   final planState = paid
       ? ModuleEntitlementState.activePaid
-      : (life?.state ?? ModuleEntitlementState.free);
+      : (receiptGrace
+          ? ModuleEntitlementState.delinquentGrace
+          : localState);
   final allows = paid ||
       snap == null ||
       planState == ModuleEntitlementState.activeTrial ||

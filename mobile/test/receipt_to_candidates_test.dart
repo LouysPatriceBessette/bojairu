@@ -73,4 +73,25 @@ void main() {
       ModuleEntitlementState.delinquentReadonly,
     );
   });
+
+  test('expired vehicle-sharing receipt skips grace', () {
+    final expired = now.subtract(const Duration(days: 2));
+    final map = ReceiptToCandidates.fromReceipts(
+      [
+        StoreReceiptRecord(
+          productId: 'bojairu.vehicle_sharing',
+          platform: 'google_play',
+          purchaseTokenOrReceipt: 'tok',
+          purchasedAt: expired.subtract(const Duration(days: 30)),
+          expiresAt: expired,
+        ),
+      ],
+      now: now,
+      graceDuration: const Duration(days: 7),
+    );
+    expect(
+      ModuleEntitlementEvaluator.evaluate(map[AppModuleId.vehicleSharing]!),
+      ModuleEntitlementState.delinquentReadonly,
+    );
+  });
 }

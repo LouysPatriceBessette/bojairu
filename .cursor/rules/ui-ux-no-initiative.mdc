@@ -63,7 +63,9 @@ from that reference ships **their mistake** as product behavior.
 - Apply **project rules** already binding (terminology dictionary, date/money
   display, melos workflow) — not new product choices.
 - **Bug fixes** where expected behavior is **proven** by code, logs, or an
-  explicit user correction (“c’est sous le menu Android” → fix placement only).
+  explicit user correction (“c’est sous le menu Android” → fix placement only),
+  **and** this turn is an explicit request to change the product — not an
+  explanation-only ask (see `explain-is-not-implement.mdc`).
 
 ## When the user confirms
 

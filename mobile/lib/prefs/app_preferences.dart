@@ -88,6 +88,12 @@ class AppPreferences extends ChangeNotifier {
   static String _housingPlanActiveUseStartedKey(String planId) =>
       'licensing.housing.planActiveUseStarted.$planId';
 
+  static const _kVehicleTrialStarted = 'licensing.vehicle.trialStartedAt';
+  static const _kVehicleSharingHoldNotified =
+      'licensing.vehicleSharing.heldInboundNotified';
+  static const _kVehicleSharingDisabledNotified =
+      'licensing.vehicleSharing.readOnlyEntryNotified';
+
   static Future<AppPreferences> load() async {
     final prefs = await _loadSharedPreferencesWithRetry();
     final appPrefs = AppPreferences._(prefs);
@@ -630,6 +636,37 @@ class AppPreferences extends ChangeNotifier {
     if (_prefs.containsKey(key)) return;
     await _prefs.setString(key, DateTime.now().toUtc().toIso8601String());
     notifyListeners();
+  }
+
+  DateTime? vehicleTrialStartedAt() {
+    final raw = _prefs.getString(_kVehicleTrialStarted);
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  /// Starts the vehicle trial clock once. Returns true if this call stored it.
+  Future<bool> markVehicleTrialStarted({DateTime? at}) async {
+    if (_prefs.containsKey(_kVehicleTrialStarted)) return false;
+    await _prefs.setString(
+      _kVehicleTrialStarted,
+      (at ?? DateTime.now()).toUtc().toIso8601String(),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  bool vehicleSharingHoldInboundNotified() =>
+      _prefs.getBool(_kVehicleSharingHoldNotified) ?? false;
+
+  Future<void> setVehicleSharingHoldInboundNotified(bool value) async {
+    await _prefs.setBool(_kVehicleSharingHoldNotified, value);
+  }
+
+  bool vehicleSharingDisabledEntryNotified() =>
+      _prefs.getBool(_kVehicleSharingDisabledNotified) ?? false;
+
+  Future<void> setVehicleSharingDisabledEntryNotified(bool value) async {
+    await _prefs.setBool(_kVehicleSharingDisabledNotified, value);
   }
 
   /// This is meant to help iterate during development. It MUST NOT be triggered

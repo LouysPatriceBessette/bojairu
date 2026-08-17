@@ -9,57 +9,39 @@ A sharing relationship between a **Propriétaire** (owner) and an **Emprunteur**
 | **PP** | Propriétaire-side sharing (offer, receive borrower data) | `vehicle-sharing` | Propriétaire |
 | **PE** | Emprunteur-side sharing (accept offer, submit usage data) | `vehicle-sharing` | Emprunteur |
 
-`vehicle-sharing` is one purchasable module; **PP** and **PE** are role-specific gates on the Propriétaire and Emprunteur devices respectively. **`vehicle-sharing` has no trial period** — see `vehicle-module-licensing`.
+`vehicle-sharing` is one purchasable module; **PP** and **PE** are role-specific gates on the Propriétaire and Emprunteur devices respectively. **`vehicle-sharing` has no trial period and no grace period.** Without a paid `vehicle-sharing` license, sharing actions are unavailable.
 
-### Requirement: Delinquency grace is one week per module
-When any of EV, PP, or PE enters delinquency (unpaid after renewal), that module instance SHALL enter a **1-week grace period** consistent with `delinquency-grace-readonly-and-export`, then transition to the module-specific restrictions below. Accumulated local data SHALL remain exportable at all times (same rule as housing).
+### Requirement: Vehicle module grace does not grant sharing-out actions
+When the Propriétaire's **`vehicle`** license is in payment-default grace, existing shares remain active and borrower envelopes are still applied. The Propriétaire SHALL NOT invite, revoke, or reactivate shares unless **both** `vehicle` and `vehicle-sharing` are **active-paid** (not trial, not grace).
 
-#### Scenario: Grace period applies independently per role
-- **WHEN** the Propriétaire's `vehicle` subscription becomes unpaid
-- **THEN** only EV (and dependent PP behavior per below) is affected after grace
-- **THEN** the Emprunteur's PE state is unchanged unless their own `vehicle-sharing` subscription lapses
+#### Scenario: Grace on vehicle keeps inbound borrower facts
+- **WHEN** the Propriétaire's `vehicle` subscription is in delinquent-grace and `vehicle-sharing` is active-paid
+- **THEN** borrower usage envelopes are applied to the owner ledger
+- **THEN** invite, revoke, and reactivate controls are disabled
 
-### Requirement: EV delinquent after grace — read-only vehicle data; PP disabled
-After grace, if **EV alone** (`vehicle` on the Propriétaire device) is delinquent:
+### Requirement: EV read-only or unpaid sharing — hold borrower envelopes
+When `vehicle` is `delinquent-readonly` **or** `vehicle-sharing` is not `active-paid` on the Propriétaire device:
 
-- EV is **read-only** for that Propriétaire's vehicle data (no new owner-side edits).
-- **PP is disabled** on the Propriétaire device:
-  - cannot offer the vehicle to new Emprunteurs or withdraw an active offer through normal publish flows;
-  - pending offers in flight expire on their own;
-  - cannot receive new usage data from Emprunteurs — Emprunteurs receive a **clear error** explaining that the Propriétaire's vehicle license is inactive.
+- Invite, revoke, and reactivate are disabled.
+- Inbound borrower-to-owner envelopes SHALL be stored locally and SHALL NOT be applied to the vehicle ledger.
+- On restore to a writable sharing-out state, held envelopes SHALL be applied in receive order.
+- The owner SHALL receive a local notification titled "Sharing disabled" when this state begins, and once more on the first held inbound packet (then silence).
 
-#### Scenario: Borrower submit fails when owner EV delinquent
-- **WHEN** an Emprunteur attempts to transmit usage data after the Propriétaire's EV has left grace as delinquent
-- **THEN** the submission fails with an explicit reason referencing the Propriétaire's inactive vehicle license
-- **THEN** no silent drop occurs without user-visible feedback
+#### Scenario: Owner vehicle trial does not allow new shares
+- **WHEN** the Propriétaire is in `active-trial` on `vehicle`
+- **THEN** add-share / invite / revoke / reactivate remain disabled
+- **THEN** an active share cannot be created during that trial
 
-### Requirement: PP delinquent after grace — EV normal; PP disabled
-After grace, if **PP alone** (`vehicle-sharing` on the Propriétaire device, while `vehicle` remains paid) is delinquent:
+### Requirement: PE requires paid vehicle-sharing only
+Borrower actions (accept offer, log usage on accessible vehicles) require `vehicle-sharing` **active-paid**. There is no trial and no grace. The `vehicle` license SHALL NOT gate borrower-path actions.
 
-- **EV continues to operate normally** (full owner toolkit on owned vehicles).
-- **PP is disabled** with the same restrictions as in the EV-delinquent case for offering, withdrawing offers, and receiving Emprunteur data.
-
-#### Scenario: Owner maintains solo vehicle while PP delinquent
-- **WHEN** the Propriétaire's `vehicle-sharing` is delinquent after grace but `vehicle` is active-paid
-- **THEN** the Propriétaire can still log fuel, maintenance, and owner uses on owned vehicles
-- **THEN** the Propriétaire cannot publish or manage sharing offers until PP is restored
-
-### Requirement: PE delinquent after grace — Emprunteur sharing disabled
-After grace, if **PE alone** (`vehicle-sharing` on the Emprunteur device) is delinquent:
-
-- **PE is disabled** on the Emprunteur device:
-  - cannot enter or transmit new usage data;
-  - cannot accept a vehicle offer;
-  - does not receive new vehicle offers from Propriétaires.
-
-#### Scenario: Delinquent borrower cannot accept a new offer
-- **WHEN** an Emprunteur's `vehicle-sharing` is delinquent after grace
-- **THEN** inbound vehicle offers are not surfaced to that Emprunteur
-- **THEN** any accept action is blocked with guidance to restore PE
+#### Scenario: Unpaid borrower cannot act
+- **WHEN** an Emprunteur's `vehicle-sharing` is not active-paid
+- **THEN** accept and accessible-vehicle action controls are disabled
 
 ### Requirement: Export remains available under all delinquency states
 Regardless of EV, PP, or PE delinquency, each affected user SHALL retain the ability to export their locally accumulated module data per `module-enable-disable-and-data-isolation` and housing export precedent.
 
 #### Scenario: Delinquent owner exports vehicle history
-- **WHEN** EV is read-only after grace
+- **WHEN** EV is read-only after trial or after vehicle payment-default grace
 - **THEN** the Propriétaire can still export vehicle data from their device

@@ -11,6 +11,9 @@ import 'housing_trial_consumption_store.dart';
 import 'housing_trial_eligibility.dart';
 import 'module_entitlement_controller.dart';
 import 'app_module_id.dart';
+import 'receipt_to_candidates.dart';
+import 'store_product_catalog.dart';
+import 'store_receipt_record.dart';
 
 /// Applies local housing trial / grace clocks, reminders, and module state.
 abstract final class HousingLicenseLifecycleSync {
@@ -62,10 +65,22 @@ abstract final class HousingLicenseLifecycleSync {
       eligible ??= true;
       final started = p.housingPlanActiveUseStartedAt(planId)?.toUtc();
       if (started == null) continue;
-      final slots = housingLicenseReminderSlots(
-        activeUseStartedAt: started,
-        trialEligible: eligible,
-      );
+      final slots = <HousingLicenseReminderSlot>[
+        ...housingLicenseReminderSlots(
+          activeUseStartedAt: started,
+          trialEligible: eligible,
+        ),
+        if (!paid)
+          ..._receiptGraceSlotsForModule(
+            receipts: entitlement?.receipts ?? const [],
+            module: AppModuleId.housing,
+            now: utc,
+          ),
+      ];
+      final cancelSlots = [
+        ...slots,
+        ...housingLicenseLegacyGraceCancelSlots(activeUseStartedAt: started),
+      ];
       final sink = reminderSinkForTesting;
       if (sink != null) {
         await sink(
@@ -79,6 +94,7 @@ abstract final class HousingLicenseLifecycleSync {
         await HousingLicenseReminderService.syncPlan(
           planId: planId,
           slots: slots,
+          extraCancelSlots: cancelSlots,
           now: utc,
           showDueImmediately: planId == showDueImmediatelyForPlanId,
           paid: paid,
@@ -130,4 +146,25 @@ abstract final class HousingLicenseLifecycleSync {
       await trialStore.markConsumed(selfInstallation);
     }
   }
+}
+
+List<HousingLicenseReminderSlot> _receiptGraceSlotsForModule({
+  required List<StoreReceiptRecord> receipts,
+  required AppModuleId module,
+  required DateTime now,
+}) {
+  DateTime? earliestExpiry;
+  for (final receipt in receipts) {
+    final entry = StoreProductCatalog.entryForProductId(receipt.productId);
+    if (entry == null || !entry.grantsModules.contains(module)) continue;
+    final exp = receipt.expiresAt;
+    if (exp == null || !exp.isBefore(now)) continue;
+    final graceEnd = exp.add(kStoreReceiptGraceDuration);
+    if (now.isAfter(graceEnd)) continue;
+    if (earliestExpiry == null || exp.isBefore(earliestExpiry)) {
+      earliestExpiry = exp;
+    }
+  }
+  if (earliestExpiry == null) return const [];
+  return housingLicenseReceiptGraceSlots(receiptExpiredAt: earliestExpiry);
 }

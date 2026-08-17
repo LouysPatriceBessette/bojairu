@@ -60,7 +60,7 @@ void main() {
     return controller;
   }
 
-  test('trial → grace keeps usable access; readonly does not', () async {
+  test('trial → readonly keeps no usable access after day 14', () async {
     final trialStore = await HousingTrialConsumptionStore.load();
     await trialStore.setPlanTrialEligible(planId, true);
     final prefs = await AppPreferences.load();
@@ -79,14 +79,6 @@ void main() {
     c = ModuleEntitlementController.maybeInstance!;
     expect(
       c.stateOf(AppModuleId.housing),
-      ModuleEntitlementState.delinquentGrace,
-    );
-    expect(c.hasUsableAccess(AppModuleId.housing), isTrue);
-
-    await applyAt(started.add(const Duration(days: 22)));
-    c = ModuleEntitlementController.maybeInstance!;
-    expect(
-      c.stateOf(AppModuleId.housing),
       ModuleEntitlementState.delinquentReadonly,
     );
     expect(c.hasUsableAccess(AppModuleId.housing), isFalse);
@@ -95,14 +87,14 @@ void main() {
       prefs: prefs,
       trialStore: trialStore,
       planId: planId,
-      now: started.add(const Duration(days: 22)),
+      now: started.add(const Duration(days: 15)),
       entitlement: c,
     );
     expect(view.allowsNewRealizedExpense, isFalse);
     expect(view.showReadonlyBanner, isTrue);
   });
 
-  test('consumed trial skips 14-day trial and starts grace', () async {
+  test('consumed trial skips 14-day trial and is read-only', () async {
     final trialStore = await HousingTrialConsumptionStore.load();
     await trialStore.setPlanTrialEligible(planId, false);
     final prefs = await AppPreferences.load();
@@ -111,9 +103,9 @@ void main() {
 
     expect(
       ModuleEntitlementController.maybeInstance!.stateOf(AppModuleId.housing),
-      ModuleEntitlementState.delinquentGrace,
+      ModuleEntitlementState.delinquentReadonly,
     );
-    expect(sinkLog.single.slotCount, 7);
+    expect(sinkLog.single.slotCount, 0);
   });
 
   test('paid Play housing cancels reminders and allows new expenses', () async {

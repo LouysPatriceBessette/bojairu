@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final started = DateTime.utc(2026, 8, 1, 12);
 
-  test('eligible trial schedules start, week-left, last 3 days, then 7 grace days', () {
+  test('eligible trial schedules start, week-left, last 3 days, then trial end', () {
     final slots = housingLicenseReminderSlots(
       activeUseStartedAt: started,
       trialEligible: true,
@@ -28,24 +28,33 @@ void main() {
       [3, 2, 1],
     );
     expect(
+      slots.where((s) => s.kind == HousingLicenseReminderKind.trialEnded).single.fireAtUtc,
+      trialEnds,
+    );
+    expect(
       slots.where((s) => s.kind == HousingLicenseReminderKind.graceDaily),
-      hasLength(7),
+      isEmpty,
     );
     expect(slots.first.fireAtUtc, started);
-    expect(slots.last.daysRemaining, 1);
   });
 
-  test('consumed trial schedules only daily grace', () {
+  test('consumed trial schedules no local reminders', () {
     final slots = housingLicenseReminderSlots(
       activeUseStartedAt: started,
       trialEligible: false,
     );
+    expect(slots, isEmpty);
+  });
+
+  test('expired paid receipt schedules 7 grace days', () {
+    final expired = DateTime.utc(2026, 8, 10, 12);
+    final slots = housingLicenseReceiptGraceSlots(receiptExpiredAt: expired);
     expect(slots, hasLength(7));
     expect(
       slots.every((s) => s.kind == HousingLicenseReminderKind.graceDaily),
       isTrue,
     );
-    expect(slots.first.fireAtUtc, started);
+    expect(slots.first.fireAtUtc, expired);
     expect(slots.first.daysRemaining, 7);
   });
 

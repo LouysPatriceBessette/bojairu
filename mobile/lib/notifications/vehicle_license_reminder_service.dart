@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../entitlement/housing_license_reminder_schedule.dart';
+import '../entitlement/vehicle_license_lifecycle_sync.dart';
 import '../l10n/app_localizations.dart';
 import '../prefs/app_preferences.dart';
 import '../util/display_date.dart';
@@ -9,18 +10,18 @@ import 'notification_permission_gate.dart';
 import 'notification_qa_prefix.dart';
 import 'push_notification_service.dart';
 
-/// Schedules / cancels local housing trial and grace reminders.
-abstract final class HousingLicenseReminderService {
-  static const int qaListNumber = 20;
+/// Schedules / cancels local vehicle trial and payment-default grace reminders.
+abstract final class VehicleLicenseReminderService {
+  static const int qaListNumber = 21;
 
-  static Future<void> syncPlan({
-    required String planId,
+  static Future<void> sync({
     required List<HousingLicenseReminderSlot> slots,
     List<HousingLicenseReminderSlot> extraCancelSlots = const [],
     required DateTime now,
     required bool showDueImmediately,
     required bool paid,
   }) async {
+    const planId = kVehicleLicenseReminderPlanId;
     final toCancel = <HousingLicenseReminderSlot>[
       ...slots,
       ...extraCancelSlots,
@@ -78,11 +79,6 @@ abstract final class HousingLicenseReminderService {
     }
   }
 
-  static bool _justDue(DateTime fireAtUtc, DateTime nowUtc) {
-    final fire = fireAtUtc.toUtc();
-    return !fire.isBefore(nowUtc.subtract(const Duration(minutes: 5)));
-  }
-
   static ({String title, String body}) _copyFor(
     HousingLicenseReminderSlot slot,
     AppLocalizations l10n,
@@ -92,14 +88,14 @@ abstract final class HousingLicenseReminderService {
       qaListNumber,
       switch (slot.kind) {
         HousingLicenseReminderKind.trialStart =>
-          l10n.pushNotificationHousingTrialStartedTitle,
+          l10n.pushNotificationVehicleTrialStartedTitle,
         HousingLicenseReminderKind.trialWeekLeft ||
         HousingLicenseReminderKind.trialDaysLeft =>
-          l10n.pushNotificationHousingTrialReminderTitle,
+          l10n.pushNotificationVehicleTrialReminderTitle,
         HousingLicenseReminderKind.trialEnded =>
           l10n.pushNotificationTrialEndedTitle,
         HousingLicenseReminderKind.graceDaily =>
-          l10n.pushNotificationHousingGraceReminderTitle,
+          l10n.pushNotificationVehicleGraceReminderTitle,
       },
     );
     final trialDate = formatPreferenceDate(slot.trialEndsAt, dateFormat);
@@ -107,16 +103,21 @@ abstract final class HousingLicenseReminderService {
     final days = slot.daysRemaining ?? 0;
     final bodyRaw = switch (slot.kind) {
       HousingLicenseReminderKind.trialStart =>
-        l10n.pushNotificationHousingTrialStartedBody(trialDate),
+        l10n.pushNotificationVehicleTrialStartedBody(trialDate),
       HousingLicenseReminderKind.trialWeekLeft =>
-        l10n.pushNotificationHousingTrialWeekLeftBody(trialDate),
+        l10n.pushNotificationVehicleTrialWeekLeftBody(trialDate),
       HousingLicenseReminderKind.trialDaysLeft =>
-        l10n.pushNotificationHousingTrialDaysLeftBody(days, trialDate),
+        l10n.pushNotificationVehicleTrialDaysLeftBody(days, trialDate),
       HousingLicenseReminderKind.trialEnded =>
-        l10n.pushNotificationHousingTrialEndedBody,
+        l10n.pushNotificationVehicleTrialEndedBody,
       HousingLicenseReminderKind.graceDaily =>
-        l10n.pushNotificationHousingGraceReminderBody(days, graceDate),
+        l10n.pushNotificationVehicleGraceReminderBody(days, graceDate),
     };
     return (title: title, body: notificationQaPrefix(qaListNumber, bodyRaw));
+  }
+
+  static bool _justDue(DateTime fireAtUtc, DateTime nowUtc) {
+    final fire = fireAtUtc.toUtc();
+    return !fire.isBefore(nowUtc.subtract(const Duration(minutes: 5)));
   }
 }

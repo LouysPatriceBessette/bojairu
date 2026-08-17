@@ -52,6 +52,7 @@ abstract final class HousingLifecycleSource {
       );
     }
 
+    // Payment-default grace lives on store receipts, not after trial.
     if (graceEnd != null && !now.isAfter(graceEnd)) {
       return EntitlementSourceCandidate(
         state: ModuleEntitlementState.delinquentGrace,
@@ -60,7 +61,7 @@ abstract final class HousingLifecycleSource {
       );
     }
 
-    // Trial fully elapsed (and grace if any): read-only.
+    // Trial fully elapsed without a paid license: read-only (no grace).
     if (snap.trialStartedAt != null &&
         trialEnd != null &&
         now.isAfter(trialEnd)) {
@@ -80,39 +81,35 @@ abstract final class HousingLifecycleSource {
     return null;
   }
 
-  /// Complete trial + grace timestamps. [candidateFor] applies [now] later.
+  /// Trial timestamps only. Payment-default grace is on store receipts.
   static HousingLifecycleSnapshot afterTrialExpired({
     required DateTime trialStartedAt,
     required DateTime trialEndsAt,
-    Duration graceDuration = kHousingGraceDuration,
   }) {
     return HousingLifecycleSnapshot(
       trialStartedAt: trialStartedAt,
       trialEndsAt: trialEndsAt,
-      graceEndsAt: trialEndsAt.add(graceDuration),
     );
   }
 
-  /// Clock for first realized-expense sync: 14-day trial, or grace only when
-  /// this installation (or a roster peer) already consumed housing trial.
+  /// Clock for first realized-expense sync: 14-day trial, or immediate
+  /// read-only when this installation (or a roster peer) already consumed
+  /// housing trial.
   static HousingLifecycleSnapshot forActiveUse({
     required DateTime startedAt,
     required bool trialEligible,
-    Duration graceDuration = kHousingGraceDuration,
   }) {
     final started = startedAt.toUtc();
     if (trialEligible) {
       return afterTrialExpired(
         trialStartedAt: started,
         trialEndsAt: started.add(kHousingTrialDuration),
-        graceDuration: graceDuration,
       );
     }
     final trialEnds = started.subtract(const Duration(microseconds: 1));
     return afterTrialExpired(
       trialStartedAt: started.subtract(kHousingTrialDuration),
       trialEndsAt: trialEnds,
-      graceDuration: graceDuration,
     );
   }
 }

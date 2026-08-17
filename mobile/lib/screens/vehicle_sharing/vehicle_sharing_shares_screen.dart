@@ -45,6 +45,7 @@ class _VehicleSharingSharesScreenState
   Map<String, bool> _pendingDecisionByLink = const {};
   Map<String, VehicleUse?> _openUseByVehicle = const {};
   bool _loading = true;
+  bool _canOfferSharing = false;
   HandshakeOrchestrator? _steadyOrch;
   int _reloadGeneration = 0;
 
@@ -95,6 +96,7 @@ class _VehicleSharingSharesScreenState
           await repo.hasPendingUsageBalanceDecision(link.id);
     }
     final openUse = await repo.openUseForVehicle(widget.vehicleId);
+    await _access.refreshAndCanOfferSharing();
 
     if (!mounted || gen != _reloadGeneration) return;
     setState(() {
@@ -106,6 +108,7 @@ class _VehicleSharingSharesScreenState
       _contactLabels = labels;
       _pendingDecisionByLink = pendingDecision;
       _openUseByVehicle = {widget.vehicleId: openUse};
+      _canOfferSharing = _access.canOfferSharing;
       _loading = false;
     });
   }
@@ -313,6 +316,7 @@ class _VehicleSharingSharesScreenState
                     final name = _contactLabels[link.borrowerContactId] ??
                         link.borrowerContactId;
                     final revokeBlocked =
+                        !_canOfferSharing ||
                         _pendingDecisionByLink[link.id] == true;
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -336,7 +340,9 @@ class _VehicleSharingSharesScreenState
                       leading: const SizedBox(width: 24),
                       title: Text(name),
                       trailing: TextButton(
-                        onPressed: () => _onReactivate(link),
+                        onPressed: _canOfferSharing
+                            ? () => _onReactivate(link)
+                            : null,
                         child: Text(l10n.vehicleSharingReactivate),
                       ),
                     );
@@ -346,9 +352,9 @@ class _VehicleSharingSharesScreenState
                 qaVehicleSharingSemantics(
                   identifier: kQaVehicleSharingAddShare,
                   button: true,
-                  onTap: _onAddShare,
+                  onTap: _canOfferSharing ? _onAddShare : null,
                   child: FilledButton(
-                    onPressed: _onAddShare,
+                    onPressed: _canOfferSharing ? _onAddShare : null,
                     child: Text(l10n.vehicleSharingAddShare),
                   ),
                 ),

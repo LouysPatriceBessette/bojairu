@@ -50,6 +50,7 @@ class ModuleEntitlementController extends ChangeNotifier {
 
   List<StoreReceiptRecord> _receipts = const <StoreReceiptRecord>[];
   HousingLifecycleSnapshot? _housingLifecycle;
+  HousingLifecycleSnapshot? _vehicleLifecycle;
 
   ModuleEntitlementState stateOf(AppModuleId module) =>
       _effective[module] ?? ModuleEntitlementState.free;
@@ -81,6 +82,12 @@ class ModuleEntitlementController extends ChangeNotifier {
   void setHousingLifecycle(HousingLifecycleSnapshot? snapshot) {
     if (_housingLifecycle == snapshot) return;
     _housingLifecycle = snapshot;
+    _recompute();
+  }
+
+  void setVehicleLifecycle(HousingLifecycleSnapshot? snapshot) {
+    if (_vehicleLifecycle == snapshot) return;
+    _vehicleLifecycle = snapshot;
     _recompute();
   }
 
@@ -168,7 +175,13 @@ class ModuleEntitlementController extends ChangeNotifier {
         );
         if (life != null) candidates.add(life);
       }
-      // vehicle / vehicle-sharing: paid or bundle only (no local trial).
+      if (module == AppModuleId.vehicle && _vehicleLifecycle != null) {
+        final life = HousingLifecycleSource.candidateFor(
+          _vehicleLifecycle!,
+          now: now,
+        );
+        if (life != null) candidates.add(life);
+      }
       final next = ModuleEntitlementEvaluator.evaluate(candidates);
       if (_effective[module] != next) {
         _effective[module] = next;

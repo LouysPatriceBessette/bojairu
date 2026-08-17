@@ -1131,6 +1131,36 @@
       "date": { "type": "String" }
     }
   },
+  "pushNotificationTrialEndedTitle": "La période d'essai est terminée.",
+  "pushNotificationHousingTrialEndedBody": "Le module de Logement passe en mode lecture seule. Les achats se font dans Licences.",
+  "pushNotificationVehicleTrialStartedTitle": "Essai véhicule commencé",
+  "pushNotificationVehicleTrialStartedBody": "Vous pouvez utiliser le véhicule jusqu’au {date}. Les achats se font dans Licences.",
+  "@pushNotificationVehicleTrialStartedBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationVehicleTrialReminderTitle": "Rappel d’essai véhicule",
+  "pushNotificationVehicleTrialWeekLeftBody": "L’essai véhicule se termine le {date} (7 jours restants). Ouvrez Licences quand vous serez prêt.",
+  "@pushNotificationVehicleTrialWeekLeftBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationVehicleTrialDaysLeftBody": "{days, plural, one{L’essai véhicule se termine le {date} (1 jour restant). Ouvrez Licences quand vous serez prêt.} other{L’essai véhicule se termine le {date} ({days} jours restants). Ouvrez Licences quand vous serez prêt.}}",
+  "@pushNotificationVehicleTrialDaysLeftBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleTrialEndedBody": "Le module de Véhicule passe en mode lecture seule. Les achats se font dans Licences.",
+  "pushNotificationVehicleGraceReminderTitle": "Période de grâce véhicule",
+  "pushNotificationVehicleGraceReminderBody": "{days, plural, one{Il reste 1 jour (jusqu’au {date}) pour souscrire dans Licences. Le véhicule reste utilisable.} other{Il reste {days} jours (jusqu’au {date}) pour souscrire dans Licences. Le véhicule reste utilisable.}}",
+  "@pushNotificationVehicleGraceReminderBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingDisabledTitle": "Partage désactivé.",
+  "pushNotificationVehicleSharingDisabledBody": "Le module Partage requiert les deux licences de Véhicule et Partage valides. Les achats se font dans Licences.",
   "pushNotificationOperatorNoticeTitle": "Message du développeur",
   "pushNotificationOperatorNoticeBody": "Ouvrez l’application pour lire un court message.",
   "operatorNoticeScreenTitle": "Message du développeur",

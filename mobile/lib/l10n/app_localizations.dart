@@ -4469,6 +4469,78 @@ abstract class AppLocalizations {
   /// **'{days, plural, one{1 day left (until {date}) to subscribe in Licenses. Housing stays usable.} other{{days} days left (until {date}) to subscribe in Licenses. Housing stays usable.}}'**
   String pushNotificationHousingGraceReminderBody(int days, String date);
 
+  /// No description provided for @pushNotificationTrialEndedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The trial period has ended.'**
+  String get pushNotificationTrialEndedTitle;
+
+  /// No description provided for @pushNotificationHousingTrialEndedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The Housing module is now read-only. Purchases are in Licenses.'**
+  String get pushNotificationHousingTrialEndedBody;
+
+  /// No description provided for @pushNotificationVehicleTrialStartedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle trial started'**
+  String get pushNotificationVehicleTrialStartedTitle;
+
+  /// No description provided for @pushNotificationVehicleTrialStartedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can use the vehicle until {date}. Purchases are in Licenses.'**
+  String pushNotificationVehicleTrialStartedBody(String date);
+
+  /// No description provided for @pushNotificationVehicleTrialReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle trial reminder'**
+  String get pushNotificationVehicleTrialReminderTitle;
+
+  /// No description provided for @pushNotificationVehicleTrialWeekLeftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The vehicle trial ends on {date} (7 days left). Open Licenses when you are ready.'**
+  String pushNotificationVehicleTrialWeekLeftBody(String date);
+
+  /// No description provided for @pushNotificationVehicleTrialDaysLeftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{The vehicle trial ends on {date} (1 day left). Open Licenses when you are ready.} other{The vehicle trial ends on {date} ({days} days left). Open Licenses when you are ready.}}'**
+  String pushNotificationVehicleTrialDaysLeftBody(int days, String date);
+
+  /// No description provided for @pushNotificationVehicleTrialEndedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The Vehicle module is now read-only. Purchases are in Licenses.'**
+  String get pushNotificationVehicleTrialEndedBody;
+
+  /// No description provided for @pushNotificationVehicleGraceReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle grace period'**
+  String get pushNotificationVehicleGraceReminderTitle;
+
+  /// No description provided for @pushNotificationVehicleGraceReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{1 day left (until {date}) to subscribe in Licenses. Vehicle stays usable.} other{{days} days left (until {date}) to subscribe in Licenses. Vehicle stays usable.}}'**
+  String pushNotificationVehicleGraceReminderBody(int days, String date);
+
+  /// No description provided for @pushNotificationVehicleSharingDisabledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing disabled.'**
+  String get pushNotificationVehicleSharingDisabledTitle;
+
+  /// No description provided for @pushNotificationVehicleSharingDisabledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The Sharing module requires valid Vehicle and Vehicle sharing licenses. Purchases are in Licenses.'**
+  String get pushNotificationVehicleSharingDisabledBody;
+
   /// No description provided for @pushNotificationOperatorNoticeTitle.
   ///
   /// In en, this message translates to:

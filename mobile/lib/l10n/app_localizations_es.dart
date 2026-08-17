@@ -2733,6 +2733,74 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get pushNotificationTrialEndedTitle =>
+      'El periodo de prueba ha terminado.';
+
+  @override
+  String get pushNotificationHousingTrialEndedBody =>
+      'El módulo de Vivienda pasa a solo lectura. Las compras se hacen en Licencias.';
+
+  @override
+  String get pushNotificationVehicleTrialStartedTitle =>
+      'Prueba de vehículo iniciada';
+
+  @override
+  String pushNotificationVehicleTrialStartedBody(String date) {
+    return 'Puede usar el vehículo hasta el $date. Las compras están en Licencias.';
+  }
+
+  @override
+  String get pushNotificationVehicleTrialReminderTitle =>
+      'Recordatorio de prueba de vehículo';
+
+  @override
+  String pushNotificationVehicleTrialWeekLeftBody(String date) {
+    return 'La prueba de vehículo termina el $date (quedan 7 días). Abra Licencias cuando esté listo.';
+  }
+
+  @override
+  String pushNotificationVehicleTrialDaysLeftBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'La prueba de vehículo termina el $date ($days días restantes). Abra Licencias cuando esté listo.',
+      one:
+          'La prueba de vehículo termina el $date (1 día restante). Abra Licencias cuando esté listo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationVehicleTrialEndedBody =>
+      'El módulo de Vehículo pasa a solo lectura. Las compras se hacen en Licencias.';
+
+  @override
+  String get pushNotificationVehicleGraceReminderTitle =>
+      'Periodo de gracia de vehículo';
+
+  @override
+  String pushNotificationVehicleGraceReminderBody(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other:
+          'Quedan $days días (hasta el $date) para suscribirse en Licencias. El vehículo sigue utilizable.',
+      one:
+          'Queda 1 día (hasta el $date) para suscribirse en Licencias. El vehículo sigue utilizable.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pushNotificationVehicleSharingDisabledTitle =>
+      'Compartir desactivado.';
+
+  @override
+  String get pushNotificationVehicleSharingDisabledBody =>
+      'El módulo Compartir requiere las dos licencias de Vehículo y Compartir vehículo válidas. Las compras se hacen en Licencias.';
+
+  @override
   String get pushNotificationOperatorNoticeTitle => 'Mensaje del desarrollador';
 
   @override

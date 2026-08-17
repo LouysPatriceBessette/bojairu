@@ -34,6 +34,17 @@ abstract final class ReceiptToCandidates {
       if (candidate == null) continue;
 
       for (final module in entry.grantsModules) {
+        if (module == AppModuleId.vehicleSharing &&
+            candidate.state == ModuleEntitlementState.delinquentGrace) {
+          out[module]!.add(
+            EntitlementSourceCandidate(
+              state: ModuleEntitlementState.delinquentReadonly,
+              kind: candidate.kind,
+              expiresAt: candidate.expiresAt,
+            ),
+          );
+          continue;
+        }
         out[module]!.add(candidate);
       }
     }

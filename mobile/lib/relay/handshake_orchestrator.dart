@@ -53,6 +53,9 @@ import '../vehicle/sharing/vehicle_usage_balance_service.dart';
 import '../vehicle/sharing/vehicle_violation_transport_service.dart';
 import '../vehicle/sharing/vehicle_use_session_transport_service.dart';
 import '../vehicle/vehicle_owner_contact.dart';
+import '../vehicle/vehicle_module_access.dart';
+import '../entitlement/held_borrower_vehicle_inbox.dart';
+import '../notifications/vehicle_sharing_license_notification.dart';
 import '../db/repositories/vehicles_repository.dart';
 import 'envelopes.dart';
 import 'identity_keystore.dart';
@@ -1109,7 +1112,119 @@ class HandshakeOrchestrator {
     }
   }
 
-  /// Fetches relay-fired housing payment reminders and shows local notifications.
+  /// Applies borrower envelopes stored while sharing was not writable.
+  Future<void> replayHeldBorrowerVehicleEnvelopes() async {
+    if (const VehicleModuleAccess().shouldHoldOwnerInbound) return;
+    final held = await HeldBorrowerVehicleInbox.loadAll();
+    if (held.isEmpty) return;
+    final selfPriv = await _identity.loadOrCreatePrivateKey();
+    final selfPub = await _identity.publicKey();
+    for (final item in held) {
+      final contact = await _contacts.get(item.senderContactId);
+      final peerB64 = contact?.peerPublicMaterial;
+      if (contact == null || peerB64 == null || peerB64.isEmpty) {
+        continue;
+      }
+      final peerPub = RelayRouting.unb64(peerB64);
+      final myListen = await RelayRouting.steadyStateAddress(
+        firstPub: selfPub,
+        secondPub: peerPub,
+      );
+      final env = item.asRelayView(
+        senderIdentity: peerPub,
+        recipientIdentity: myListen,
+      );
+      try {
+        await _dispatchHeldBorrowerEnvelope(
+          contact: contact,
+          envelope: env,
+          myListenAddr: myListen,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        await HeldBorrowerVehicleInbox.remove(item.envelopeId);
+      } catch (e, st) {
+        debugPrint('held borrower envelope replay failed: $e\n$st');
+      }
+    }
+  }
+
+  Future<void> _dispatchHeldBorrowerEnvelope({
+    required Contact contact,
+    required RelayEnvelopeView envelope,
+    required Uint8List myListenAddr,
+    required Uint8List selfPriv,
+    required Uint8List peerPub,
+  }) async {
+    switch (envelope.kind) {
+      case EnvelopeKind.vehicleSharingOfferAccept:
+        await _handleInboundVehicleSharingOfferAccept(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleUseSessionStart:
+        await _handleInboundVehicleUseSessionStart(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleUseSessionEnd:
+        await _handleInboundVehicleUseSessionEnd(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleFuelPurchase:
+        await _handleInboundVehicleFuelPurchase(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleMaintenance:
+        await _handleInboundVehicleMaintenance(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleTrafficViolation:
+        await _handleInboundVehicleTrafficViolation(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      case EnvelopeKind.vehicleSharingReactivateAccept:
+        await _handleInboundVehicleSharingReactivateAccept(
+          contact: contact,
+          envelope: envelope,
+          myListenAddr: myListenAddr,
+          selfPriv: selfPriv,
+          peerPub: peerPub,
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
   Future<void> pollHousingPaymentReminders() async {
     await _pollHousingPaymentReminders();
   }
@@ -1193,6 +1308,17 @@ class HandshakeOrchestrator {
               envelopeId: env.envelopeId,
               recipient: myListen,
             );
+          } else if (HeldBorrowerVehicleInbox.isBorrowerToOwnerKind(env.kind) &&
+              const VehicleModuleAccess().shouldHoldOwnerInbound) {
+            await HeldBorrowerVehicleInbox.enqueue(
+              envelope: env,
+              senderContactId: contact.id,
+            );
+            await _relay.ackEnvelope(
+              envelopeId: env.envelopeId,
+              recipient: myListen,
+            );
+            await notifyHeldBorrowerPacketOnce();
           } else if (env.kind == EnvelopeKind.disconnect) {
             await _handleInboundDisconnect(
               contact: contact,

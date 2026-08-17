@@ -1114,6 +1114,36 @@
       "date": { "type": "String" }
     }
   },
+  "pushNotificationTrialEndedTitle": "El periodo de prueba ha terminado.",
+  "pushNotificationHousingTrialEndedBody": "El módulo de Vivienda pasa a solo lectura. Las compras se hacen en Licencias.",
+  "pushNotificationVehicleTrialStartedTitle": "Prueba de vehículo iniciada",
+  "pushNotificationVehicleTrialStartedBody": "Puede usar el vehículo hasta el {date}. Las compras están en Licencias.",
+  "@pushNotificationVehicleTrialStartedBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationVehicleTrialReminderTitle": "Recordatorio de prueba de vehículo",
+  "pushNotificationVehicleTrialWeekLeftBody": "La prueba de vehículo termina el {date} (quedan 7 días). Abra Licencias cuando esté listo.",
+  "@pushNotificationVehicleTrialWeekLeftBody": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "pushNotificationVehicleTrialDaysLeftBody": "{days, plural, one{La prueba de vehículo termina el {date} (1 día restante). Abra Licencias cuando esté listo.} other{La prueba de vehículo termina el {date} ({days} días restantes). Abra Licencias cuando esté listo.}}",
+  "@pushNotificationVehicleTrialDaysLeftBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleTrialEndedBody": "El módulo de Vehículo pasa a solo lectura. Las compras se hacen en Licencias.",
+  "pushNotificationVehicleGraceReminderTitle": "Periodo de gracia de vehículo",
+  "pushNotificationVehicleGraceReminderBody": "{days, plural, one{Queda 1 día (hasta el {date}) para suscribirse en Licencias. El vehículo sigue utilizable.} other{Quedan {days} días (hasta el {date}) para suscribirse en Licencias. El vehículo sigue utilizable.}}",
+  "@pushNotificationVehicleGraceReminderBody": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "pushNotificationVehicleSharingDisabledTitle": "Compartir desactivado.",
+  "pushNotificationVehicleSharingDisabledBody": "El módulo Compartir requiere las dos licencias de Vehículo y Compartir vehículo válidas. Las compras se hacen en Licencias.",
   "pushNotificationOperatorNoticeTitle": "Mensaje del desarrollador",
   "pushNotificationOperatorNoticeBody": "Abra la aplicación para leer un mensaje breve.",
   "operatorNoticeScreenTitle": "Mensaje del desarrollador",

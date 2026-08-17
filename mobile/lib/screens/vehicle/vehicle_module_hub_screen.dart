@@ -44,7 +44,7 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
   List<Vehicle> _vehicles = const [];
   VehicleUse? _openUse;
   bool _loading = true;
-  bool _entitled = false;
+  bool _writesAllowed = true;
   int _cardReloadToken = 0;
 
   @override
@@ -55,15 +55,9 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
 
   Future<void> _reload() async {
     if (mounted) setState(() => _loading = true);
-    final entitled = await _access.refreshAndHasVehicleEntitlement();
+    await _access.refreshAndHasVehicleEntitlement();
     if (!mounted) return;
-    if (!entitled) {
-      setState(() {
-        _entitled = false;
-        _loading = false;
-      });
-      return;
-    }
+    final writesAllowed = _access.vehicleWritesAllowed;
     final vehicles = await _repo.listOwnedVehicles();
     final anyOpen = await _repo.findAnyOpenUse();
     // Propriétaire hub: only an open use attributed to self is "mine to end".
@@ -76,7 +70,7 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
         : null;
     if (!mounted) return;
     setState(() {
-      _entitled = true;
+      _writesAllowed = writesAllowed;
       _vehicles = vehicles;
       _openUse = ownOpen;
       _loading = false;
@@ -91,12 +85,6 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.homeModuleVehicle)),
         body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (!_entitled) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.homeModuleVehicle)),
-        body: Center(child: Text(l10n.vehicleLicensingRequired)),
       );
     }
     final dateFmt = effectiveDateFormat(widget.prefs);
@@ -120,7 +108,7 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
           ),
         ],
       ),
-      floatingActionButton: atActiveCap
+        floatingActionButton: (atActiveCap || !_writesAllowed)
           ? null
           : qaVehicleSemantics(
               identifier: kQaVehicleAddFab,
@@ -153,8 +141,12 @@ class _VehicleModuleHubScreenState extends State<VehicleModuleHubScreen> {
                         ? l10n.vehicleUseSessionStartAction
                         : l10n.vehicleUseSessionEndAction,
                     sessionSecondaryLine: sessionStartedLine,
-                    onSession: () => _launchQuickAction('odometer'),
-                    onFuel: () => _launchQuickAction('fuel'),
+                    onSession: _writesAllowed
+                        ? () => _launchQuickAction('odometer')
+                        : null,
+                    onFuel: _writesAllowed
+                        ? () => _launchQuickAction('fuel')
+                        : null,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -218,8 +210,8 @@ class _QuickActionsRow extends StatelessWidget {
   final bool sessionOpen;
   final String sessionPrimaryLabel;
   final String? sessionSecondaryLine;
-  final VoidCallback onSession;
-  final VoidCallback onFuel;
+  final VoidCallback? onSession;
+  final VoidCallback? onFuel;
 
   @override
   Widget build(BuildContext context) {

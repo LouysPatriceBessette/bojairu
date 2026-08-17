@@ -17,6 +17,7 @@ import 'debug/web_dev_db_write_observer.dart';
 import 'debug/web_dev_host_session.dart';
 import 'entitlement/entitlement_coordinator.dart';
 import 'entitlement/housing_license_lifecycle_sync.dart';
+import 'entitlement/vehicle_license_lifecycle_sync.dart';
 import 'entitlement/module_entitlement_controller.dart';
 import 'entitlement/app_module_id.dart';
 import 'entitlement/participant_installation_store.dart';
@@ -165,14 +166,28 @@ Future<AppPreferences> completeAppStartup({
     unawaited(
       HousingLicenseLifecycleSync.apply(db: AppDatabase.maybeProcessScope),
     );
+    unawaited(VehicleLicenseLifecycleSync.apply());
     var housingPaid = moduleEntitlement.isActivePaid(AppModuleId.housing);
+    var vehiclePaid = moduleEntitlement.isActivePaid(AppModuleId.vehicle);
+    var sharingPaid =
+        moduleEntitlement.isActivePaid(AppModuleId.vehicleSharing);
     moduleEntitlement.addListener(() {
       final paid = moduleEntitlement.isActivePaid(AppModuleId.housing);
-      if (paid == housingPaid) return;
+      final vPaid = moduleEntitlement.isActivePaid(AppModuleId.vehicle);
+      final sPaid =
+          moduleEntitlement.isActivePaid(AppModuleId.vehicleSharing);
+      if (paid == housingPaid &&
+          vPaid == vehiclePaid &&
+          sPaid == sharingPaid) {
+        return;
+      }
       housingPaid = paid;
+      vehiclePaid = vPaid;
+      sharingPaid = sPaid;
       unawaited(
         HousingLicenseLifecycleSync.apply(db: AppDatabase.maybeProcessScope),
       );
+      unawaited(VehicleLicenseLifecycleSync.apply());
     });
 
     if (config.entitlementEnabled) {

@@ -5,6 +5,7 @@ enum HousingLicenseReminderKind {
   trialStart,
   trialWeekLeft,
   trialDaysLeft,
+  trialEnded,
   graceDaily,
 }
 
@@ -43,38 +44,63 @@ List<HousingLicenseReminderSlot> housingLicenseReminderSlots({
   required bool trialEligible,
 }) {
   final started = activeUseStartedAt.toUtc();
-  if (trialEligible) {
-    final trialEnds = started.add(kHousingTrialDuration);
-    final graceEnds = trialEnds.add(kHousingGraceDuration);
-    return [
-      HousingLicenseReminderSlot(
-        kind: HousingLicenseReminderKind.trialStart,
-        fireAtUtc: started,
-        sequence: 0,
-        daysRemaining: kHousingTrialDuration.inDays,
-        trialEndsAt: trialEnds,
-      ),
-      HousingLicenseReminderSlot(
-        kind: HousingLicenseReminderKind.trialWeekLeft,
-        fireAtUtc: trialEnds.subtract(const Duration(days: 7)),
-        sequence: 1,
-        daysRemaining: 7,
-        trialEndsAt: trialEnds,
-      ),
-      for (var daysLeft = 3; daysLeft >= 1; daysLeft--)
-        HousingLicenseReminderSlot(
-          kind: HousingLicenseReminderKind.trialDaysLeft,
-          fireAtUtc: trialEnds.subtract(Duration(days: daysLeft)),
-          sequence: 4 - daysLeft,
-          daysRemaining: daysLeft,
-          trialEndsAt: trialEnds,
-        ),
-      ..._graceDailySlots(graceStartedAt: trialEnds, graceEndsAt: graceEnds),
-    ];
-  }
+  if (!trialEligible) return const [];
 
-  final graceEnds = started.add(kHousingGraceDuration);
-  return _graceDailySlots(graceStartedAt: started, graceEndsAt: graceEnds);
+  final trialEnds = started.add(kHousingTrialDuration);
+  return [
+    HousingLicenseReminderSlot(
+      kind: HousingLicenseReminderKind.trialStart,
+      fireAtUtc: started,
+      sequence: 0,
+      daysRemaining: kHousingTrialDuration.inDays,
+      trialEndsAt: trialEnds,
+    ),
+    HousingLicenseReminderSlot(
+      kind: HousingLicenseReminderKind.trialWeekLeft,
+      fireAtUtc: trialEnds.subtract(const Duration(days: 7)),
+      sequence: 1,
+      daysRemaining: 7,
+      trialEndsAt: trialEnds,
+    ),
+    for (var daysLeft = 3; daysLeft >= 1; daysLeft--)
+      HousingLicenseReminderSlot(
+        kind: HousingLicenseReminderKind.trialDaysLeft,
+        fireAtUtc: trialEnds.subtract(Duration(days: daysLeft)),
+        sequence: 4 - daysLeft,
+        daysRemaining: daysLeft,
+        trialEndsAt: trialEnds,
+      ),
+    HousingLicenseReminderSlot(
+      kind: HousingLicenseReminderKind.trialEnded,
+      fireAtUtc: trialEnds,
+      sequence: 5,
+      daysRemaining: 0,
+      trialEndsAt: trialEnds,
+    ),
+  ];
+}
+
+/// Daily grace reminders after a **paid** store receipt expires.
+List<HousingLicenseReminderSlot> housingLicenseReceiptGraceSlots({
+  required DateTime receiptExpiredAt,
+}) {
+  final started = receiptExpiredAt.toUtc();
+  return _graceDailySlots(
+    graceStartedAt: started,
+    graceEndsAt: started.add(kHousingGraceDuration),
+  );
+}
+
+/// Ids previously used for trial-chained grace (cancel leftovers).
+List<HousingLicenseReminderSlot> housingLicenseLegacyGraceCancelSlots({
+  required DateTime activeUseStartedAt,
+}) {
+  final started = activeUseStartedAt.toUtc();
+  final trialEnds = started.add(kHousingTrialDuration);
+  return _graceDailySlots(
+    graceStartedAt: trialEnds,
+    graceEndsAt: trialEnds.add(kHousingGraceDuration),
+  );
 }
 
 List<HousingLicenseReminderSlot> _graceDailySlots({

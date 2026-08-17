@@ -17,6 +17,7 @@ import '../../vehicle/vehicle_meter_reading_effective.dart';
 import '../../vehicle/vehicle_owner_contact.dart';
 import '../../vehicle/vehicle_owned_active_cap.dart';
 import '../../vehicle/vehicle_emprunteur_cap.dart';
+import '../../entitlement/vehicle_license_lifecycle_sync.dart';
 
 const String kVehicleGapAttributionUnknown = 'unknown';
 
@@ -1083,9 +1084,13 @@ class VehiclesRepository {
         sessionConsumptionMode: drift.Value(sessionConsumptionMode?.wire),
       ),
     );
-    return (await (_db.select(
+    final closed = await (_db.select(
       _db.vehicleUses,
-    )..where((t) => t.id.equals(useId))).getSingle());
+    )..where((t) => t.id.equals(useId))).getSingle();
+    await VehicleLicenseLifecycleSync.maybeStartTrialFromOwnerFact(
+      actingContactId: closed.attributedContactId,
+    );
+    return closed;
   }
 
   /// Emprunteur: mark open session as awaiting Propriétaire fuel catch-up (kind 23).
@@ -1197,9 +1202,13 @@ class VehiclesRepository {
             tankFillFraction: drift.Value(isFullTank ? null : tankFillFraction),
           ),
         );
-    return (await (_db.select(
+    final saved = await (_db.select(
       _db.fuelPurchases,
-    )..where((t) => t.id.equals(resolvedId))).getSingle());
+    )..where((t) => t.id.equals(resolvedId))).getSingle();
+    await VehicleLicenseLifecycleSync.maybeStartTrialFromOwnerFact(
+      actingContactId: recordedByContactId,
+    );
+    return saved;
   }
 
   Future<MaintenanceEvent> saveMaintenanceEvent({
