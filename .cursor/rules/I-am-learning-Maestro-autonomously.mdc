@@ -71,6 +71,8 @@ in the skill **worked before** but **fails in a new run** (different situation).
 | Skill lesson only after green run log or user confirmation | Skill claim of success before demonstration |
 | Smallest lesson: symptom → action → evidence pointer | Rewriting the whole skill or unrelated sections |
 | Alternate fix + situation delta after **that** fix is demonstrated | Deleting or overwriting a prior demonstrated solution |
+| Assert that can fail the flow; step whose outcome changes the verdict | Ignore a failed assert (`optional: true` → Warning then COMPLETED, or `\|\| true` on a success-path assert flow) |
+| Delete a step that does not affect pass/fail | Keep a “useless” test because the scenario still prints `PASSED` |
 
 ## When to write a skill entry
 
@@ -81,6 +83,55 @@ in the skill **worked before** but **fails in a new run** (different situation).
    **demonstrated** this run → append alternative (never remove the old one).
 
 If evidence is missing, investigate first — **do not** invent a new skill entry.
+
+## Re-run bar — historically PASSED scenarios must pass first try
+
+A catalog **re-run** (same scenario id, already green in a prior session) is expected to **PASS on the first attempt**. These runs are not a license to redesign selectors.
+
+If a historically PASSED scenario FAILs:
+
+1. Treat it as a **selector / semantics / seed-date** mismatch against the **current** tree — not as a product screenshot bug (the UI is often already correct).
+2. **Do not** add a second `Semantics` wrapper around a tile that already has `identifier` + `excludeSemantics: true`. Maestro then loses the inner id; the screen looks unchanged; the run looks like a regression and is hard to unwind.
+3. Record the lesson in the skill **after** a green `PASSED` line (or user confirmation) — this rule exists so the next agent does not rediscover it in chat.
+
+### Demonstrated: `settlement_last_day` (2026-08-17)
+
+| | Fact |
+| --- | --- |
+| **Context** | Housing hub catalog re-run after relative `device_date: current` seeds. Scenario had PASSED before. |
+| **UI** | Hub « Entente passée », tile « Régler un dû », subtitle « Fonctionnalité disponible jusqu'au {today} ». |
+| **First FAIL** | `qa-housing-hub-settlement-due` COMPLETED; `assertVisible` on subtitle **text** FAILED. `_HubTile` uses `excludeSemantics: true` and `label:` = title only — the subtitle is not in the accessibility tree. |
+| **Wrong follow-up** | Nested `Semantics(identifier: qa-housing-hub-settlement-available-until)` around that tile. Run `20260817T234648Z`: inner `qa-housing-hub-settlement-due` **gone**; screenshot still showed the tile. User: false-negative became a regression. |
+| **Fix that recovered** | One identifier on the **same** `_HubTile` node. Last inclusive window day → `qa-housing-hub-settlement-last-day`; otherwise `qa-housing-hub-settlement-due`. Flow waits on that id. Log `20260817T235532Z`: `Scenario PASSED \| settlement_last_day`. |
+| **Skill entry** | `.cursor/skills/maestro-scenario-avoid-carpet-tripping/SKILL.md` — hub tile nested-id / last-day id. |
+
+### Demonstrated: `proposal_wizard_expenses` (2026-08-17)
+
+| | Fact |
+| --- | --- |
+| **Context** | Housing catalog re-run with `device_date: current`. Recurrence range picker opens on the 1st of **today's** month. |
+| **First FAIL** | Flow waited on `qa-housing-expense-recurrence-day-2027-06-15`. Calendar on screen: **août 2026**. |
+| **Fix that recovered** | First-month cells 15 and 20 use `qa-housing-expense-recurrence-day-15` / `…-20`; later months keep ISO ids. Wizard draft period relative to today. Log `20260818T011959Z`: `Scenario PASSED \| proposal_wizard_expenses`. |
+| **Skill entry** | `.cursor/skills/maestro-scenario-avoid-carpet-tripping/SKILL.md` — no pinned calendar `YYYY-MM-DD` when the picker is the current month. |
+
+### Demonstrated: `qa:run-payment-reminder` probe wall (2026-08-17)
+
+| | Fact |
+| --- | --- |
+| **Context** | Catalog re-run; coordinator probe after OS shade tap. |
+| **First FAIL** | `20260818T022054Z`: journal on screen + probe assert COMPLETED; script `FAILED: no journal title` because `timeout 25` wrapped the whole `maestro test` (~19 s device attach). |
+| **Fix that recovered** | Probe wall 90s. Log `20260818T024120Z`: `Journal title qa-* visible`, four phases, `Done. Artifacts:`. |
+| **Skill entry** | `.cursor/skills/maestro-scenario-avoid-carpet-tripping/SKILL.md` — Maestro-process timeout ≠ YAML wait. |
+
+### Binding: assertions and useless steps (2026-08-18)
+
+**Never ignore a failed assertion** in a Maestro scenario. `optional: true` on `assertVisible` / `assertNotVisible` / `extendedWaitUntil` / `assertTrue` so the flow continues after a Warning is forbidden. A failed assert must fail that flow (or, for a dedicated symptom probe, the coordinator must treat Maestro’s non-zero exit as the **measured** result — not swallow it so the parent still prints `PASSED`).
+
+**Never write a useless test.** If true and false both leave the verdict unchanged, delete the step. Burning 60 s (or any timeout) for a result that is discarded is forbidden even when the orchestrator later prints `PASSED`.
+
+`when: visible` then tap (permission prompt) is an optional **action**, not an ignored assert.
+
+**Demonstrated:** `contact_handshake_bug_91` `inviter_standby_probe.yaml` — optional 60 s `notVisible` on `qa-contacts-invitation-short-code`; Warning then COMPLETED; attempt still classified the same. User: remove it. Skill: `maestro-scenario-avoid-carpet-tripping` QA integrity.
 
 ## Relation to other rules
 

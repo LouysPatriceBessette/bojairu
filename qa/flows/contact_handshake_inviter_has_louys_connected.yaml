@@ -3,11 +3,10 @@ appId: app.incoherences.bojairu.dev
 - launchApp:
     stopApp: false
 - runFlow:
-    file: _on_contacts_hub.yaml
+    file: _navigate_inviter_to_contacts_list.yaml
 - extendedWaitUntil:
     visible:
       id: "qa-contacts-row-louys-qa"
     timeout: 8000
-    optional: true
 - assertVisible:
     id: "qa-contacts-row-louys-qa"

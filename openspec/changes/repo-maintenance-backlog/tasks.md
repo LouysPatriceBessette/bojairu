@@ -57,6 +57,18 @@ Deferred engineering chores. Pick these up when convenient; they are
 
 ## Done
 
+- [x] **Full Android Maestro catalog re-run (2026-08-17–18)** after housing seeds
+  used dates relative to today (`device_date: current`). Operator-verified Pass
+  on all executed catalog scenarios (housing hub + wizard, vehicle owner paths,
+  sale export/import ± undo, rent reminders, two-AVD handshake / proposal /
+  bug 1.22 / vehicle-sharing offer, FCM wake on Galaxy S25). Three
+  vehicle-sharing **seed** fixtures were not re-run (manual starting-data only).
+  Test-only Maestro/selector adaptations (last-day hub id, recurrence day 15/20,
+  reminder probe process timeout, inviter Contacts navigation, bug 9.1 attempts
+  10→4). No product bugs opened from the catalog. Report:
+  `docs/QA-reports/2026-08-18-14-40-All-QA-scenarios-run.md`. Guide:
+  `docs/qa-android-e2e.md`.
+
 - [x] **Android local E2E QA toolchain (Maestro + emulator + seed + orchestrator)** — Phases 0–3 (2026-06).
   Pinned AVD, programmable clock (`set_android_date.sh`), debug-Android DB seed
   (`qa_scenario_seed.dart`), nine housing end-of-agreement Maestro scenarios,

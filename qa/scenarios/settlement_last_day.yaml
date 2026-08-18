@@ -1,6 +1,6 @@
 id: settlement_last_day
 description: Dernier jour de la fenêtre de règlement
-device_date: "2027-09-10T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: settlement_last_day
 flow: qa/flows/settlement_last_day.yaml

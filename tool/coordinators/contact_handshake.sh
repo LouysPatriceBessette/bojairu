@@ -173,17 +173,10 @@ _run_bug_91_probe_once() {
   invite_code="$(_wait_for_handshake_code "${INVITER_SERIAL}")"
   echo "  invitation code: ${invite_code}"
 
-  (
-    _run_maestro "${base}/inviter-standby" "${INVITER_SERIAL}" \
-      "${FLOWS_DIR}/contact_handshake_inviter_standby_probe.yaml"
-  ) &
-  local inviter_pid=$!
-
-  # Fast parallel redeem — race window for transient relay errors.
+  # Inviter stays on the generate screen without a Maestro wait. Redeem may fail
+  # (that is the bug 9.1 race); probes classify afterwards.
   _run_maestro "${base}/invitee-redeem-fast" "${INVITEE_SERIAL}" "${INVITEE_FLOW}" \
     -e "INVITE_CODE=${invite_code}" || true
-
-  wait "${inviter_pid}" || true
   sleep 8
 
   if _detect_bug_91_asymmetry "${attempt_dir}"; then

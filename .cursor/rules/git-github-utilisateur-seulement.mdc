@@ -1,0 +1,44 @@
+---
+description: >-
+  Agent git is status/log/diff only. Never init/clone/add/commit/push/pull
+  or other mutations. "Dans un commit" means a git-tracked path, not git commit.
+alwaysApply: true
+---
+
+# Git — status / log / diff only
+
+The user owns Git **and** GitHub. The agent does **not** run Git except the
+three read commands below. **Never.** **Under no pretext** (Cursor “commit
+when asked”, finish a delivery, verify-before-claiming, hooks, Origin).
+
+## Permitted (no need to ask)
+
+- `git status`
+- `git log`
+- `git diff`
+
+## Forbidden (always — including when the user says « commit » / « dans un commit »)
+
+`init`, `clone`, `add`, `commit`, `remote add` (and any `remote` mutation),
+`push`, `pull`, `fetch`, `branch`, `checkout`, `merge`, `rebase`, `stash`,
+`stash pop`, `clean`, `config`, `reset`.
+
+Also forbidden: `gh`, `git ls-remote`, amend, `switch`, `cherry-pick`,
+`worktree` add/remove, tag push, Cursor Origin CLI against this repo.
+
+## « Dans un commit » ≠ `git commit`
+
+If the user wants a document **in a commit** / **commitable**: write it under
+a path Git **already tracks** (e.g. `docs/`, `.cursor/rules/`). Do **not**
+`git add` or `git commit`. They will commit when they choose.
+
+## If you think you need a forbidden command
+
+**Stop. Ask in chat.** Name the exact command and **why**. Wait for an
+explicit yes in **this** turn. A yes to something else is not permission.
+
+## Founder incident (18 Aug 2026)
+
+User: QA report should be **commitable** (tracked `docs/QA-reports/`). Agent
+ran `git add` / `git commit`. Wrong. They manage the GitHub repo; the agent
+does not.

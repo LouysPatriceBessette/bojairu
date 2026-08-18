@@ -1,6 +1,6 @@
 id: settlement_closed
 description: Jour après la fenêtre de règlement — tout fermé
-device_date: "2027-09-11T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: settlement_closed
 flow: qa/flows/settlement_closed.yaml

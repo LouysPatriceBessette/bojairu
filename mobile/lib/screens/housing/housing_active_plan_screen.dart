@@ -14,6 +14,7 @@ import '../../housing/renewal/housing_renewal_fork_availability.dart';
 import '../../housing/renewal/housing_renewal_fork_navigation.dart';
 import '../../housing/reminders/payment_reminder_journal_month.dart';
 import '../../housing/settlement/housing_hub_expense_entry.dart';
+import '../../housing/settlement/housing_settlement_window.dart';
 import '../../housing/participation/housing_participation_change_kind.dart';
 import '../../housing/participation/housing_participation_hub_gates.dart';
 import '../../housing/participation/housing_participation_membership_service.dart';
@@ -903,7 +904,15 @@ class _HousingActivePlanScreenState extends State<HousingActivePlanScreen>
                                           ? switch (entry.mode) {
                                             HousingHubExpenseEntryMode
                                                 .settlementDue =>
-                                              'qa-housing-hub-settlement-due',
+                                              (entry.settlementWindowEnd !=
+                                                          null &&
+                                                      isSettlementWindowLastDay(
+                                                        settlementWindowEnd:
+                                                            entry
+                                                                .settlementWindowEnd!,
+                                                      ))
+                                                  ? 'qa-housing-hub-settlement-last-day'
+                                                  : 'qa-housing-hub-settlement-due',
                                             HousingHubExpenseEntryMode
                                                 .enterExpense =>
                                               'qa-housing-hub-enter-expense',

@@ -1,6 +1,6 @@
 id: voluntary_withdrawal_effective
 description: Date d'effet atteinte, accusés complets — retrait appliqué
-device_date: "2027-08-11T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: voluntary_withdrawal_effective
 flow: qa/flows/voluntary_withdrawal_effective.yaml

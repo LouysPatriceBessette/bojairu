@@ -45,7 +45,6 @@ const kQaAndroidSeedAppliedFileName = 'compartarenta_qa_seed_applied.txt';
 const kQaScenarioIds = <String>{
   'period_end_day',
   'settlement_open',
-  'settlement_window_open',
   'settlement_last_day',
   'settlement_closed',
   'renewal_fork_visible',
@@ -259,27 +258,31 @@ bool _qaMeterPhotoOptionalForScenario(String scenarioId) {
   };
 }
 
-Future<void> applyQaScenario(AppDatabase db, String scenarioId) async {
+Future<void> applyQaScenario(
+  AppDatabase db,
+  String scenarioId, {
+  DateTime? now,
+}) async {
+  final clock = now ?? DateTime.now();
   switch (scenarioId) {
     case 'period_end_day':
-      await _seedPeriodEndDay(db);
+      await _seedPeriodEndDay(db, clock);
     case 'settlement_open':
-    case 'settlement_window_open':
-      await _seedSettlementOpen(db);
+      await _seedSettlementOpen(db, clock);
     case 'settlement_last_day':
-      await _seedSettlementLastDay(db);
+      await _seedSettlementLastDay(db, clock);
     case 'settlement_closed':
-      await _seedSettlementClosed(db);
+      await _seedSettlementClosed(db, clock);
     case 'renewal_fork_visible':
-      await _seedRenewalForkVisible(db);
+      await _seedRenewalForkVisible(db, clock);
     case 'voluntary_withdrawal_ack_j5':
-      await _seedVoluntaryWithdrawalAckJ5(db);
+      await _seedVoluntaryWithdrawalAckJ5(db, clock);
     case 'voluntary_withdrawal_effective':
-      await _seedVoluntaryWithdrawalEffective(db);
+      await _seedVoluntaryWithdrawalEffective(db, clock);
     case 'proposal_response_expired':
-      await _seedProposalResponseExpired(db);
+      await _seedProposalResponseExpired(db, clock);
     case 'proposal_wizard_expenses':
-      await _seedProposalWizardExpenses(db);
+      await _seedProposalWizardExpenses(db, clock);
     case 'vehicle_add':
       break;
     case 'vehicle_fuel_purchase':
@@ -323,98 +326,140 @@ Future<void> applyQaScenario(AppDatabase db, String scenarioId) async {
   }
 }
 
-Future<void> _seedPeriodEndDay(AppDatabase db) async {
-  await seedQaInForceHousingPlan(
-    db: db,
-    planId: qaPlanIdForScenario('period_end_day'),
-    title: 'Entente QA fin de période',
-  );
-}
-
-Future<void> _seedSettlementOpen(AppDatabase db) async {
-  await seedQaInForceHousingPlan(
-    db: db,
-    planId: kQaSettlementOpenPlanId,
-    title: 'Entente QA règlement',
-    withPublishedExpense: true,
-  );
-}
-
-Future<void> _seedSettlementLastDay(AppDatabase db) async {
-  await seedQaInForceHousingPlan(
-    db: db,
-    planId: qaPlanIdForScenario('settlement_last_day'),
-    title: 'Entente QA dernier jour règlement',
-    withPublishedExpense: true,
-  );
-}
-
-Future<void> _seedSettlementClosed(AppDatabase db) async {
-  await seedQaInForceHousingPlan(
-    db: db,
-    planId: qaPlanIdForScenario('settlement_closed'),
-    title: 'Entente QA règlement fermé',
-    withPublishedExpense: true,
-  );
-}
-
-Future<void> _seedRenewalForkVisible(AppDatabase db) async {
-  await seedQaInForceHousingPlan(
-    db: db,
-    planId: qaPlanIdForScenario('renewal_fork_visible'),
-    title: 'Entente QA renouvellement',
-  );
-}
-
-Future<void> _seedVoluntaryWithdrawalAckJ5(AppDatabase db) async {
-  const scenarioId = 'voluntary_withdrawal_ack_j5';
-  final planId = qaPlanIdForScenario(scenarioId);
+Future<void> _seedEndedHousingPlan({
+  required AppDatabase db,
+  required String planId,
+  required String title,
+  required DateTime periodEnd,
+  bool withPublishedExpense = false,
+}) async {
   await seedQaInForceHousingPlan(
     db: db,
     planId: planId,
+    title: title,
+    periodStart: qaPeriodStartBeforeEnd(periodEnd),
+    periodEnd: periodEnd,
+    withPublishedExpense: withPublishedExpense,
+  );
+}
+
+Future<void> _seedPeriodEndDay(AppDatabase db, DateTime now) async {
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: qaPlanIdForScenario('period_end_day'),
+    title: 'Entente QA fin de période',
+    periodEnd: qaPeriodEndYesterdayNoonUtc(now),
+  );
+}
+
+Future<void> _seedSettlementOpen(AppDatabase db, DateTime now) async {
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: kQaSettlementOpenPlanId,
+    title: 'Entente QA règlement',
+    periodEnd: qaPeriodEndYesterdayNoonUtc(now),
+    withPublishedExpense: true,
+  );
+}
+
+Future<void> _seedSettlementLastDay(AppDatabase db, DateTime now) async {
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: qaPlanIdForScenario('settlement_last_day'),
+    title: 'Entente QA dernier jour règlement',
+    periodEnd: qaPeriodEndForSettlementLastDayNoonUtc(now),
+    withPublishedExpense: true,
+  );
+}
+
+Future<void> _seedSettlementClosed(AppDatabase db, DateTime now) async {
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: qaPlanIdForScenario('settlement_closed'),
+    title: 'Entente QA règlement fermé',
+    periodEnd: qaPeriodEndForSettlementClosedNoonUtc(now),
+    withPublishedExpense: true,
+  );
+}
+
+Future<void> _seedRenewalForkVisible(AppDatabase db, DateTime now) async {
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: qaPlanIdForScenario('renewal_fork_visible'),
+    title: 'Entente QA renouvellement',
+    periodEnd: qaPeriodEndYesterdayNoonUtc(now),
+  );
+}
+
+Future<void> _seedVoluntaryWithdrawalAckJ5(AppDatabase db, DateTime now) async {
+  const scenarioId = 'voluntary_withdrawal_ack_j5';
+  final planId = qaPlanIdForScenario(scenarioId);
+  final today = qaLocalDateOnly(now);
+  await _seedEndedHousingPlan(
+    db: db,
+    planId: planId,
     title: 'Entente QA retrait ack',
+    periodEnd: qaPeriodEndYesterdayNoonUtc(now),
   );
   await seedQaVoluntaryWithdrawal(
     db: db,
     planId: planId,
     changeId: 'pc:qa-withdraw-ack',
-    noticeAt: DateTime.utc(2027, 8, 6, 12),
-    departureDate: DateTime.utc(2027, 8, 25, 12),
+    noticeAt: qaNoonUtcOnLocalCalendarDate(
+      today.subtract(const Duration(days: 5)),
+    ),
+    departureDate: qaNoonUtcOnLocalCalendarDate(
+      today.add(const Duration(days: 14)),
+    ),
     monicaAcknowledged: false,
   );
 }
 
-Future<void> _seedVoluntaryWithdrawalEffective(AppDatabase db) async {
+Future<void> _seedVoluntaryWithdrawalEffective(AppDatabase db, DateTime now) async {
   const scenarioId = 'voluntary_withdrawal_effective';
   final planId = qaPlanIdForScenario(scenarioId);
-  await seedQaInForceHousingPlan(
+  final today = qaLocalDateOnly(now);
+  await _seedEndedHousingPlan(
     db: db,
     planId: planId,
     title: 'Entente QA retrait effectif',
+    periodEnd: qaPeriodEndYesterdayNoonUtc(now),
   );
   await seedQaVoluntaryWithdrawal(
     db: db,
     planId: planId,
     changeId: 'pc:qa-withdraw-effective',
-    noticeAt: DateTime.utc(2027, 8, 1, 12),
-    departureDate: DateTime.utc(2027, 8, 11, 12),
+    noticeAt: qaNoonUtcOnLocalCalendarDate(
+      today.subtract(const Duration(days: 10)),
+    ),
+    departureDate: qaNoonUtcOnLocalCalendarDate(today),
     monicaAcknowledged: true,
   );
 }
 
-Future<void> _seedProposalWizardExpenses(AppDatabase db) async {
+Future<void> _seedProposalWizardExpenses(AppDatabase db, DateTime now) async {
   await seedQaProposalWizardDraft(
     db: db,
     planId: qaPlanIdForScenario('proposal_wizard_expenses'),
+    now: now,
   );
 }
 
-Future<void> _seedProposalResponseExpired(AppDatabase db) async {
+Future<void> _seedProposalResponseExpired(AppDatabase db, DateTime now) async {
+  final yesterday = qaLocalDateOnly(now).subtract(const Duration(days: 1));
+  final weekAgo = qaLocalDateOnly(now).subtract(const Duration(days: 7));
   await seedQaExpiredPendingProposal(
     db: db,
     planId: qaPlanIdForScenario('proposal_response_expired'),
     title: 'Proposition QA expirée',
-    responseExpiresAt: DateTime.utc(2027, 8, 10, 12),
+    responseExpiresAt: qaNoonUtcOnLocalCalendarDate(yesterday),
+    createdAt: qaNoonUtcOnLocalCalendarDate(weekAgo),
+    periodStart: qaNoonUtcOnLocalCalendarDate(
+      qaLocalDateOnly(now).add(const Duration(days: 30)),
+    ),
+    periodEnd: qaNoonUtcOnLocalCalendarDate(
+      qaAddCalendarMonths(qaLocalDateOnly(now), 8),
+    ),
   );
 }
 
@@ -429,7 +474,6 @@ Future<void> assertQaScenarioPostconditions({
     case 'period_end_day':
       await _assertPeriodEndDay(db, now);
     case 'settlement_open':
-    case 'settlement_window_open':
       await _assertSettlementOpen(db, now);
     case 'settlement_last_day':
       await _assertSettlementLastDay(db, now);
@@ -444,7 +488,7 @@ Future<void> assertQaScenarioPostconditions({
     case 'proposal_response_expired':
       await _assertProposalResponseExpired(db, now);
     case 'proposal_wizard_expenses':
-      await _assertProposalWizardExpenses(db);
+      await _assertProposalWizardExpenses(db, now);
     case 'vehicle_add':
       await _assertVehicleAdd(db);
     case 'vehicle_fuel_purchase':
@@ -756,7 +800,10 @@ Future<void> _assertProposalResponseExpired(AppDatabase db, DateTime now) async 
   }
 }
 
-Future<void> _assertProposalWizardExpenses(AppDatabase db) async {
+Future<void> _assertProposalWizardExpenses(
+  AppDatabase db,
+  DateTime now,
+) async {
   final planId = qaPlanIdForScenario('proposal_wizard_expenses');
   final transport = HousingProposalTransportService(db);
   if (await transport.hasActiveRevision(planId)) {
@@ -765,6 +812,15 @@ Future<void> _assertProposalWizardExpenses(AppDatabase db) async {
   final agreement = await db.getAgreementForPlan(planId);
   if (agreement == null) {
     throw StateError('proposal_wizard_expenses: missing agreement');
+  }
+  final today = qaLocalDateOnly(now);
+  final day20 = DateTime(today.year, today.month, 20);
+  final endLocal = qaLocalDateOnly(agreement.periodEnd);
+  if (endLocal.isBefore(day20)) {
+    throw StateError(
+      'proposal_wizard_expenses: periodEnd $endLocal must include '
+      'the 20th of the current month ($day20) for the recurrence picker',
+    );
   }
   final lines = await db.listPlanLines(planId);
   if (lines.isNotEmpty) {

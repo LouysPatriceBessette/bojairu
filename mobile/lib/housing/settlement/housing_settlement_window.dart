@@ -31,6 +31,16 @@ DateTime settlementWindowLastDayInclusive(DateTime periodEnd) {
   return DateTime(year, month, day);
 }
 
+/// Whether [now] is the last inclusive calendar day of the settlement window.
+bool isSettlementWindowLastDay({
+  required DateTime settlementWindowEnd,
+  DateTime? now,
+}) {
+  final today = DateUtils.dateOnly((now ?? DateTime.now()).toLocal());
+  final lastDay = DateUtils.dateOnly(settlementWindowEnd.toLocal());
+  return today == lastDay;
+}
+
 /// Whether an ended agreement is still in its settlement window.
 bool isSettlementOpen({
   required Agreement agreement,

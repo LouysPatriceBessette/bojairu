@@ -5,7 +5,7 @@
 # ([maybeApplyQaAndroidSeed]), cold-starts the app once, then stops it so Maestro
 # can relaunch without clearing Drift state.
 #
-# Usage: ./tool/seed_qa_scenario.sh settlement_window_open
+# Usage: ./tool/seed_qa_scenario.sh settlement_open
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ qa_require_command adb
 SCENARIO_ID="${1:-}"
 if [[ -z "${SCENARIO_ID}" ]]; then
   echo "Usage: $0 <scenario-id>" >&2
-  echo "Example: $0 settlement_window_open" >&2
+  echo "Example: $0 settlement_open" >&2
   exit 1
 fi
 

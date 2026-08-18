@@ -7,6 +7,12 @@
 # post-tap screencap MD5 to shade-closed baseline (after KEYCODE_HOME). Shade still
 # open (MD5 differs) → FAIL. Shade closed → open app and navigate to journal by id.
 #
+# Probe Maestro wall budget is 90s (not 25s): this run's artifacts showed ~19s
+# between probe folder create (22:24:03) and the first YAML command (22:24:22)
+# — device attach, not report I/O — then 1s for the visible assert. YAML wait
+# stays 8s. 25s wall left almost no margin after attach (and a miss needs
+# attach + 8s wait).
+#
 # Expects env from tool/run_housing_payment_reminder_scenario.sh.
 
 set -euo pipefail
@@ -51,16 +57,22 @@ _run_maestro() {
   fi
 }
 
-# Short probe; non-zero means journal title qa-* not visible.
+# Probe: journal title visible. Wall budget covers Maestro device-attach (~20s
+# observed on Maestro 2.6.1 in this catalog run) plus the YAML 8s wait.
+_PROBE_MAESTRO_TIMEOUT_SEC="${COMPARTARENTA_QA_PAYMENT_REMINDER_PROBE_TIMEOUT_SEC:-90}"
+
 _probe_monthly_expenses_visible() {
   local label="$1"
-  local out
+  local out rc=0
   out="$(qa_maestro_artifact_dir "${label}")"
   mkdir -p "${out}"
   echo "  probe journal title qa-housing-monthly-expenses-screen -> ${out}"
-  if timeout 25 maestro test --udid "${SERIAL}" "${FLOW_PROBE}" --test-output-dir "${out}"; then
+  timeout "${_PROBE_MAESTRO_TIMEOUT_SEC}" maestro test --udid "${SERIAL}" \
+    "${FLOW_PROBE}" --test-output-dir "${out}" || rc=$?
+  if [[ "${rc}" -eq 0 ]]; then
     return 0
   fi
+  echo "  probe maestro/timeout exit=${rc} (124=GNU timeout killed the process)" >&2
   return 1
 }
 

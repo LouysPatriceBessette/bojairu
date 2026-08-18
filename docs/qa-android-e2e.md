@@ -7,6 +7,16 @@ UI flows with screenshots.
 Runs are **manual** on your machine. There is **no CI** integration for this
 toolchain.
 
+## Catalog run reports
+
+Operator-verified catalog runs (dated) live under `docs/QA-reports/`.
+
+Latest full Android Maestro catalog re-run after housing seeds used dates
+**relative to today** (`device_date: current`):  
+[`docs/QA-reports/2026-08-18-14-40-All-QA-scenarios-run.md`](QA-reports/2026-08-18-14-40-All-QA-scenarios-run.md)
+(17–18 August 2026). Three vehicle-sharing **seed** fixtures were left unrun by
+design (manual starting data). iOS QA remains deferred.
+
 ## What you get
 
 | Layer | Role |
@@ -194,7 +204,6 @@ Options (pass after `--` with melos):
 ./tool/melosw run qa:build-apk
 ./tool/melosw run qa:install-apk
 
-./tool/set_android_date.sh 2027-08-11T09:00:00 America/Toronto
 ./tool/melosw run qa:seed -- settlement_open
 # … use the app on the emulator …
 ./tool/restore_android_date.sh
@@ -219,7 +228,7 @@ COMPARTARENTA_QA_AVD_NAME=Monica-QA ./tool/melosw run qa:create-avd
 ./tool/melosw run qa:run-multi-scenario -- contact_handshake_happy_path
 ```
 
-**Bug 9.1 probe (10 attempts, writes `bug_91_result.txt`):**
+**Bug 9.1 probe (4 attempts, writes `bug_91_result.txt`):**
 
 ```bash
 ./tool/melosw run qa:run-multi-scenario -- contact_handshake_bug_91
@@ -317,10 +326,10 @@ certificate validity window**. Prefer `device_date: current` for contact
 handshake, housing proposal, FCM wake, and any other flow that calls the relay.
 Pinned past dates (e.g. an old calendar day before the cert `notBefore`) yield
 `CERTIFICATE_VERIFY_FAILED: certificate is not yet valid`; dates past
-`notAfter` yield `certificate has expired`. Housing settlement / period / renewal
-/ withdrawal / `proposal_response_expired` scenarios keep fixed **2027-** dates
-aligned with seeded `periodEnd` (hub gating only — they do not establish relay
-routing during the Maestro run).
+`notAfter` yield `certificate has expired`. Housing hub-gating scenarios
+(settlement, period end, renewal, withdrawal, expired proposal) use
+`device_date: current` and seed `periodEnd` **relative to today** (they do not
+talk to the relay during the Maestro run).
 
 Artifacts: `qa/artifacts/multi-<scenario-id>/<UTC-timestamp>/`.
 
@@ -421,7 +430,7 @@ Each scenario is defined by a **manifest** in `qa/scenarios/<id>.yaml`:
 ```yaml
 id: settlement_open
 description: Day after periodEnd, non-zero balances — settlement open
-device_date: "2027-08-11T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: settlement_open
 flow: qa/flows/settlement_open.yaml
@@ -459,20 +468,19 @@ Seeds set **French UI** (`prefs.languageCode=fr`) so Maestro text assertions mat
 
 ## Scenario catalog
 
-Ten manifests ship today (housing hub + plan-draft wizard). Anchor agreement
-`periodEnd`: **2027-08-10** (noon UTC in seed data).
+Nine manifests ship today (housing hub + plan-draft wizard). Hub-gating seeds
+place `periodEnd` relative to **today** (emulator clock = `device_date: current`).
 
 | Scenario id | Device date | Expected UI |
 | --- | --- | --- |
-| `period_end_day` | 2027-08-11 | Expense tile disabled (zero balances) |
-| `settlement_open` | 2027-08-11 | Settlement tile visible |
-| `settlement_window_open` | 2027-08-11 | Same seed/expectation as `settlement_open` (phase-1 POC id) |
-| `settlement_last_day` | 2027-09-10 | Settlement tile + “available until” subtitle |
-| `settlement_closed` | 2027-09-11 | Expense and settlement closed |
-| `renewal_fork_visible` | 2027-08-15 | “New term from current plan” tile |
-| `voluntary_withdrawal_ack_j5` | 2027-08-11 | Participation banner (last ack day) |
-| `voluntary_withdrawal_effective` | 2027-08-11 | Withdrawal applied; no banner |
-| `proposal_response_expired` | 2027-08-11 | Archive list shows expired proposal |
+| `period_end_day` | current | Expense tile disabled (zero balances; term ended yesterday) |
+| `settlement_open` | current | Settlement tile visible (term ended yesterday, non-zero balances) |
+| `settlement_last_day` | current | Settlement tile + “available until” subtitle (today = last window day) |
+| `settlement_closed` | current | Expense and settlement closed (window ended yesterday) |
+| `renewal_fork_visible` | current | “New term from current plan” tile (term ended yesterday) |
+| `voluntary_withdrawal_ack_j5` | current | Participation banner (last ack day) |
+| `voluntary_withdrawal_effective` | current | Withdrawal applied; no banner |
+| `proposal_response_expired` | current | Archive list shows expired proposal |
 | `proposal_wizard_expenses` | current | Plan-draft wizard: 3 expenses (equal / custom / Like), summary + response deadline |
 
 List manifests from the shell:
@@ -620,8 +628,11 @@ Wizard expense rows: `qa-housing-wizard-expense-<slug>` (e.g. `…-loyer`,
 `assertVisible` on titles — list row text is not always exposed to Maestro.
 
 Recurrence date range (debug builds): `showAppDateRangePicker` uses a Maestro-aware
-picker with one semantics id per day (`qa-housing-expense-recurrence-day-YYYY-MM-DD`)
-so day numbers are unambiguous when several months are visible. Turning
+picker. The 15th and 20th of the picker's first month (the 1st of today in
+`showExpenseRecurrenceFlow`) use stable ids `qa-housing-expense-recurrence-day-15`
+and `qa-housing-expense-recurrence-day-20` so `proposal_wizard_expenses` does not
+pin a calendar year. Other days keep `qa-housing-expense-recurrence-day-YYYY-MM-DD`
+so duplicate day numbers in later months stay unambiguous. Turning
 **`qa-housing-expense-recurring-switch`** ON opens that picker immediately (no
 separate “Définir la récurrence” tap). Flow after the switch: start day, end day,
 then **`qa-housing-expense-recurrence-range-save`** (`enabled: true`) — the picker
@@ -686,7 +697,8 @@ from flows as:
 | `qa-housing-hub-journals` | Active hub → Journals tile |
 | `qa-housing-journals-monthly-expenses` | Journals menu → Accepted expenses |
 | `qa-housing-monthly-expenses-screen` | Accepted expenses AppBar title |
-| `qa-housing-hub-settlement-due` | Settlement-due expense tile |
+| `qa-housing-hub-settlement-due` | Settlement-due expense tile (window open, not last day) |
+| `qa-housing-hub-settlement-last-day` | Same settlement tile when today is the inclusive last window day |
 | `qa-housing-hub-enter-expense` | Active-period expense entry tile |
 | `qa-housing-hub-expense-disabled` | Disabled expense tile |
 | `qa-housing-hub-renewal-fork` | Renewal fork tile |

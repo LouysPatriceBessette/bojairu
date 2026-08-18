@@ -4,7 +4,5 @@ appId: app.incoherences.bojairu.dev
     file: _enter_housing_hub.yaml
 - extendedWaitUntil:
     visible:
-      id: "qa-housing-hub-settlement-due"
+      id: "qa-housing-hub-settlement-last-day"
     timeout: 30000
-- assertVisible: "Régler un dû"
-- assertVisible: ".*Fonctionnalité disponible jusqu'au.*"

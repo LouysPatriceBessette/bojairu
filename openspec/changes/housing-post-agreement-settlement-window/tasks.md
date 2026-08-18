@@ -25,7 +25,7 @@
 
 Manual multi-device QA is **not** replaced; these scenarios automate **single-device hub gating** after programmatic seed + clock push (`docs/qa-android-e2e.md`).
 
-- [x] 5.1 Scenario manifests + Maestro flows for settlement arc (`period_end_day`, `settlement_open`, `settlement_window_open`, `settlement_last_day`, `settlement_closed`).
+- [x] 5.1 Scenario manifests + Maestro flows for settlement arc (`period_end_day`, `settlement_open`, `settlement_last_day`, `settlement_closed`).
 - [x] 5.2 Seed postconditions + unit tests aligned with Maestro assertions (`qa_scenario_seed.dart`, `qa_scenario_seed_test.dart`).
 - [x] 5.3 Orchestrator: `run_scenario.sh`, `run_all_scenarios.sh`, aggregated `index.html` report, manifest/semantics verification (`qa:verify`, `qa:run-all-scenarios`).
 

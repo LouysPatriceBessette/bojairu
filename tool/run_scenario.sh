@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run one manual QA scenario end-to-end on the Android emulator.
 #
-# Usage: ./tool/run_scenario.sh settlement_window_open
+# Usage: ./tool/run_scenario.sh settlement_open
 # Options:
 #   --skip-build       reuse existing debug APK
 #   --skip-install     do not adb install

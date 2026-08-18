@@ -1,7 +1,0 @@
-id: settlement_window_open
-description: Entente terminée hier, soldes ≠ 0 → bouton règlement visible
-device_date: "2027-08-11T09:00:00"
-timezone: America/Toronto
-seed: settlement_window_open
-flow: qa/flows/settlement_window_open.yaml
-screenshot_prefix: settlement_open

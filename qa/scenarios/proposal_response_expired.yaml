@@ -1,6 +1,6 @@
 id: proposal_response_expired
 description: Après responseExpiresAt — proposition expirée dans les archives
-device_date: "2027-08-11T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: proposal_response_expired
 flow: qa/flows/proposal_response_expired.yaml

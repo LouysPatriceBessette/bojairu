@@ -1,6 +1,6 @@
 id: renewal_fork_visible
 description: Après periodEnd — tuile nouvelle période visible
-device_date: "2027-08-15T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: renewal_fork_visible
 flow: qa/flows/renewal_fork_visible.yaml

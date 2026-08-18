@@ -78,12 +78,12 @@ appId: app.incoherences.bojairu.dev
 # Switch ON opens the recurrence date-range picker immediately (no "Définir la récurrence" tap).
 - extendedWaitUntil:
     visible:
-      id: "qa-housing-expense-recurrence-day-2027-06-15"
+      id: "qa-housing-expense-recurrence-day-15"
     timeout: 30000
 - tapOn:
-    id: "qa-housing-expense-recurrence-day-2027-06-15"
+    id: "qa-housing-expense-recurrence-day-15"
 - tapOn:
-    id: "qa-housing-expense-recurrence-day-2027-06-20"
+    id: "qa-housing-expense-recurrence-day-20"
 - extendedWaitUntil:
     visible:
       id: "qa-housing-expense-recurrence-range-save"

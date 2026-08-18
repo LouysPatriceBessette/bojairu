@@ -1,6 +1,9 @@
 appId: app.incoherences.bojairu.dev
 ---
-# Inviter standby/redeem already navigated here — row check only.
+# Generate/handshake pops to invitation codes, not Contacts.
+# qa-contacts-row-louys-qa exists only on the Contacts list.
+- runFlow:
+    file: _navigate_inviter_to_contacts_list.yaml
 - extendedWaitUntil:
     visible:
       id: "qa-contacts-row-louys-qa"

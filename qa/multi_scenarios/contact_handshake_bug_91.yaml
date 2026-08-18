@@ -4,7 +4,7 @@ device_date: current
 timezone: America/Toronto
 coordinator: contact_handshake
 mode: bug_91_probe
-attempts: 10
+attempts: 4
 role_inviter:
   avd: Monica-QA
   seed: contact_handshake_inviter

@@ -39,6 +39,35 @@ void main() {
     });
   });
 
+  group('isSettlementWindowLastDay', () {
+    test('is true on the inclusive last day', () {
+      expect(
+        isSettlementWindowLastDay(
+          settlementWindowEnd: DateTime(2026, 8, 17),
+          now: DateTime(2026, 8, 17, 19, 44),
+        ),
+        isTrue,
+      );
+    });
+
+    test('is false the day before and the day after', () {
+      expect(
+        isSettlementWindowLastDay(
+          settlementWindowEnd: DateTime(2026, 8, 17),
+          now: DateTime(2026, 8, 16),
+        ),
+        isFalse,
+      );
+      expect(
+        isSettlementWindowLastDay(
+          settlementWindowEnd: DateTime(2026, 8, 17),
+          now: DateTime(2026, 8, 18),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('isSettlementOpen', () {
     test('is false while period still open', () {
       expect(

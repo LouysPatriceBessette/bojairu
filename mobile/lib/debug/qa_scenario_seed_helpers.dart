@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/material.dart' show DateUtils;
 
 import '../db/app_database.dart';
 import '../housing/participation/housing_participation_change_kind.dart';
@@ -8,19 +9,91 @@ import '../housing/participation/housing_participation_membership_service.dart';
 import '../housing/proposals/plan_agreement_proposal_service.dart';
 import '../housing/realized_expense/realized_expense_ledger_service.dart';
 import '../housing/realized_expense/realized_expense_status.dart';
+import '../housing/settlement/housing_settlement_window.dart';
 
-/// Shared agreement anchor for QA housing scenarios (noon UTC avoids TZ date shift).
+/// Shared agreement anchor for QA drafts that still need a fixed calendar
+/// (FCM wake housing draft). Hub-gating scenarios and
+/// `proposal_wizard_expenses` do **not** use these — they seed relative to
+/// [DateTime.now].
 final kQaAnchorPeriodStart = DateTime.utc(2027, 1, 1, 12);
 final kQaAnchorPeriodEnd = DateTime.utc(2027, 8, 10, 12);
 final kQaSeedCreatedAt = DateTime.utc(2027, 1, 1);
 
-/// Plan id for settlement-open scenarios ([settlement_open], [settlement_window_open]).
+DateTime qaLocalDateOnly(DateTime now) {
+  final local = now.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+DateTime qaNoonUtcOnLocalCalendarDate(DateTime localDate) {
+  final d = DateTime(localDate.year, localDate.month, localDate.day);
+  return DateTime.utc(d.year, d.month, d.day, 12);
+}
+
+DateTime qaAddCalendarMonths(DateTime localDate, int months) {
+  final d = DateTime(localDate.year, localDate.month, localDate.day);
+  var year = d.year;
+  var month = d.month + months;
+  while (month > 12) {
+    month -= 12;
+    year++;
+  }
+  while (month < 1) {
+    month += 12;
+    year--;
+  }
+  final daysInMonth = DateUtils.getDaysInMonth(year, month);
+  final day = d.day <= daysInMonth ? d.day : daysInMonth;
+  return DateTime(year, month, day);
+}
+
+/// `periodEnd` = yesterday local — today is the first day after the term.
+DateTime qaPeriodEndYesterdayNoonUtc(DateTime now) {
+  final yesterday = qaLocalDateOnly(now).subtract(const Duration(days: 1));
+  return qaNoonUtcOnLocalCalendarDate(yesterday);
+}
+
+DateTime qaPeriodStartBeforeEnd(DateTime periodEndUtc, {int months = 7}) {
+  final endLocal = DateUtils.dateOnly(periodEndUtc.toLocal());
+  return qaNoonUtcOnLocalCalendarDate(qaAddCalendarMonths(endLocal, -months));
+}
+
+/// `periodEnd` one calendar month before today, so today is the last
+/// inclusive settlement-window day when the day-of-month round-trips.
+DateTime qaPeriodEndForSettlementLastDayNoonUtc(DateTime now) {
+  final today = qaLocalDateOnly(now);
+  return qaNoonUtcOnLocalCalendarDate(qaAddCalendarMonths(today, -1));
+}
+
+/// Window last day = yesterday → settlement is closed today.
+DateTime qaPeriodEndForSettlementClosedNoonUtc(DateTime now) {
+  final yesterday = qaLocalDateOnly(now).subtract(const Duration(days: 1));
+  return qaNoonUtcOnLocalCalendarDate(qaAddCalendarMonths(yesterday, -1));
+}
+
+DateTime qaExpenseDuringPeriodNoonUtc(DateTime periodStart, DateTime periodEnd) {
+  final startLocal = DateUtils.dateOnly(periodStart.toLocal());
+  final endLocal = DateUtils.dateOnly(periodEnd.toLocal());
+  final mid = startLocal.add(const Duration(days: 14));
+  final chosen = mid.isAfter(endLocal) ? startLocal : mid;
+  return qaNoonUtcOnLocalCalendarDate(chosen);
+}
+
+bool qaSettlementLastDayRoundTrips(DateTime now) {
+  final today = qaLocalDateOnly(now);
+  final periodEnd = qaPeriodEndForSettlementLastDayNoonUtc(now);
+  final lastDay = settlementWindowLastDayInclusive(periodEnd);
+  return lastDay.year == today.year &&
+      lastDay.month == today.month &&
+      lastDay.day == today.day;
+}
+
+/// Plan id for the [settlement_open] QA scenario.
 const kQaSettlementOpenPlanId = 'housing:qa-settlement-open';
 
 String qaPlanIdForScenario(String scenarioId) {
   return switch (scenarioId) {
     'period_end_day' => 'housing:qa-period-end-day',
-    'settlement_open' || 'settlement_window_open' => kQaSettlementOpenPlanId,
+    'settlement_open' => kQaSettlementOpenPlanId,
     'settlement_last_day' => 'housing:qa-settlement-last-day',
     'settlement_closed' => 'housing:qa-settlement-closed',
     'renewal_fork_visible' => 'housing:qa-renewal-fork',
@@ -33,14 +106,22 @@ String qaPlanIdForScenario(String scenarioId) {
 }
 
 /// Orphan housing draft: participants + agreement dates, no expenses yet (wizard step 2).
+///
+/// Period starts on the 1st of [now]'s month and ends eight months later so the
+/// recurrence picker (`firstDate` = 1st of current month, `lastDate` = period
+/// end) always includes the 15th and 20th of the current month.
 Future<void> seedQaProposalWizardDraft({
   required AppDatabase db,
   required String planId,
+  required DateTime now,
 }) async {
   const coContactId = 'contact:qa:wizard-co';
-  final createdAt = kQaSeedCreatedAt;
-  final periodStart = kQaAnchorPeriodStart;
-  final periodEnd = kQaAnchorPeriodEnd;
+  final today = qaLocalDateOnly(now);
+  final createdAt = qaNoonUtcOnLocalCalendarDate(today);
+  final periodStart = qaNoonUtcOnLocalCalendarDate(
+    DateTime(today.year, today.month, 1),
+  );
+  final periodEnd = qaNoonUtcOnLocalCalendarDate(qaAddCalendarMonths(today, 8));
   final selfId = '$planId:self';
   final coId = '$planId:p0';
 
@@ -115,7 +196,7 @@ Future<void> seedQaInForceHousingPlan({
   final lineId = 'line:$planId:rent';
   final selfId = '$planId:self';
   final coId = '$planId:p0';
-  final createdAt = kQaSeedCreatedAt;
+  final createdAt = start;
 
   await db.upsertPlan(
     PlansCompanion.insert(
@@ -214,7 +295,7 @@ Future<void> seedQaInForceHousingPlan({
   );
 
   if (withPublishedExpense) {
-    final expenseAt = DateTime.utc(2027, 7, 1);
+    final expenseAt = qaExpenseDuringPeriodNoonUtc(start, end);
     await db.into(db.realizedExpenses).insert(
       RealizedExpensesCompanion.insert(
         id: 'expense:$planId:1',
@@ -280,20 +361,23 @@ Future<void> seedQaExpiredPendingProposal({
   required String planId,
   required String title,
   required DateTime responseExpiresAt,
+  DateTime? createdAt,
+  DateTime? periodStart,
+  DateTime? periodEnd,
 }) async {
   final packageId = 'pkg:$planId';
   final revisionId = 'rev:$planId:pending';
   final selfId = '$planId:self';
   final coId = '$planId:p0';
-  final createdAt = kQaSeedCreatedAt;
-  final periodStart = kQaAnchorPeriodStart;
-  final periodEnd = kQaAnchorPeriodEnd;
+  final created = createdAt ?? kQaSeedCreatedAt;
+  final start = periodStart ?? kQaAnchorPeriodStart;
+  final end = periodEnd ?? kQaAnchorPeriodEnd;
 
   await db.upsertPlan(
     PlansCompanion.insert(
       id: planId,
       type: 'housing',
-      createdAt: createdAt,
+      createdAt: created,
       title: drift.Value(title),
       currency: const drift.Value('CAD'),
       notes: const drift.Value.absent(),
@@ -304,7 +388,7 @@ Future<void> seedQaExpiredPendingProposal({
       id: selfId,
       displayName: 'Monica QA',
       avatarId: 'mdi:0',
-      createdAt: createdAt,
+      createdAt: created,
     ),
   );
   await db.upsertParticipant(
@@ -312,15 +396,15 @@ Future<void> seedQaExpiredPendingProposal({
       id: coId,
       displayName: 'Louys QA',
       avatarId: 'mdi:1',
-      createdAt: createdAt,
+      createdAt: created,
     ),
   );
   await db.upsertAgreement(
     AgreementsCompanion.insert(
       id: 'agreement:$planId',
       planId: planId,
-      periodStart: periodStart,
-      periodEnd: periodEnd,
+      periodStart: start,
+      periodEnd: end,
       minNoticeDays: const drift.Value(30),
       penaltyMinor: const drift.Value(0),
       clauses: const drift.Value(''),
@@ -328,7 +412,7 @@ Future<void> seedQaExpiredPendingProposal({
       withdrawalPerParticipantJson: const drift.Value('{}'),
       agreementRulesJson: const drift.Value('{}'),
       version: const drift.Value(1),
-      createdAt: createdAt,
+      createdAt: created,
     ),
   );
 
@@ -338,15 +422,15 @@ Future<void> seedQaExpiredPendingProposal({
     'responseExpiresAt': responseExpiresAt.toUtc().toIso8601String(),
     'plan': {'title': title},
     'agreement': {
-      'periodStart': periodStart.toUtc().toIso8601String(),
-      'periodEnd': periodEnd.toUtc().toIso8601String(),
+      'periodStart': start.toUtc().toIso8601String(),
+      'periodEnd': end.toUtc().toIso8601String(),
     },
   };
   await db.into(db.proposalPackages).insertOnConflictUpdate(
     ProposalPackagesCompanion.insert(
       id: packageId,
       planId: planId,
-      createdAt: createdAt,
+      createdAt: created,
       pendingRevisionId: drift.Value(revisionId),
     ),
   );
@@ -357,7 +441,7 @@ Future<void> seedQaExpiredPendingProposal({
       contentHash: 'qa:$revisionId',
       proposerParticipantId: selfId,
       payloadJson: jsonEncode(payload),
-      createdAt: createdAt,
+      createdAt: created,
     ),
   );
 }

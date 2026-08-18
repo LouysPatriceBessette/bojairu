@@ -6,18 +6,31 @@ import '../prefs/app_preferences.dart';
 import '../prefs/week_start.dart';
 import '../util/week_start_calendar.dart';
 
-/// Prefix for per-day recurrence picker ids (`…-YYYY-MM-DD`).
+/// Prefix for per-day recurrence picker ids (`…-YYYY-MM-DD`, or `…-15` / `…-20`
+/// for the 15th and 20th of [rangeFirstDate]'s month).
 const kQaRecurrenceDayIdPrefix = 'qa-housing-expense-recurrence-day-';
 
-/// Fixture ids referenced by `proposal_wizard_expenses` (seed date 2027-06-15).
-const kQaRecurrenceDay20270615 = 'qa-housing-expense-recurrence-day-2027-06-15';
-const kQaRecurrenceDay20270620 = 'qa-housing-expense-recurrence-day-2027-06-20';
+/// Stable ids for the 15th and 20th of the picker's first month (current month
+/// in `showExpenseRecurrenceFlow`). Referenced by `proposal_wizard_expenses`.
+const kQaRecurrenceDay15 = 'qa-housing-expense-recurrence-day-15';
+const kQaRecurrenceDay20 = 'qa-housing-expense-recurrence-day-20';
 
 const kQaRecurrenceRangeSave = 'qa-housing-expense-recurrence-range-save';
 
-/// Maestro-facing id for a selectable day cell (ISO date, unambiguous across months).
-String qaRecurrenceDaySemanticsId(DateTime day) {
+/// Maestro-facing id for a selectable day cell.
+///
+/// The 15th and 20th of [rangeFirstDate]'s month use stable day-of-month ids so
+/// flows do not pin a calendar year. Other days keep an ISO suffix so duplicate
+/// day numbers in later months stay unambiguous.
+String qaRecurrenceDaySemanticsId(
+  DateTime day, {
+  required DateTime rangeFirstDate,
+}) {
   final d = DateUtils.dateOnly(day);
+  final first = DateUtils.dateOnly(rangeFirstDate);
+  final inFirstMonth = d.year == first.year && d.month == first.month;
+  if (inFirstMonth && d.day == 15) return kQaRecurrenceDay15;
+  if (inFirstMonth && d.day == 20) return kQaRecurrenceDay20;
   return '$kQaRecurrenceDayIdPrefix'
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
@@ -219,6 +232,7 @@ class _QaDateRangePickerDialogState extends State<_QaDateRangePickerDialog> {
                     _WeekdayHeader(firstDayOfWeekIndex: _firstDayOfWeekIndex),
                     _MonthGrid(
                       month: month,
+                      rangeFirstDate: widget.firstDate,
                       leadingBlanks: _leadingBlankCells(month),
                       isSelectable: _isSelectable,
                       isStart: (d) => _isSameDay(_start, d),
@@ -269,6 +283,7 @@ class _WeekdayHeader extends StatelessWidget {
 class _MonthGrid extends StatelessWidget {
   const _MonthGrid({
     required this.month,
+    required this.rangeFirstDate,
     required this.leadingBlanks,
     required this.isSelectable,
     required this.isStart,
@@ -278,6 +293,7 @@ class _MonthGrid extends StatelessWidget {
   });
 
   final DateTime month;
+  final DateTime rangeFirstDate;
   final int leadingBlanks;
   final bool Function(DateTime day) isSelectable;
   final bool Function(DateTime day) isStart;
@@ -300,7 +316,12 @@ class _MonthGrid extends StatelessWidget {
       final scheme = Theme.of(context).colorScheme;
       cells.add(
         Semantics(
-          identifier: selectable ? qaRecurrenceDaySemanticsId(date) : null,
+          identifier: selectable
+              ? qaRecurrenceDaySemanticsId(
+                  date,
+                  rangeFirstDate: rangeFirstDate,
+                )
+              : null,
           button: true,
           label: '$day',
           enabled: selectable,

@@ -1,6 +1,6 @@
 id: voluntary_withdrawal_ack_j5
 description: Avis de retrait + 5 jours — bannière accusé de réception
-device_date: "2027-08-11T09:00:00"
+device_date: current
 timezone: America/Toronto
 seed: voluntary_withdrawal_ack_j5
 flow: qa/flows/voluntary_withdrawal_ack_j5.yaml

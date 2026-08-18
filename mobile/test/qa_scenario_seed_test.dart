@@ -1,5 +1,6 @@
 import 'package:compartarenta/db/app_database.dart';
 import 'package:compartarenta/debug/qa_scenario_seed.dart';
+import 'package:compartarenta/debug/qa_scenario_seed_helpers.dart';
 import 'package:compartarenta/housing/realized_expense/realized_expense_ledger_service.dart';
 import 'package:compartarenta/housing/settlement/housing_settlement_window.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -9,46 +10,101 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
-  final scenarios = <String, DateTime>{
-    'period_end_day': DateTime(2027, 8, 11, 9),
-    'settlement_open': DateTime(2027, 8, 11, 9),
-    'settlement_window_open': DateTime(2027, 8, 11, 9),
-    'settlement_last_day': DateTime(2027, 9, 10, 9),
-    'settlement_closed': DateTime(2027, 9, 11, 9),
-    'renewal_fork_visible': DateTime(2027, 8, 15, 9),
-    'voluntary_withdrawal_ack_j5': DateTime(2027, 8, 11, 9),
-    'voluntary_withdrawal_effective': DateTime(2027, 8, 11, 9),
-    'proposal_response_expired': DateTime(2027, 8, 11, 9),
-    'proposal_wizard_expenses': DateTime(2027, 6, 15, 9),
-    'vehicle_add': DateTime(2027, 6, 15, 9),
-    'vehicle_fuel_purchase': DateTime(2027, 6, 15, 9),
-    'vehicle_use_session': DateTime(2027, 6, 15, 9),
-    'vehicle_session_start_gap': DateTime(2027, 6, 15, 9),
-    'vehicle_standalone_meter_gap': DateTime(2027, 6, 15, 9),
-    'vehicle_consumption': DateTime(2027, 6, 15, 9),
-    'vehicle_sale_export_import_seller': DateTime(2026, 7, 14, 12),
-    'vehicle_sale_export_import_buyer': DateTime(2026, 7, 14, 12),
-  };
+  const housingHubScenarios = <String>[
+    'period_end_day',
+    'settlement_open',
+    'settlement_last_day',
+    'settlement_closed',
+    'renewal_fork_visible',
+    'voluntary_withdrawal_ack_j5',
+    'voluntary_withdrawal_effective',
+    'proposal_response_expired',
+  ];
 
-  for (final entry in scenarios.entries) {
-    test('${entry.key} seed satisfies postconditions', () async {
+  const otherScenarios = <String>[
+    'proposal_wizard_expenses',
+    'vehicle_add',
+    'vehicle_fuel_purchase',
+    'vehicle_use_session',
+    'vehicle_session_start_gap',
+    'vehicle_standalone_meter_gap',
+    'vehicle_consumption',
+    'vehicle_sale_export_import_seller',
+    'vehicle_sale_export_import_buyer',
+  ];
+
+  test('housing hub seeds satisfy postconditions at DateTime.now', () async {
+    final now = DateTime.now();
+    for (final id in housingHubScenarios) {
+      if (id == 'settlement_last_day' && !qaSettlementLastDayRoundTrips(now)) {
+        continue;
+      }
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
 
-      await applyQaScenario(db, entry.key);
+      await applyQaScenario(db, id, now: now);
       await assertQaScenarioPostconditions(
         db: db,
-        scenarioId: entry.key,
-        now: entry.value,
+        scenarioId: id,
+        now: now,
+      );
+    }
+  });
+
+  test('settlement_last_day round-trips on 2026-08-17', () async {
+    final now = DateTime(2026, 8, 17, 12);
+    expect(qaSettlementLastDayRoundTrips(now), isTrue);
+
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    await applyQaScenario(db, 'settlement_last_day', now: now);
+    await assertQaScenarioPostconditions(
+      db: db,
+      scenarioId: 'settlement_last_day',
+      now: now,
+    );
+  });
+
+  for (final id in otherScenarios) {
+    test('$id seed satisfies postconditions', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final now = DateTime.now();
+      await applyQaScenario(db, id, now: now);
+      await assertQaScenarioPostconditions(
+        db: db,
+        scenarioId: id,
+        now: now,
       );
     });
   }
 
-  test('settlement_open has non-zero balances and window end 2027-09-10', () async {
+  test('proposal_wizard_expenses period includes day 20 in 2028 and 2029',
+      () async {
+    for (final now in [
+      DateTime(2028, 3, 17, 12),
+      DateTime(2029, 12, 5, 12),
+    ]) {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      await applyQaScenario(db, 'proposal_wizard_expenses', now: now);
+      await assertQaScenarioPostconditions(
+        db: db,
+        scenarioId: 'proposal_wizard_expenses',
+        now: now,
+      );
+    }
+  });
+
+  test('settlement_open has non-zero balances and window open at now', () async {
+    final now = DateTime.now();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    await applyQaScenario(db, 'settlement_open');
+    await applyQaScenario(db, 'settlement_open', now: now);
 
     final agreement = await db.getAgreementForPlan(kQaSettlementOpenPlanId);
     expect(agreement, isNotNull);
@@ -58,12 +114,19 @@ void main() {
       isTrue,
     );
     expect(
-      settlementWindowLastDayInclusive(agreement!.periodEnd),
-      DateTime(2027, 9, 10),
+      isSettlementOpen(
+        agreement: agreement!,
+        hasNonZeroOptimizedBalances: true,
+        now: now,
+      ),
+      isTrue,
     );
   });
 
   test('all scenario ids have manifests in kQaScenarioIds', () {
-    expect(kQaScenarioIds, containsAll(scenarios.keys));
+    expect(
+      kQaScenarioIds,
+      containsAll([...housingHubScenarios, ...otherScenarios]),
+    );
   });
 }
