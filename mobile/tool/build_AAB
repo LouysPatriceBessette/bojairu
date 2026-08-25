@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# Build a signed prod-release Android App Bundle and append one row to
+# docs/AAB-versions.md.
+#
+# Usage (from anywhere):
+#   ./mobile/tool/build_AAB --prod
+#   ./mobile/tool/build_AAB --test
+#
+# --prod  → Usage "Production"
+# --test  → Usage "Test interne"
+#
+# versionCode is last number in docs/AAB-versions.md + 1 (101 if the table
+# has no version rows yet). versionName and GIT_SHA still come from
+# compute_version.sh (git tag / HEAD).
+#
+# stdout: versionCode, then absolute path of the versioned AAB copy.
+# flutter / progress go to stderr.
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF' >&2
+Usage: build_AAB --prod | --test
+
+  --prod   Build the prod-release AAB and record Usage "Production"
+  --test   Build the same AAB and record Usage "Test interne"
+
+Prints the versionCode and the AAB path on stdout.
+EOF
+}
+
+MOBILE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "${MOBILE_DIR}/.." && pwd)"
+VERSIONS_DOC="${REPO_ROOT}/docs/AAB-versions.md"
+FIRST_VERSION=101
+AAB_DIR="${MOBILE_DIR}/build/app/outputs/bundle/prodRelease"
+AAB_DEFAULT="${AAB_DIR}/app-prod-release.aab"
+
+usage_label=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --prod)
+      if [[ -n "${usage_label}" ]]; then
+        echo "Pass exactly one of --prod or --test." >&2
+        exit 2
+      fi
+      usage_label="Production"
+      shift
+      ;;
+    --test)
+      if [[ -n "${usage_label}" ]]; then
+        echo "Pass exactly one of --prod or --test." >&2
+        exit 2
+      fi
+      usage_label="Test interne"
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -z "${usage_label}" ]]; then
+  usage
+  exit 2
+fi
+
+next_aab_version() {
+  local file="$1"
+  local last=""
+  if [[ -f "${file}" ]]; then
+    last="$(awk -F'|' '
+      {
+        v = $2
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+        if (v ~ /^[0-9]+$/) last = v
+      }
+      END { if (last != "") print last }
+    ' "${file}")"
+  fi
+  if [[ -z "${last}" ]]; then
+    printf '%s\n' "${FIRST_VERSION}"
+  else
+    printf '%s\n' "$((last + 1))"
+  fi
+}
+
+ensure_versions_doc() {
+  if [[ -f "${VERSIONS_DOC}" ]]; then
+    return 0
+  fi
+  mkdir -p "$(dirname "${VERSIONS_DOC}")"
+  cat >"${VERSIONS_DOC}" <<'EOF'
+# Android App Bundle versions
+
+Play `versionCode` history for Bojairũ AABs built with
+[`mobile/tool/build_AAB`](../mobile/tool/build_AAB).
+
+| Version | Built at | Usage | Notes |
+| --- | --- | --- | --- |
+EOF
+}
+
+ensure_versions_doc
+version="$(next_aab_version "${VERSIONS_DOC}")"
+
+# shellcheck source=entitlement_base_url_default.sh
+source "${MOBILE_DIR}/tool/entitlement_base_url_default.sh"
+
+API_BASE_URL_VALUE="${API_BASE_URL:-https://sync.incoherences.org}"
+ENTITLEMENT_BASE_URL_VALUE="$(entitlement_base_url_default "${API_BASE_URL_VALUE}")"
+
+build_name=""
+git_sha=""
+while IFS='=' read -r key value; do
+  case "${key}" in
+    BUILD_NAME) build_name="${value}" ;;
+    GIT_SHA) git_sha="${value}" ;;
+  esac
+done < <("${MOBILE_DIR}/tool/compute_version.sh" --env)
+
+if [[ -z "${build_name}" ]]; then
+  echo "compute_version.sh did not yield BUILD_NAME." >&2
+  exit 1
+fi
+
+flutter_args=(
+  build appbundle
+  --release
+  --flavor prod
+  -t lib/main.dart
+  --build-name="${build_name}"
+  --build-number="${version}"
+  --dart-define=ENV=prod
+  --dart-define="API_BASE_URL=${API_BASE_URL_VALUE}"
+)
+if [[ -n "${git_sha}" ]]; then
+  flutter_args+=(--dart-define="GIT_SHA=${git_sha}")
+fi
+if [[ -n "${ENTITLEMENT_BASE_URL_VALUE}" ]]; then
+  flutter_args+=(--dart-define="ENTITLEMENT_BASE_URL=${ENTITLEMENT_BASE_URL_VALUE}")
+fi
+
+echo "Building AAB versionCode=${version} versionName=${build_name} usage=${usage_label}" >&2
+
+cd "${MOBILE_DIR}"
+./tool/flutterw "${flutter_args[@]}" >&2
+
+if [[ ! -f "${AAB_DEFAULT}" ]]; then
+  echo "AAB not found after build: ${AAB_DEFAULT}" >&2
+  exit 1
+fi
+
+mkdir -p "${AAB_DIR}"
+aab_copy="${AAB_DIR}/app-prod-release-${version}.aab"
+cp -f "${AAB_DEFAULT}" "${aab_copy}"
+
+built_at="$(date '+%Y-%m-%d %H:%M %Z')"
+printf '| %s | %s | %s |  |\n' "${version}" "${built_at}" "${usage_label}" \
+  >>"${VERSIONS_DOC}"
+
+printf '%s\n' "${version}"
+printf '%s\n' "${aab_copy}"

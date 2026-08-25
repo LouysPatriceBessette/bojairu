@@ -684,6 +684,33 @@ the FCM payload carries only `v`, `kind`, optional `target_build`, and
 
 At least one of `--target-build` or `--consult-site` is required.
 
+### Before `--confirm` (Play update)
+
+`--confirm` sends for real (every distinct non-expired FCM token). It is
+not a rehearsal. Dry-run already counts tokens.
+
+When the notice includes `--target-build=N` (so the in-app page can show
+the Play update badge):
+
+1. **Production must already have that AAB.** The badge opens the public
+   listing `https://play.google.com/store/apps/details?id=app.incoherences.bojairu`,
+   not an Internal testing track. Do not `--confirm` with `N` until
+   Google Play Console → **Production** has `versionCode` **N** (published
+   or processing onto that listing). Announcing a number that is only on
+   Internal testing, or not on Play yet, shows a badge that cannot install
+   that package.
+2. **`N` must be strictly greater than the installed build** on devices
+   that should see the badge. The app shows the Play block only when
+   `installed < N`. Confirming with the `versionCode` those phones already
+   have (for example targeting 40 while those devices already run 40) still
+   delivers the notification, but hides the badge. `--consult-site` can
+   still show **Read the message**.
+3. **Dry-run first with the same flags** as the send (same `N`, same
+   `--consult-site`), then `--confirm`.
+
+`--consult-site` without `--target-build` has no Play badge; steps 1–2
+do not apply.
+
 Dry-run (replace `39` with the Play `versionCode` you mean, or omit
 `--target-build` and keep `--consult-site`):
 

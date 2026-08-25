@@ -1235,7 +1235,24 @@ https://bojairu.app/fr/message , https://bojairu.app/en/message , and
 https://bojairu.app/es/mensaje . Android / FCM only (no APNs).
 
 At least one of `--target-build` or `--consult-site` is required.
-Default is dry-run. `--confirm` actually sends.
+Default is dry-run. `--confirm` actually sends (not a rehearsal).
+
+**Before `--confirm` with `--target-build=N` (Play update):**
+
+1. Google Play Console → app **Bojairũ** (`app.incoherences.bojairu`) →
+   **Production** already has AAB `versionCode` **N** on the public
+   listing. The in-app badge opens
+   `https://play.google.com/store/apps/details?id=app.incoherences.bojairu`,
+   not Internal testing. Do not announce an Internal-only or unreleased
+   number.
+2. **N** is **strictly greater** than the build on phones that should see
+   the badge (`installed < N`). Same number as already installed →
+   notification can still arrive; Play badge is hidden. `--consult-site`
+   can still offer the site message.
+3. Re-run `--dry-run` with the **same** flags, then `--confirm`.
+
+`--consult-site` alone (no `--target-build`) skips the Play badge; then
+steps 1–2 do not apply.
 
 Dry-run (example `versionCode` **39** — use the number you mean):
 
