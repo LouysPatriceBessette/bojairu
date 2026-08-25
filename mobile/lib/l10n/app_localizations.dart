@@ -8455,6 +8455,30 @@ abstract class AppLocalizations {
   /// **'Pending offers'**
   String get vehicleSharingPendingOfferTitlePlural;
 
+  /// No description provided for @vehicleSharingModuleCapabilitiesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'What does this module allow'**
+  String get vehicleSharingModuleCapabilitiesButton;
+
+  /// No description provided for @vehicleSharingModuleCapabilitiesBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'The Sharing module lets you enter usage data for someone else\'s vehicle. It also lets you invite your contacts so they can use your vehicle.'**
+  String get vehicleSharingModuleCapabilitiesBody1;
+
+  /// No description provided for @vehicleSharingModuleCapabilitiesBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'In both cases, the Sharing license must be active. To share your vehicle, the Vehicle license must also be active.'**
+  String get vehicleSharingModuleCapabilitiesBody2;
+
+  /// No description provided for @vehicleSharingModuleCapabilitiesLicensesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'You currently have the following licenses:'**
+  String get vehicleSharingModuleCapabilitiesLicensesHeading;
+
   /// No description provided for @vehicleSharingEmptyNone.
   ///
   /// In en, this message translates to:

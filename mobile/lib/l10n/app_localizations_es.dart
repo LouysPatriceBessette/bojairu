@@ -5168,6 +5168,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vehicleSharingPendingOfferTitlePlural => 'Ofertas pendientes';
 
   @override
+  String get vehicleSharingModuleCapabilitiesButton =>
+      'Qué permite este módulo';
+
+  @override
+  String get vehicleSharingModuleCapabilitiesBody1 =>
+      'El módulo de Compartir permite introducir datos de uso del vehículo de otra persona. También permite invitar a sus contactos para que puedan usar su vehículo.';
+
+  @override
+  String get vehicleSharingModuleCapabilitiesBody2 =>
+      'En ambos casos, la licencia Compartir debe estar activada. Para compartir su vehículo, la licencia Vehículo también debe estar activada.';
+
+  @override
+  String get vehicleSharingModuleCapabilitiesLicensesHeading =>
+      'Actualmente tiene las siguientes licencias:';
+
+  @override
   String get vehicleSharingEmptyNone => 'Ninguno';
 
   @override

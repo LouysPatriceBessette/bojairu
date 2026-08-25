@@ -6,6 +6,10 @@ import 'qa_vehicle_semantics.dart';
 /// Vehicle sharing hub (debug Maestro).
 const kQaVehicleSharingHub = 'qa-vehicle-sharing-hub';
 
+/// Hub button that opens the module-capabilities dialog.
+const kQaVehicleSharingModuleCapabilities =
+    'qa-vehicle-sharing-module-capabilities';
+
 /// Add share CTA on shares detail screen.
 const kQaVehicleSharingAddShare = 'qa-vehicle-sharing-add-share';
 

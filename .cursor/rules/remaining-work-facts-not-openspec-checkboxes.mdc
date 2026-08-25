@@ -1,0 +1,61 @@
+---
+description: >-
+  Remaining-work checklists and “open tasks” answers must cite code, logs, or
+  the user’s stated ops status — never treat an unchecked OpenSpec box as proof
+  the work is absent.
+alwaysApply: true
+---
+
+# Remaining work — facts, not unchecked boxes
+
+## Hard rule
+
+When the user asks what is **still to do**, for a **checklist of remaining
+work**, or whether OpenSpec / tasks / SPECS items are **open**:
+
+1. **Read the task text**, then **grep/read the implementation** (and any
+   named ops note, QA report, or live URL) **this turn**.
+2. List as remaining **only** what that evidence shows is missing, incomplete,
+   or not yet executed.
+3. An unchecked `- [ ]` in `openspec/**/tasks.md` is **not** proof the product
+   lacks the behavior. Checkboxes lag. The inverse is also true: a checked box
+   is not proof without the matching code or artefact.
+4. If you cannot inspect a surface (Play Console, VPS crontab, live Apache
+   copy you did not fetch), write **not verified here** and **stop** — do not
+   put it on the remaining list as if proven undone.
+
+This is the same class of failure as filling a documentation gap: helpful
+fiction instead of facts.
+
+## Required delivery shape
+
+| Section | Content |
+| --- | --- |
+| **In the binary / repo** | Paths or commands that show the behavior already exists (even if the task is still `- [ ]`) |
+| **Remaining** | Gaps with a citation (missing symbol, TODO, `_canSave` without the invariant, user said this ops step was not run) |
+| **Not verified** | Surfaces not opened this turn |
+
+Do **not** ship a “later AAB / still open” list copied from unchecked boxes.
+
+## Forbidden
+
+| Forbidden | Required |
+| --- | --- |
+| OpenSpec `- [ ]` → “not delivered” | Grep/read; cite the file that implements it **or** the absence |
+| “Pending” in a months-old `tasks.md` as current Console/VPS state | User message this thread, `curl` of the live page, or say not verified |
+| Mixing “checkbox stale” guesses into remaining work without a cite | Separate **in code** vs **not in code** vs **ops not run** |
+
+## Founder incident — 18 Aug 2026 (first-prod checklist)
+
+| | Fact |
+| --- | --- |
+| **Ask** | Checklist of remaining work from open SPECS toward a first production AAB |
+| **Failure** | Agent listed import gate, vehicle license stubs, invite Play badges, and realized-expense E2E as later-AAB work because tasks were `- [ ]` |
+| **Code that already existed** | `store_import_gate.dart` (release Play query); `vehicle_module_access.dart` (release gates); live invite HTML Play `href`; realized-expense screens + sync |
+| **Cost** | A remaining-work list that was a copy of lagging checkboxes, not of the tree |
+
+## Relation
+
+Complements `doc-verification-no-gap-filling.mdc` (vendor docs: cite or stop),
+`no-probability-coding.mdc` (no probable product edits), and
+`verify-state-before-claiming.mdc` (git/deploy from commands).

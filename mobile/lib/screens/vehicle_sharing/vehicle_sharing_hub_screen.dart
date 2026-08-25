@@ -7,6 +7,8 @@ import '../../db/app_database.dart';
 import '../../db/repositories/contacts_repository.dart';
 import '../../db/repositories/vehicles_repository.dart';
 import '../../debug/qa_vehicle_sharing_semantics.dart';
+import '../../entitlement/app_module_id.dart';
+import '../../entitlement/module_entitlement_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../../prefs/app_preferences.dart';
 import '../../relay/handshake_orchestrator.dart';
@@ -15,7 +17,7 @@ import '../../vehicle/vehicle_module_access.dart';
 import '../../vehicle/vehicle_module_exit.dart';
 import '../../vehicle/vehicle_owner_contact.dart';
 import '../../vehicle/vehicle_usage_context.dart';
-import '../../widgets/screen_body_padding.dart';
+import 'vehicle_sharing_module_capabilities_dialog.dart';
 
 class VehicleSharingHubScreen extends StatefulWidget {
   const VehicleSharingHubScreen({super.key, required this.prefs});
@@ -174,6 +176,38 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
     if (mounted) await _reload();
   }
 
+  void _openCapabilitiesDialog() {
+    final entitlement = ModuleEntitlementController.maybeInstance;
+    unawaited(
+      showVehicleSharingModuleCapabilitiesDialog(
+        context: context,
+        vehiclePaid: entitlement?.isActivePaid(AppModuleId.vehicle) ?? false,
+        sharingPaid:
+            entitlement?.isActivePaid(AppModuleId.vehicleSharing) ?? false,
+      ),
+    );
+  }
+
+  Widget _capabilitiesButton(AppLocalizations l10n) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Center(
+          child: qaVehicleSharingSemantics(
+            identifier: kQaVehicleSharingModuleCapabilities,
+            button: true,
+            onTap: _openCapabilitiesDialog,
+            child: FilledButton(
+              onPressed: _openCapabilitiesDialog,
+              child: Text(l10n.vehicleSharingModuleCapabilitiesButton),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -185,7 +219,14 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
           ),
           title: Text(l10n.homeModuleVehicleSharing),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Column(
+          children: [
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            _capabilitiesButton(l10n),
+          ],
+        ),
       );
     }
     return Scaffold(
@@ -198,10 +239,13 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
           child: Text(l10n.homeModuleVehicleSharing),
         ),
       ),
-      body: RefreshIndicator(
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
               onRefresh: _reload,
               child: ListView(
-                padding: screenBodyScrollPadding(context),
+                padding: const EdgeInsets.all(16),
                 children: [
                   _sectionTitle(
                     context,
@@ -345,6 +389,10 @@ class _VehicleSharingHubScreenState extends State<VehicleSharingHubScreen> {
                 ],
               ),
             ),
+          ),
+          _capabilitiesButton(l10n),
+        ],
+      ),
     );
   }
 
