@@ -102,5 +102,34 @@ void main() {
 
     expect(called, isFalse);
   });
+
+  test('server all-modules grant opens and revoke closes all modules', () async {
+    final now = DateTime.utc(2026, 9, 1);
+    final controller = ModuleEntitlementController(
+      receiptStore: LocalStoreReceiptStore(),
+      clock: () => now,
+    );
+
+    await controller.reconcileServerGrant(
+      StoreReceiptRecord(
+        productId: 'bojairu.bundle.all_modules',
+        platform: 'server_grant',
+        purchaseTokenOrReceipt: 'server-grant:installation-1',
+        purchasedAt: now,
+        expiresAt: now.add(const Duration(days: 365)),
+        autoRenewing: false,
+      ),
+    );
+
+    for (final module in AppModuleId.values) {
+      expect(controller.stateOf(module), ModuleEntitlementState.activePaid);
+    }
+
+    await controller.reconcileServerGrant(null);
+
+    for (final module in AppModuleId.values) {
+      expect(controller.stateOf(module), ModuleEntitlementState.free);
+    }
+  });
   });
 }

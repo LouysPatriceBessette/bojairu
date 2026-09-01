@@ -25,6 +25,70 @@ void main() {
       expect(json['participant_installation_id'], 'inst-test-device');
     });
 
+    test(
+      'registerInstallationPushToken posts installation and FCM token',
+      () async {
+        String? capturedBody;
+        final client = EntitlementClient(
+          baseUrl: Uri.parse('http://127.0.0.1:8081'),
+          httpClient: MockClient((request) async {
+            capturedBody = request.body;
+            expect(request.url.path, '/v1/installations/push-token');
+            return http.Response('', 204);
+          }),
+        );
+        addTearDown(client.close);
+
+        await client.registerInstallationPushToken(
+          participantInstallationId: 'inst-test-device',
+          pushToken: 'fcm-token',
+        );
+
+        final json = jsonDecode(capturedBody!) as Map<String, dynamic>;
+        expect(json['participant_installation_id'], 'inst-test-device');
+        expect(json['provider'], 'fcm');
+        expect(json['push_token'], 'fcm-token');
+      },
+    );
+
+    test('listLicenses parses server grant', () async {
+      final client = EntitlementClient(
+        baseUrl: Uri.parse('http://127.0.0.1:8081'),
+        httpClient: MockClient((request) async {
+          expect(request.url.path, '/v1/licenses');
+          expect(
+            request.url.queryParameters['participant_installation_id'],
+            'inst-test-device',
+          );
+          return http.Response(
+            jsonEncode({
+              'receipts': [
+                {
+                  'product_id': 'bojairu.bundle.all_modules',
+                  'platform': 'server_grant',
+                  'purchase_token': 'server-grant:inst-test-device',
+                  'validation_state': 'valid',
+                  'granted_modules': ['housing', 'vehicle', 'vehicle-sharing'],
+                  'purchased_at': '2026-09-01T10:00:00Z',
+                  'expires_at': '2126-09-01T10:00:00Z',
+                  'auto_renewing': false,
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      addTearDown(client.close);
+
+      final rows = await client.listLicenses('inst-test-device');
+
+      expect(rows, hasLength(1));
+      expect(rows.single.platform, 'server_grant');
+      expect(rows.single.productId, 'bojairu.bundle.all_modules');
+      expect(rows.single.expiresAt, DateTime.utc(2126, 9, 1, 10));
+    });
+
     test('reportPlanRoster posts roster payload', () async {
       String? capturedBody;
       final client = EntitlementClient(

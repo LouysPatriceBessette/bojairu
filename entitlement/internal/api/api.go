@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/compartarenta/entitlement/internal/config"
 	"github.com/compartarenta/entitlement/internal/domain"
 	"github.com/compartarenta/entitlement/internal/license"
+	"github.com/compartarenta/entitlement/internal/push"
 	"github.com/compartarenta/entitlement/internal/store"
 	"github.com/compartarenta/entitlement/internal/version"
 )
@@ -21,6 +23,15 @@ type Server struct {
 	store    *store.Store
 	housing  *domain.Housing
 	verifier license.Verifier
+	push     licensePushSender
+}
+
+type licensePushSender interface {
+	SendLicenseChange(
+		context.Context,
+		string,
+		push.LicenseChange,
+	) error
 }
 
 func NewServer(cfg config.Config, st *store.Store) *Server {
@@ -42,14 +53,20 @@ func (s *Server) SetPlayVerifier(v license.Verifier) {
 	s.housing.SetPlayVerification(true)
 }
 
+func (s *Server) SetLicensePushSender(sender licensePushSender) {
+	s.push = sender
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/installations/register", s.handleRegisterInstallation)
+	mux.HandleFunc("/v1/installations/push-token", s.handleInstallationPushToken)
 	mux.HandleFunc("/v1/installations/migrate", s.handleMigrateInstallation)
 	mux.HandleFunc("/v1/housing/plan-roster", s.handlePlanRoster)
 	mux.HandleFunc("/v1/housing/license-status", s.handleLicenseStatus)
 	mux.HandleFunc("/v1/licenses/play-token", s.handlePlayToken)
 	mux.HandleFunc("/v1/licenses", s.handleListLicenses)
+	mux.HandleFunc("/v1/free-licenses", s.handleFreeLicenses)
 	mux.HandleFunc("/v1/housing/expense-decision", s.handleExpenseDecision)
 	mux.HandleFunc("/v1/housing/active-use", s.handleActiveUse)
 	mux.HandleFunc("/v1/introspect/envelope", s.handleIntrospectEnvelope)
@@ -62,6 +79,10 @@ func (s *Server) Handler() http.Handler {
 			return
 		}
 		if r.URL.Path == "/v1/installations/migrate" && !s.authorizeInternal(r) {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "missing or invalid internal token")
+			return
+		}
+		if r.URL.Path == "/v1/free-licenses" && !s.authorizeInternal(r) {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "missing or invalid internal token")
 			return
 		}
@@ -94,6 +115,53 @@ func (s *Server) handleRegisterInstallation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if err := s.housing.RegisterInstallation(r.Context(), id); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleInstallationPushToken(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "POST only")
+		return
+	}
+	var req struct {
+		ParticipantInstallationID string `json:"participant_installation_id"`
+		Provider                  string `json:"provider"`
+		PushToken                 string `json:"push_token"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	id, ok := validateID(
+		req.ParticipantInstallationID,
+		s.cfg.IDMinLen,
+		s.cfg.IDMaxLen,
+	)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_installation_id", "installation id invalid")
+		return
+	}
+	if req.Provider != "fcm" {
+		writeError(w, http.StatusBadRequest, "invalid_push_provider", "provider must be fcm")
+		return
+	}
+	req.PushToken = strings.TrimSpace(req.PushToken)
+	if req.PushToken == "" || len(req.PushToken) > 512 {
+		writeError(w, http.StatusBadRequest, "invalid_push_token", "push token invalid")
+		return
+	}
+	if err := s.store.UpsertInstallationPushToken(
+		r.Context(),
+		id,
+		req.Provider,
+		req.PushToken,
+		time.Now().UTC(),
+	); err != nil {
 		writeInternal(w, err)
 		return
 	}
@@ -436,7 +504,191 @@ func (s *Server) handleListLicenses(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, item)
 	}
+	free, err := s.store.FreeLicenseForInstallation(r.Context(), pid)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if free != nil && free.ExpiresAt.After(time.Now().UTC()) {
+		items = append(items, map[string]any{
+			"product_id":         license.ProductAllModules,
+			"platform":           license.PlatformServerGrant,
+			"purchase_token":     serverGrantToken(pid),
+			"purchased_at":       free.GrantedAt.UTC().Format(time.RFC3339Nano),
+			"expires_at":         free.ExpiresAt.UTC().Format(time.RFC3339Nano),
+			"validation_state":   license.ValidationValid,
+			"granted_modules":    []string{license.ModuleHousing, license.ModuleVehicle, license.ModuleVehicleSharing},
+			"subscription_state": license.SubscriptionStateActive,
+			"auto_renewing":      false,
+		})
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"receipts": items})
+}
+
+func (s *Server) handleFreeLicenses(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.handleListFreeLicenses(w, r)
+	case http.MethodPost:
+		s.handleSetFreeLicense(w, r)
+	case http.MethodDelete:
+		s.handleDeleteFreeLicense(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "GET, POST, or DELETE only")
+	}
+}
+
+func (s *Server) handleListFreeLicenses(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.store.ListFreeLicenses(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	writer := csv.NewWriter(w)
+	if err := writer.Write([]string{"Nom", "InstallationId"}); err != nil {
+		return
+	}
+	for _, row := range rows {
+		if err := writer.Write([]string{row.UserName, row.InstallationID}); err != nil {
+			return
+		}
+	}
+	writer.Flush()
+}
+
+func (s *Server) handleSetFreeLicense(w http.ResponseWriter, r *http.Request) {
+	if s.push == nil {
+		writeError(w, http.StatusServiceUnavailable, "push_unconfigured", "FCM sender not configured")
+		return
+	}
+	var req struct {
+		ParticipantInstallationID string `json:"participant_installation_id"`
+		UserName                  string `json:"free_user_name"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	id, ok := validateID(
+		req.ParticipantInstallationID,
+		s.cfg.IDMinLen,
+		s.cfg.IDMaxLen,
+	)
+	name := strings.TrimSpace(req.UserName)
+	if !ok || name == "" || len(name) > 200 {
+		writeError(w, http.StatusBadRequest, "invalid_request", "installation id and free user name required")
+		return
+	}
+	grantedAt := time.Now().UTC()
+	expiresAt := grantedAt.AddDate(100, 0, 0)
+	free, err := s.store.SetFreeLicense(
+		r.Context(),
+		id,
+		name,
+		grantedAt,
+		expiresAt,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrPaidLicenseStillValid):
+			writeError(w, http.StatusConflict, "paid_license_still_valid", err.Error())
+		case errors.Is(err, store.ErrFreeLicenseExists):
+			writeError(w, http.StatusConflict, "free_license_exists", err.Error())
+		case errors.Is(err, store.ErrInstallationNotFound):
+			writeError(w, http.StatusNotFound, "installation_not_found", err.Error())
+		default:
+			writeInternal(w, err)
+		}
+		return
+	}
+	if free.PushProvider != "fcm" || free.PushToken == "" {
+		_ = s.store.ClearFreeLicense(r.Context(), id)
+		writeError(w, http.StatusConflict, "push_token_missing", "installation has no registered FCM token")
+		return
+	}
+	change := push.LicenseChange{
+		Action:         "grant",
+		InstallationID: id,
+		ProductID:      license.ProductAllModules,
+		Platform:       license.PlatformServerGrant,
+		PurchaseToken:  serverGrantToken(id),
+		PurchasedAt:    grantedAt,
+		ExpiresAt:      expiresAt,
+	}
+	if err := s.push.SendLicenseChange(
+		r.Context(),
+		free.PushToken,
+		change,
+	); err != nil {
+		_ = s.store.ClearFreeLicense(r.Context(), id)
+		writeError(w, http.StatusBadGateway, "push_failed", err.Error())
+		return
+	}
+	if err := s.housing.ReprojectInstallationLicense(r.Context(), id, false); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"participant_installation_id": id,
+		"free_user_name":              name,
+		"expires_at":                  expiresAt.Format(time.RFC3339Nano),
+	})
+}
+
+func (s *Server) handleDeleteFreeLicense(w http.ResponseWriter, r *http.Request) {
+	if s.push == nil {
+		writeError(w, http.StatusServiceUnavailable, "push_unconfigured", "FCM sender not configured")
+		return
+	}
+	id, ok := validateID(
+		r.URL.Query().Get("participant_installation_id"),
+		s.cfg.IDMinLen,
+		s.cfg.IDMaxLen,
+	)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_installation_id", "installation id invalid")
+		return
+	}
+	free, err := s.store.FreeLicenseForInstallation(r.Context(), id)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if free == nil {
+		writeError(w, http.StatusNotFound, "free_license_not_found", "free license not found")
+		return
+	}
+	if free.PushProvider != "fcm" || free.PushToken == "" {
+		writeError(w, http.StatusConflict, "push_token_missing", "installation has no registered FCM token")
+		return
+	}
+	if err := s.push.SendLicenseChange(
+		r.Context(),
+		free.PushToken,
+		push.LicenseChange{
+			Action:         "revoke",
+			InstallationID: id,
+			ProductID:      license.ProductAllModules,
+			Platform:       license.PlatformServerGrant,
+			PurchaseToken:  serverGrantToken(id),
+		},
+	); err != nil {
+		writeError(w, http.StatusBadGateway, "push_failed", err.Error())
+		return
+	}
+	if err := s.store.ClearFreeLicense(r.Context(), id); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if err := s.housing.ReprojectInstallationLicense(r.Context(), id, true); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func serverGrantToken(installationID string) string {
+	return "server-grant:" + installationID
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {

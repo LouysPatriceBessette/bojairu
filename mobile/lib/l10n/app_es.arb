@@ -41,6 +41,7 @@
   "settingsAppVersionTitle": "Versión de la aplicación",
   "settingsEnvironmentTitle": "Entorno",
   "settingsApiBaseUrlTitle": "URL base de la API",
+  "settingsInstallationIdTitle": "ID de instalación",
   "settingsNotificationsTitle": "Notificaciones",
   "settingsNotificationsSubtitle": "Permisos, categorías y sonido",
   "settingsUnitsTitle": "Unidades",

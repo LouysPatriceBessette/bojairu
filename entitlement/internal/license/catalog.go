@@ -7,7 +7,9 @@ const (
 	ModuleVehicle        = "vehicle"
 	ModuleVehicleSharing = "vehicle-sharing"
 
-	PlatformGooglePlay = "google_play"
+	PlatformGooglePlay  = "google_play"
+	PlatformServerGrant = "server_grant"
+	ProductAllModules   = "bojairu.bundle.all_modules"
 )
 
 // Product describes one sellable Play subscription (standalone or bundle).
@@ -37,7 +39,7 @@ var playCatalog = []Product{
 		GrantedModules: []string{ModuleHousing, ModuleVehicle},
 	},
 	{
-		ProductID:      "bojairu.bundle.all_modules",
+		ProductID:      ProductAllModules,
 		BundleID:       "all_modules",
 		GrantedModules: []string{ModuleHousing, ModuleVehicle, ModuleVehicleSharing},
 	},

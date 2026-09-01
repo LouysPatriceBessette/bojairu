@@ -322,6 +322,12 @@ abstract class AppLocalizations {
   /// **'API base URL'**
   String get settingsApiBaseUrlTitle;
 
+  /// No description provided for @settingsInstallationIdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installation ID'**
+  String get settingsInstallationIdTitle;
+
   /// No description provided for @settingsNotificationsTitle.
   ///
   /// In en, this message translates to:

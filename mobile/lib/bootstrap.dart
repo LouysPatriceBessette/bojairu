@@ -200,6 +200,7 @@ Future<AppPreferences> completeAppStartup({
       EntitlementCoordinator.install(coordinator);
       moduleEntitlement.playTokenUploader = coordinator.uploadGooglePlayReceipt;
       unawaited(coordinator.ensureRegistered());
+      unawaited(coordinator.syncServerLicenses());
       unawaited(moduleEntitlement.uploadPendingPlayTokens());
     }
 
@@ -223,7 +224,11 @@ Future<AppPreferences> completeAppStartup({
 
   final sandboxActive = SandboxMode.isActive(prefs);
   if (!sandboxActive) {
-    unawaited(_initializePushIfAlreadyAuthorized());
+    if (config.entitlementEnabled) {
+      unawaited(PushNotificationService.initialize());
+    } else {
+      unawaited(_initializePushIfAlreadyAuthorized());
+    }
     if (!kIsWeb) {
       unawaited(
         scheduleClosedAppPushKeepAlive().catchError((

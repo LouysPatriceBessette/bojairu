@@ -19,6 +19,7 @@ type Config struct {
 	IDMaxLen                   int
 	PlayPackageName            string
 	PlayServiceAccountJSONPath string
+	FCMServiceAccountJSONPath  string
 }
 
 func Load() (Config, error) {
@@ -34,6 +35,7 @@ func Load() (Config, error) {
 		IDMaxLen:                   64,
 		PlayPackageName:            env("PLAY_PACKAGE_NAME", "app.incoherences.bojairu"),
 		PlayServiceAccountJSONPath: strings.TrimSpace(os.Getenv("PLAY_SERVICE_ACCOUNT_JSON_PATH")),
+		FCMServiceAccountJSONPath:  strings.TrimSpace(os.Getenv("FCM_SERVICE_ACCOUNT_JSON_PATH")),
 	}
 	if c.DatabaseURL == "" {
 		errs = append(errs, errors.New("DATABASE_URL is required"))

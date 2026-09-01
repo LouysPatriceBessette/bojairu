@@ -121,6 +121,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsApiBaseUrlTitle => 'API base URL';
 
   @override
+  String get settingsInstallationIdTitle => 'Installation ID';
+
+  @override
   String get settingsNotificationsTitle => 'Notifications';
 
   @override

@@ -5,8 +5,10 @@ import '../prefs/app_preferences.dart';
 import 'entitlement_client.dart';
 import 'entitlement_gate.dart';
 import 'entitlement_plan_id.dart';
+import 'module_entitlement_controller.dart';
 import 'participant_installation_store.dart';
 import 'plan_participant_installation_registry.dart';
+import 'server_grant_receipt.dart';
 import 'store_receipt_record.dart';
 
 /// Maps import tails (`self`, `p0`, …) to full participant ids used by the
@@ -67,6 +69,61 @@ class EntitlementCoordinator {
     } on Object catch (e, st) {
       debugPrint('entitlement: register failed: $e\n$st');
     }
+  }
+
+  Future<void> registerPushToken(String pushToken) async {
+    if (!httpEnabled || pushToken.isEmpty) return;
+    try {
+      final id = await _installationStore.loadOrCreateId();
+      await _client!.registerInstallationPushToken(
+        participantInstallationId: id,
+        pushToken: pushToken,
+      );
+    } on Object catch (e, st) {
+      debugPrint('entitlement: push-token register failed: $e\n$st');
+    }
+  }
+
+  Future<bool> syncServerLicenses() async {
+    if (!httpEnabled) return false;
+    try {
+      final id = await _installationStore.loadOrCreateId();
+      final rows = await _client!.listLicenses(id);
+      StoreReceiptRecord? grant;
+      final now = DateTime.now().toUtc();
+      for (final row in rows) {
+        final candidate = storeReceiptFromServerGrant(row, now: now);
+        if (candidate == null) continue;
+        if (grant == null || candidate.expiresAt!.isAfter(grant.expiresAt!)) {
+          grant = candidate;
+        }
+      }
+      final controller = ModuleEntitlementController.maybeInstance;
+      if (controller == null) return false;
+      await controller.reconcileServerGrant(grant);
+      return true;
+    } on Object catch (e, st) {
+      debugPrint('entitlement: license sync failed: $e\n$st');
+      return false;
+    }
+  }
+
+  Future<bool> applyLicensePush(Map<String, dynamic> data) async {
+    final controller = ModuleEntitlementController.maybeInstance;
+    if (controller == null) return false;
+    final id = await _installationStore.loadOrCreateId();
+    if (isServerGrantRevokePush(data, installationId: id)) {
+      await controller.reconcileServerGrant(null);
+      return true;
+    }
+    final grant = storeReceiptFromLicensePush(
+      data,
+      installationId: id,
+      now: DateTime.now().toUtc(),
+    );
+    if (grant == null) return false;
+    await controller.reconcileServerGrant(grant);
+    return true;
   }
 
   Future<void> bindSelfParticipant({

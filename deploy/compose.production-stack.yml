@@ -96,6 +96,7 @@ services:
       SHUTDOWN_TIMEOUT: ${ENTITLEMENT_SHUTDOWN_TIMEOUT:-30s}
       PLAY_PACKAGE_NAME: ${PLAY_PACKAGE_NAME:-app.incoherences.bojairu}
       PLAY_SERVICE_ACCOUNT_JSON_PATH: ${PLAY_SERVICE_ACCOUNT_JSON_PATH:-}
+      FCM_SERVICE_ACCOUNT_JSON_PATH: ${FCM_SERVICE_ACCOUNT_JSON_PATH:-}
     read_only: true
     cap_drop: ["ALL"]
     security_opt:

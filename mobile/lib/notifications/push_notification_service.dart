@@ -11,6 +11,8 @@ import '../data/supported_time_zones.dart';
 import '../navigation/app_navigation.dart';
 import '../db/app_database.dart';
 import '../db/repositories/vehicles_repository.dart';
+import '../entitlement/entitlement_coordinator.dart';
+import '../entitlement/server_grant_receipt.dart';
 import '../housing/amendment/housing_amendment_summary.dart';
 import '../housing/housing_navigation_intent.dart';
 import '../housing/reminders/payment_reminder_journal_id.dart';
@@ -154,8 +156,21 @@ class PushNotificationService {
       unawaited(
         ClosedAppPushRegistrationService.maybeInstance?.onTokenRefreshed(token),
       );
+      unawaited(EntitlementCoordinator.maybeInstance?.registerPushToken(token));
     });
 
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        unawaited(
+          EntitlementCoordinator.maybeInstance?.registerPushToken(token),
+        );
+      }
+    } catch (e, st) {
+      debugPrint(
+        'PushNotificationService: entitlement token register failed: $e\n$st',
+      );
+    }
     unawaited(ClosedAppPushRegistrationService.maybeInstance?.sync());
   }
 
@@ -439,6 +454,14 @@ class PushNotificationService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
+    if (isLicenseReceiptChangedRemoteMessage(message)) {
+      unawaited(
+        EntitlementCoordinator.maybeInstance?.applyLicensePush(
+          Map<String, dynamic>.from(message.data),
+        ),
+      );
+      return;
+    }
     if (isWakeForInboxRemoteMessage(message)) {
       unawaited(_handleWakeForegroundMessage());
       return;
@@ -458,6 +481,10 @@ class PushNotificationService {
   /// Data-only wake from the relay (`v` is ignored for forward compatibility).
   static bool isWakeForInboxRemoteMessage(RemoteMessage message) {
     return message.data['kind'] == 'wake_for_inbox';
+  }
+
+  static bool isLicenseReceiptChangedRemoteMessage(RemoteMessage message) {
+    return message.data['kind'] == kLicenseReceiptChangedKind;
   }
 
   /// Operator VPS notice (`kind=operator_notice`). Not an inbox wake.

@@ -17,7 +17,12 @@ import (
 	"github.com/compartarenta/entitlement/internal/version"
 )
 
-var ErrOldInstallationNotFound = errors.New("old installation not found for plan")
+var (
+	ErrOldInstallationNotFound = errors.New("old installation not found for plan")
+	ErrInstallationNotFound    = errors.New("installation not found")
+	ErrFreeLicenseExists       = errors.New("free license already exists")
+	ErrPaidLicenseStillValid   = errors.New("Failed adding a free licence because a paid one is still valid.")
+)
 
 //go:embed schema/*.sql
 var schemaFS embed.FS
@@ -54,6 +59,15 @@ type PlayReceipt struct {
 	ValidatedAt       time.Time
 	GrantedModules    []string
 	SubscriptionState string
+}
+
+type FreeLicense struct {
+	InstallationID string
+	UserName       string
+	GrantedAt      time.Time
+	ExpiresAt      time.Time
+	PushProvider   string
+	PushToken      string
 }
 
 func New(ctx context.Context, dsn string) (*Store, error) {
@@ -93,6 +107,188 @@ func (s *Store) RegisterInstallation(ctx context.Context, id string) error {
 		VALUES ($1)
 		ON CONFLICT (installation_id) DO NOTHING`, id)
 	return err
+}
+
+func (s *Store) UpsertInstallationPushToken(
+	ctx context.Context,
+	id, provider, token string,
+	at time.Time,
+) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO installations (
+			installation_id, push_provider, push_token, push_token_updated_at
+		) VALUES ($1,$2,$3,$4)
+		ON CONFLICT (installation_id) DO UPDATE SET
+			push_provider = EXCLUDED.push_provider,
+			push_token = EXCLUDED.push_token,
+			push_token_updated_at = EXCLUDED.push_token_updated_at`,
+		id, provider, token, at)
+	return err
+}
+
+func (s *Store) SetFreeLicense(
+	ctx context.Context,
+	installationID, userName string,
+	grantedAt, expiresAt time.Time,
+) (*FreeLicense, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	var existingName *string
+	var provider, token *string
+	err = tx.QueryRow(ctx, `
+		SELECT free_user_name, push_provider, push_token
+		FROM installations
+		WHERE installation_id = $1
+		FOR UPDATE`, installationID).Scan(&existingName, &provider, &token)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrInstallationNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if existingName != nil {
+		return nil, ErrFreeLicenseExists
+	}
+
+	rows, err := tx.Query(ctx, `
+		SELECT COALESCE(subscription_state, ''), expires_at
+		FROM license_receipts
+		WHERE installation_id = $1
+		  AND platform = 'google_play'`, installationID)
+	if err != nil {
+		return nil, err
+	}
+	paidStillValid := false
+	for rows.Next() {
+		var state string
+		var expires *time.Time
+		if err := rows.Scan(&state, &expires); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		if paidReceiptBlocksFreeLicense(state, expires, grantedAt) {
+			paidStillValid = true
+			break
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if paidStillValid {
+		return nil, ErrPaidLicenseStillValid
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE installations
+		SET free_user_name = $2,
+		    free_license_granted_at = $3,
+		    free_license_expires_at = $4
+		WHERE installation_id = $1`,
+		installationID, userName, grantedAt, expiresAt)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	out := &FreeLicense{
+		InstallationID: installationID,
+		UserName:       userName,
+		GrantedAt:      grantedAt,
+		ExpiresAt:      expiresAt,
+	}
+	if provider != nil {
+		out.PushProvider = *provider
+	}
+	if token != nil {
+		out.PushToken = *token
+	}
+	return out, nil
+}
+
+func (s *Store) FreeLicenseForInstallation(
+	ctx context.Context,
+	installationID string,
+) (*FreeLicense, error) {
+	var row FreeLicense
+	err := s.pool.QueryRow(ctx, `
+		SELECT installation_id, free_user_name, free_license_granted_at,
+		       free_license_expires_at, COALESCE(push_provider, ''),
+		       COALESCE(push_token, '')
+		FROM installations
+		WHERE installation_id = $1
+		  AND free_user_name IS NOT NULL
+		  AND free_license_granted_at IS NOT NULL
+		  AND free_license_expires_at IS NOT NULL`,
+		installationID).Scan(
+		&row.InstallationID,
+		&row.UserName,
+		&row.GrantedAt,
+		&row.ExpiresAt,
+		&row.PushProvider,
+		&row.PushToken,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+func (s *Store) ClearFreeLicense(ctx context.Context, installationID string) error {
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE installations
+		SET free_user_name = NULL,
+		    free_license_granted_at = NULL,
+		    free_license_expires_at = NULL
+		WHERE installation_id = $1
+		  AND free_user_name IS NOT NULL`,
+		installationID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrInstallationNotFound
+	}
+	return nil
+}
+
+func (s *Store) ListFreeLicenses(ctx context.Context) ([]FreeLicense, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT installation_id, free_user_name, free_license_granted_at,
+		       free_license_expires_at, COALESCE(push_provider, ''),
+		       COALESCE(push_token, '')
+		FROM installations
+		WHERE free_user_name IS NOT NULL
+		  AND free_license_expires_at > now()
+		ORDER BY lower(free_user_name), free_user_name, installation_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []FreeLicense
+	for rows.Next() {
+		var row FreeLicense
+		if err := rows.Scan(
+			&row.InstallationID,
+			&row.UserName,
+			&row.GrantedAt,
+			&row.ExpiresAt,
+			&row.PushProvider,
+			&row.PushToken,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) MarkTrialConsumed(ctx context.Context, ids []string, at time.Time) error {
@@ -323,6 +519,18 @@ func (s *Store) PlayReceiptsForInstallation(ctx context.Context, installationID 
 	return out, rows.Err()
 }
 
+func paidReceiptBlocksFreeLicense(
+	subscriptionState string,
+	expiresAt *time.Time,
+	now time.Time,
+) bool {
+	switch subscriptionState {
+	case "SUBSCRIPTION_STATE_CANCELED", "SUBSCRIPTION_STATE_EXPIRED":
+		return false
+	}
+	return expiresAt == nil || expiresAt.After(now)
+}
+
 func (s *Store) PlansForInstallation(ctx context.Context, installationID string) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT DISTINCT r.plan_id
@@ -406,7 +614,10 @@ func (s *Store) MigrateInstallation(ctx context.Context, planID, oldID, newID st
 	_, err = tx.Exec(ctx, `
 		UPDATE installations AS new
 		SET trial_housing_consumed = new.trial_housing_consumed OR old.trial_housing_consumed,
-		    trial_housing_consumed_at = COALESCE(new.trial_housing_consumed_at, old.trial_housing_consumed_at)
+		    trial_housing_consumed_at = COALESCE(new.trial_housing_consumed_at, old.trial_housing_consumed_at),
+		    free_user_name = COALESCE(new.free_user_name, old.free_user_name),
+		    free_license_granted_at = COALESCE(new.free_license_granted_at, old.free_license_granted_at),
+		    free_license_expires_at = COALESCE(new.free_license_expires_at, old.free_license_expires_at)
 		FROM installations AS old
 		WHERE new.installation_id = $1 AND old.installation_id = $2`,
 		newID, oldID)

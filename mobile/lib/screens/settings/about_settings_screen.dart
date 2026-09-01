@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../config/app_config.dart';
+import '../../entitlement/participant_installation_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/async_state.dart';
 import '../../widgets/screen_body_padding.dart';
 
 class AboutSettingsScreen extends StatefulWidget {
-  const AboutSettingsScreen({super.key, required this.config});
+  const AboutSettingsScreen({
+    super.key,
+    required this.config,
+    this.installationId,
+  });
 
   final AppConfig config;
+  final Future<String>? installationId;
 
   @override
   State<AboutSettingsScreen> createState() => _AboutSettingsScreenState();
@@ -17,6 +23,9 @@ class AboutSettingsScreen extends StatefulWidget {
 
 class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
   late Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
+  late final Future<String> _installationId =
+      widget.installationId ??
+      ParticipantInstallationStore.secureStorage().loadOrCreateId();
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +43,18 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
           ListTile(
             title: Text(l10n.settingsApiBaseUrlTitle),
             subtitle: Text(widget.config.apiBaseUrl.toString()),
+          ),
+          FutureBuilder(
+            future: _installationId,
+            builder: (context, snapshot) => ListTile(
+              title: Text(l10n.settingsInstallationIdTitle),
+              subtitle: Text(
+                snapshot.connectionState == ConnectionState.done &&
+                        snapshot.hasData
+                    ? snapshot.data!
+                    : l10n.commonNotSet,
+              ),
+            ),
           ),
           FutureBuilder(
             future: _packageInfo,

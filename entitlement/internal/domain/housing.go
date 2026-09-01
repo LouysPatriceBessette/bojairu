@@ -159,10 +159,26 @@ func (h *Housing) ApplyPlayResult(ctx context.Context, installationID string, re
 	if err := h.st.UpsertPlayReceipt(ctx, rec); err != nil {
 		return err
 	}
-	return h.reprojectInstallationHousing(ctx, installationID)
+	return h.reprojectInstallationHousing(ctx, installationID, false)
 }
 
-func (h *Housing) reprojectInstallationHousing(ctx context.Context, installationID string) error {
+func (h *Housing) ReprojectInstallationLicense(
+	ctx context.Context,
+	installationID string,
+	revokeImmediately bool,
+) error {
+	return h.reprojectInstallationHousing(
+		ctx,
+		installationID,
+		revokeImmediately,
+	)
+}
+
+func (h *Housing) reprojectInstallationHousing(
+	ctx context.Context,
+	installationID string,
+	revokeImmediately bool,
+) error {
 	rows, err := h.st.PlayReceiptsForInstallation(ctx, installationID)
 	if err != nil {
 		return err
@@ -178,6 +194,24 @@ func (h *Housing) reprojectInstallationHousing(ctx context.Context, installation
 			SubscriptionState: r.SubscriptionState,
 		})
 	}
+	free, err := h.st.FreeLicenseForInstallation(ctx, installationID)
+	if err != nil {
+		return err
+	}
+	if free != nil && free.ExpiresAt.After(h.now()) {
+		results = append(results, license.Result{
+			ValidationState: license.ValidationValid,
+			Active:          true,
+			ProductID:       license.ProductAllModules,
+			GrantedModules: []string{
+				license.ModuleHousing,
+				license.ModuleVehicle,
+				license.ModuleVehicleSharing,
+			},
+			ExpiresAt:         &free.ExpiresAt,
+			SubscriptionState: license.SubscriptionStateActive,
+		})
+	}
 	paid, expires := license.HousingPaidFromResults(results, h.now())
 	state := LicenseUnpaid
 	if paid {
@@ -190,6 +224,20 @@ func (h *Housing) reprojectInstallationHousing(ctx context.Context, installation
 	for _, planID := range plans {
 		if err := h.st.UpsertLicenseStatus(ctx, planID, installationID, state, expires, h.now()); err != nil {
 			return err
+		}
+		if revokeImmediately && !paid {
+			plan, err := h.st.GetPlan(ctx, planID)
+			if err != nil {
+				return err
+			}
+			if plan != nil && plan.ActiveUseStartedAt != nil {
+				plan.LifecycleState = StateDelinquentReadonly
+				plan.UpdatedAt = h.now()
+				if err := h.st.UpsertPlan(ctx, *plan); err != nil {
+					return err
+				}
+				continue
+			}
 		}
 		if err := h.RefreshPlanLifecycle(ctx, planID); err != nil {
 			return err

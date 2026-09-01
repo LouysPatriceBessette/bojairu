@@ -6,6 +6,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../entitlement/app_module_id.dart';
+import '../../entitlement/entitlement_coordinator.dart';
 import '../../entitlement/module_entitlement_controller.dart';
 import '../../entitlement/store_billing_service.dart';
 import '../../entitlement/store_product_catalog.dart';
@@ -72,6 +73,7 @@ class _LicensesScreenState extends State<LicensesScreen>
     final billing = _billing;
     if (billing == null) return;
     if (mounted) setState(() => _loading = true);
+    await EntitlementCoordinator.maybeInstance?.syncServerLicenses();
     final ok = await billing.refreshFromPlayStore();
     if (!mounted) return;
     setState(() {
@@ -88,6 +90,7 @@ class _LicensesScreenState extends State<LicensesScreen>
       return;
     }
     await entitlement.load();
+    await EntitlementCoordinator.maybeInstance?.syncServerLicenses();
     final prefs = await AppPreferences.load();
 
     var billing = StoreBillingService.maybeInstance;
@@ -610,7 +613,10 @@ class _LicensesScreenState extends State<LicensesScreen>
         ? ''
         : formatSubscriptionPriceWithPeriod(product: details, l10n: l10n);
     final status = _statusLine(kind, receipt, l10n);
-    final actionButton = kind == SubscriptionProductLineKind.autoRenewing
+    final isGooglePlayReceipt = receipt?.platform == 'google_play';
+    final actionButton = !isGooglePlayReceipt
+        ? null
+        : kind == SubscriptionProductLineKind.autoRenewing
         ? FilledButton(
             onPressed: _busy
                 ? null

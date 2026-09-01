@@ -7,6 +7,7 @@ import 'module_entitlement_evaluator.dart';
 import 'module_entitlement_state.dart';
 import 'receipt_play_reconcile.dart';
 import 'receipt_to_candidates.dart';
+import 'server_grant_receipt.dart';
 import 'store_receipt_record.dart';
 
 /// Uploads a Google Play receipt and returns the server expiry when known.
@@ -135,6 +136,15 @@ class ModuleEntitlementController extends ChangeNotifier {
     await _receiptStore.saveAll(rows);
     _receipts = List<StoreReceiptRecord>.from(rows);
     _recompute();
+  }
+
+  Future<void> reconcileServerGrant(StoreReceiptRecord? serverGrant) async {
+    await replaceReceipts(
+      reconcileServerGrantReceipts(
+        local: _receipts,
+        serverGrant: serverGrant,
+      ),
+    );
   }
 
   /// After a successful Play purchase query: keep only Google Play rows whose

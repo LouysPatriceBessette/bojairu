@@ -13,6 +13,7 @@ import (
 	"github.com/compartarenta/entitlement/internal/api"
 	"github.com/compartarenta/entitlement/internal/config"
 	"github.com/compartarenta/entitlement/internal/license"
+	"github.com/compartarenta/entitlement/internal/push"
 	"github.com/compartarenta/entitlement/internal/store"
 	"github.com/compartarenta/entitlement/internal/version"
 )
@@ -47,6 +48,15 @@ func run() error {
 			return fmt.Errorf("play verifier: %w", err)
 		}
 		srv.SetPlayVerifier(play)
+	}
+	if cfg.FCMServiceAccountJSONPath != "" {
+		fcm, err := push.NewFCMFromServiceAccountJSON(
+			cfg.FCMServiceAccountJSONPath,
+		)
+		if err != nil {
+			return fmt.Errorf("FCM sender: %w", err)
+		}
+		srv.SetLicensePushSender(fcm)
 	}
 	server := &http.Server{
 		Addr:              cfg.ListenAddr,

@@ -34,6 +34,60 @@ class EntitlementClient {
     }
   }
 
+  Future<void> registerInstallationPushToken({
+    required String participantInstallationId,
+    required String pushToken,
+    String provider = 'fcm',
+  }) async {
+    final uri = baseUrl.resolve('/v1/installations/push-token');
+    final res = await _client
+        .post(
+          uri,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'participant_installation_id': participantInstallationId,
+            'provider': provider,
+            'push_token': pushToken,
+          }),
+        )
+        .timeout(_timeout);
+    if (res.statusCode != 204) {
+      throw EntitlementClientError._fromResponse(
+        'installations_push_token',
+        res,
+      );
+    }
+  }
+
+  Future<List<ServerLicenseReceipt>> listLicenses(
+    String participantInstallationId,
+  ) async {
+    final uri = baseUrl
+        .resolve('/v1/licenses')
+        .replace(
+          queryParameters: {
+            'participant_installation_id': participantInstallationId,
+          },
+        );
+    final res = await _client.get(uri).timeout(_timeout);
+    if (res.statusCode != 200) {
+      throw EntitlementClientError._fromResponse('licenses_list', res);
+    }
+    final decoded = jsonDecode(res.body);
+    if (decoded is! Map) {
+      throw const FormatException('licenses response is not a JSON object');
+    }
+    final rows = decoded['receipts'];
+    if (rows is! List) return const <ServerLicenseReceipt>[];
+    return rows
+        .whereType<Map>()
+        .map(
+          (row) =>
+              ServerLicenseReceipt.fromJson(Map<String, dynamic>.from(row)),
+        )
+        .toList(growable: false);
+  }
+
   Future<void> reportPlanRoster({
     required String planId,
     required String revisionId,
@@ -119,6 +173,50 @@ class EntitlementClient {
       throw EntitlementClientError._fromResponse('licenses_play_token', res);
     }
     return PlayTokenVerification.fromResponseBody(res.body);
+  }
+}
+
+class ServerLicenseReceipt {
+  const ServerLicenseReceipt({
+    required this.productId,
+    required this.platform,
+    required this.purchaseToken,
+    required this.validationState,
+    required this.grantedModules,
+    required this.autoRenewing,
+    this.purchasedAt,
+    this.expiresAt,
+  });
+
+  final String productId;
+  final String platform;
+  final String purchaseToken;
+  final String validationState;
+  final List<String> grantedModules;
+  final bool autoRenewing;
+  final DateTime? purchasedAt;
+  final DateTime? expiresAt;
+
+  factory ServerLicenseReceipt.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(Object? raw) {
+      if (raw is! String || raw.isEmpty) return null;
+      return DateTime.tryParse(raw)?.toUtc();
+    }
+
+    final modules = <String>[
+      for (final module in json['granted_modules'] as List? ?? const [])
+        if (module is String && module.isNotEmpty) module,
+    ];
+    return ServerLicenseReceipt(
+      productId: json['product_id'] as String? ?? '',
+      platform: json['platform'] as String? ?? '',
+      purchaseToken: json['purchase_token'] as String? ?? '',
+      validationState: json['validation_state'] as String? ?? '',
+      grantedModules: modules,
+      autoRenewing: json['auto_renewing'] as bool? ?? false,
+      purchasedAt: parseDate(json['purchased_at']),
+      expiresAt: parseDate(json['expires_at']),
+    );
   }
 }
 

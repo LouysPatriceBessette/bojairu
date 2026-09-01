@@ -9,6 +9,7 @@ import 'app_root_navigator.dart';
 import 'config/app_config.dart';
 import 'db/app_database.dart';
 import 'db/repositories/contacts_repository.dart';
+import 'entitlement/entitlement_coordinator.dart';
 import 'prefs/app_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
@@ -148,6 +149,7 @@ class _BojairuAppState extends State<BojairuApp>
       unawaited(
         ClosedAppPushRegistrationService.maybeInstance?.syncIfNeeded(),
       );
+      unawaited(EntitlementCoordinator.maybeInstance?.syncServerLicenses());
     }
   }
 

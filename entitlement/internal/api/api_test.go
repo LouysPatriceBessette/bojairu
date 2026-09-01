@@ -43,6 +43,25 @@ func TestMigrateInstallationUnauthorizedWithoutToken(t *testing.T) {
 	}
 }
 
+func TestFreeLicensesUnauthorizedWithoutToken(t *testing.T) {
+	cfg := config.Config{InternalToken: "secret", IDMinLen: 8, IDMaxLen: 64}
+	s := NewServer(cfg, nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/free-licenses", nil)
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d", rr.Code)
+	}
+}
+
+func TestServerGrantTokenIsStablePerInstallation(t *testing.T) {
+	const installationID = "inst-alpha-device-001"
+	want := "server-grant:" + installationID
+	if got := serverGrantToken(installationID); got != want {
+		t.Fatalf("got=%q want=%q", got, want)
+	}
+}
+
 func TestMigrateInstallationRejectsInvalidEnvelopeKind(t *testing.T) {
 	cfg := config.Config{InternalToken: "secret", IDMinLen: 8, IDMaxLen: 64}
 	s := NewServer(cfg, nil)
