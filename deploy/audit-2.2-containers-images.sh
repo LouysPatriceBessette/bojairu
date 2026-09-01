@@ -7,7 +7,7 @@ set -uo pipefail
 DEPLOY_ROOT="${DEPLOY_ROOT:-/srv/compartarenta-relay}"
 STACK_COMPOSE="${STACK_COMPOSE:-source/deploy/compose.production-stack.yml}"
 SECRETS_COMPOSE="${SECRETS_COMPOSE:-docker-compose.secrets.yml}"
-RELEASE_TAG="${RELEASE_TAG:-v0.4.0}"
+RELEASE_TAG="${RELEASE_TAG:-}"
 RELAY_DIGEST="${RELAY_DIGEST:-}"
 ENTITLEMENT_DIGEST="${ENTITLEMENT_DIGEST:-}"
 
@@ -16,6 +16,7 @@ fail() {
   exit 1
 }
 
+[[ -n "$RELEASE_TAG" ]] || fail
 [[ -n "$RELAY_DIGEST" && -n "$ENTITLEMENT_DIGEST" ]] || fail
 
 cd "$DEPLOY_ROOT" || fail

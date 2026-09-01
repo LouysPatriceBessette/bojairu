@@ -9,10 +9,14 @@
 # Deploy from /srv/compartarenta-relay:
 #
 #   docker compose --env-file env/.env \
-#     -f source/deploy/compose.production-stack.yml build
+#     -f source/deploy/compose.production-stack.yml \
+#     -f docker-compose.secrets.yml \
+#     build
 #
 #   docker compose --env-file env/.env \
-#     -f source/deploy/compose.production-stack.yml up -d
+#     -f source/deploy/compose.production-stack.yml \
+#     -f docker-compose.secrets.yml \
+#     up -d
 #
 # Invariants:
 #   * Relay Postgres volume name `pgdata` matches relay/compose.yml so an

@@ -27,19 +27,21 @@ after step 1.1):
 ```bash
 DEPLOY_ROOT=/srv/compartarenta-relay
 PUBLIC_HOST=sync.incoherences.org
+LICENSE_HOST=license.incoherences.org
 STACK_COMPOSE=source/deploy/compose.production-stack.yml
 SECRETS_COMPOSE=docker-compose.secrets.yml
 LANDING_SRC="$DEPLOY_ROOT/source/relay/deploy/landing/contact/invite"
 LANDING_DST=/var/www/compartarenta-relay-landing/contact/invite
 # One release version for both images (RELAY_TAG + ENTITLEMENT_TAG in env/.env).
-RELEASE_TAG=v0.4.0
-# Host path of the FCM JSON currently mounted (confirm with inspect in 1.4).
-FCM_HOST_JSON=/srv/compartarenta-relay/secrets/bojairu-firebase-adminsdk-fbsvc-3f8e9288d7.json
-FCM_CONTAINER_PATH=/run/secrets/fcm-service-account.json
+RELEASE_TAG=v0.5.1
+RELAY_SCHEMA_VERSION=4
+ENTITLEMENT_SCHEMA_VERSION=3
 ```
 
-Set `RELEASE_TAG` to this release’s version. Update `FCM_HOST_JSON` to the
-real filename on disk after Procedure A.
+Set `RELEASE_TAG` and the two schema-version variables to the release being
+deployed. Section 1.4 reads the real host secret paths from the merged Compose
+configuration before any container is rebuilt; do not guess or hardcode a
+replacement filename.
 
 ### 1.1 Shell identity (once)
 
@@ -65,11 +67,16 @@ cd "$DEPLOY_ROOT"
 git -C source pull --ff-only
 GIT_COMMIT=$(git -C source rev-parse HEAD)
 echo "GIT_COMMIT=$GIT_COMMIT"
+git -C source status --short
+git -C source tag --points-at HEAD
 ```
 
-Start (or update) a **local** notepad on your laptop — not on the VPS —
-with the four-line block in §1.6. Put `Git commit:` now; fill the rest
-after build.
+**Expected for this release:** `GIT_COMMIT` is
+`62926400f29428e7951326fe554e5da375e6e4f2`, status prints nothing, and the
+tag list contains `v0.5.1`. Stop if any of those three checks differs.
+
+Start (or update) a **local** notepad on your laptop — not on the VPS.
+Section 1.6 prints the exact blocks to save after the images are built.
 
 ### 1.3 Edit `env/.env`
 
@@ -82,7 +89,7 @@ Set these to this release (version ≠ git SHA):
 
 | Variable in `.env` | Value |
 |--------------------|--------|
-| `RELAY_TAG` | `$RELEASE_TAG` (e.g. `v0.4.0`) |
+| `RELAY_TAG` | `$RELEASE_TAG` (`v0.5.1` for this release) |
 | `ENTITLEMENT_TAG` | `$RELEASE_TAG` (same version number) |
 | `BUILD_DIGEST` | `$GIT_COMMIT` (full SHA from §1.2) |
 
@@ -93,22 +100,66 @@ Leave these **unchanged**:
 | Variable | Value |
 |----------|--------|
 | `FCM_SERVICE_ACCOUNT_JSON_PATH` | `/run/secrets/fcm-service-account.json` |
+| `PLAY_SERVICE_ACCOUNT_JSON_PATH` | `/run/secrets/play-android-developer.json` |
 | `ENTITLEMENT_INTROSPECT_URL` | `http://entitlement:8080` |
 | `WAKE_PUSH_DISPATCH_ENABLED` | `true` (production wake) |
 
-### 1.4 Confirm FCM mount
+The Firebase path is consumed by **both** relay and Entitlement. The Play
+path is consumed only by Entitlement. They are different credentials and
+must remain separate files.
+
+### 1.4 Confirm the planned relay and Entitlement secret mounts
 
 ```bash
 cd "$DEPLOY_ROOT"
-docker inspect compartarenta-relay \
-  --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+stack_config=$(docker compose --env-file env/.env \
+  -f "$STACK_COMPOSE" \
+  -f "$SECRETS_COMPOSE" \
+  config --format json)
+
+FCM_HOST_JSON=$(printf '%s\n' "$stack_config" | jq -r \
+  'first(.services.relay.volumes[]? |
+    select(.target == "/run/secrets/fcm-service-account.json") |
+    .source) // empty')
+ENTITLEMENT_FCM_HOST_JSON=$(printf '%s\n' "$stack_config" | jq -r \
+  'first(.services.entitlement.volumes[]? |
+    select(.target == "/run/secrets/fcm-service-account.json") |
+    .source) // empty')
+PLAY_HOST_JSON=$(printf '%s\n' "$stack_config" | jq -r \
+  'first(.services.entitlement.volumes[]? |
+    select(.target == "/run/secrets/play-android-developer.json") |
+    .source) // empty')
+
+if [[ -n "$FCM_HOST_JSON" &&
+      "$FCM_HOST_JSON" == "$ENTITLEMENT_FCM_HOST_JSON" ]]; then
+  echo "FCM Host: ok"
+else
+  echo "FCM Host: FAILED — the same Firebase file must be mounted in relay and Entitlement"
+fi
+
+if [[ -n "$PLAY_HOST_JSON" &&
+      "$PLAY_HOST_JSON" != "$FCM_HOST_JSON" ]]; then
+  echo "Play Host: ok"
+else
+  echo "Play Host: FAILED — Entitlement needs a separate Google Play file"
+fi
 ```
 
-**Expected:** one line with `$FCM_HOST_JSON` → `$FCM_CONTAINER_PATH`.
+**Expected:**
 
-For a new host JSON file, complete
-[Procedure A](#procedure-a--replace-fcm-service-account-file) first, then
-re-run this inspect before §1.6.
+```text
+FCM Host: ok
+Play Host: ok
+```
+
+Do not continue while either line says `FAILED`.
+
+If the Entitlement Firebase destination is absent, add the same host Firebase
+file to its `volumes` block in `docker-compose.secrets.yml` as described in
+[Procedure A](#procedure-a--replace-fcm-service-account-file). Preserve the
+existing, separate Play mount, then re-run this section immediately. This
+check reads the planned Compose configuration, so it must pass **before**
+recording the deployment time or rebuilding the containers.
 
 ### 1.5 Record deploy timestamp
 
@@ -143,21 +194,18 @@ DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%MZ")
 echo "RELAY_DIGEST=$RELAY_DIGEST"
 echo "ENTITLEMENT_DIGEST=$ENTITLEMENT_DIGEST"
 echo "DEPLOYED_AT=$DEPLOYED_AT"
+
+printf 'export RELEASE_TAG=%q\nexport RELAY_DIGEST=%q\nexport ENTITLEMENT_DIGEST=%q\n' \
+  "$RELEASE_TAG" "$RELAY_DIGEST" "$ENTITLEMENT_DIGEST"
+printf 'Git commit: %s\nVersion: %s\nBuild datetime: %s\nDocker SHA: %s\nEntitlement SHA: %s\n' \
+  "$GIT_COMMIT" "${RELEASE_TAG#v}" "$DEPLOYED_AT" \
+  "$RELAY_DIGEST" "$ENTITLEMENT_DIGEST"
 ```
 
-**Save on your laptop** (SSH can drop during a long audit). Use exactly
-this shape — `Version` without a leading `v`; `Docker SHA` = **relay**
-image id (`RELAY_DIGEST`):
-
-```text
-Git commit: <GIT_COMMIT from §1.2>
-Version: 0.4.0
-Build datetime: 2026-07-24T17:49Z		(13:49 EST)
-Docker SHA: sha256:…
-```
-
-Also keep `ENTITLEMENT_DIGEST` somewhere in the same note (fifth line is
-fine). You will paste the four-line block at §2.7.
+**Save both printed blocks on your laptop.** The first block is ready to paste
+into §2.0 if the SSH session drops. The second block is ready for the public
+audit log; `Docker SHA` is the relay image id and `Entitlement SHA` is the
+Entitlement image id.
 
 ### 1.7 Landing page (Apache DocumentRoot)
 
@@ -175,28 +223,61 @@ sudo cp -r /srv/compartarenta-relay/source/relay/deploy/landing/contact/invite/*
 Back as `compartarenta-relay` in `$DEPLOY_ROOT` (reuse §1.0 vars).
 
 ```bash
-curl -sS "https://${PUBLIC_HOST}/healthz" | jq .
+relay_hz=$(curl -sS "https://${PUBLIC_HOST}/healthz")
+printf '%s\n' "$relay_hz" | jq .
+test "$(printf '%s\n' "$relay_hz" | jq -r '.build')" = "$GIT_COMMIT"
+test "$(printf '%s\n' "$relay_hz" | jq -r '.schema_version')" = "$RELAY_SCHEMA_VERSION"
 curl -sS -H 'Accept: text/html' "https://${PUBLIC_HOST}/healthz" | head
 curl -sS -o /dev/null -w '%{http_code}\n' "https://${PUBLIC_HOST}/readyz"
 
-curl -sS http://127.0.0.1:8081/healthz | jq .
+entitlement_hz=$(curl -sS http://127.0.0.1:8081/healthz)
+printf '%s\n' "$entitlement_hz" | jq .
+test "$(printf '%s\n' "$entitlement_hz" | jq -r '.build')" = "$GIT_COMMIT"
+test "$(printf '%s\n' "$entitlement_hz" | jq -r '.schema_version')" = "$ENTITLEMENT_SCHEMA_VERSION"
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8081/readyz
 
+test "$(curl -sS -o /dev/null -w '%{http_code}' "http://${LICENSE_HOST}/healthz")" = "301"
+public_entitlement_hz=$(curl -sS "https://${LICENSE_HOST}/healthz")
+test "$(printf '%s\n' "$public_entitlement_hz" | jq -r '.build')" = "$GIT_COMMIT"
+test "$(printf '%s\n' "$public_entitlement_hz" | jq -r '.schema_version')" = "$ENTITLEMENT_SCHEMA_VERSION"
+test "$(curl -sS -o /dev/null -w '%{http_code}' "https://${LICENSE_HOST}/readyz")" = "200"
+test "$(curl -sS -o /dev/null -w '%{http_code}' "https://${LICENSE_HOST}/v1/introspect/envelope")" = "403"
+test "$(curl -sS -o /dev/null -w '%{http_code}' "https://${LICENSE_HOST}/v1/free-licenses")" = "401"
+
 docker inspect compartarenta-relay \
+  --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+docker inspect compartarenta-entitlement \
   --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
 docker run --rm \
   -v "${FCM_HOST_JSON}:/sa.json:ro" \
   python:3.12-alpine \
-  python -c "import json; print(json.load(open('/sa.json'))['project_id'])"
+  python -c "import json; d=json.load(open('/sa.json')); print(d['type'], d['project_id'])"
+docker run --rm \
+  -v "${PLAY_HOST_JSON}:/sa.json:ro" \
+  python:3.12-alpine \
+  python -c "import json; d=json.load(open('/sa.json')); print(d['type'], d['project_id'])"
 
 curl -sS "https://${PUBLIC_HOST}/contact/invite/" | grep -iE 'Bojairũ|bojairu://' | head
+
+set -a
+. env/.env
+set +a
+"$DEPLOY_ROOT/source/deploy/free-licence/free-license-get.sh"
 ```
 
 **Expected:**
 
-- healthz JSON healthy; HTML healthz readable; readyz `200`
-- entitlement healthz/readyz OK on loopback
-- FCM mount host → `/run/secrets/fcm-service-account.json`; `project_id` prints `bojairu`
+- both health responses expose build
+  `62926400f29428e7951326fe554e5da375e6e4f2`
+- relay schema is `4`; Entitlement schema is `3`; both readyz calls return `200`
+- `license.incoherences.org` redirects HTTP to HTTPS and serves the same
+  Entitlement build; public introspection is `403`; unauthenticated free-license
+  administration is `401`
+- relay has the Firebase mount; Entitlement has the Firebase and Play mounts
+- both credential checks print `service_account`; Firebase also prints project
+  `bojairu`
+- the authenticated free-license GET prints CSV beginning with
+  `Nom,InstallationId` and does not change any licence
 - invite page shows **Bojairũ** and `bojairu://`
 
 From the **developer workstation** (phone USB + Monica-QA AVD):
@@ -217,7 +298,8 @@ notification after Monica submits (app process killed, not force-stopped).
 
 | File | Role | Where it goes |
 |------|------|----------------|
-| Firebase **service account** JSON (`"type": "service_account"`, `project_id`: **`bojairu`**) | Relay sends FCM wake | VPS host → see below |
+| Firebase **service account** JSON (`"type": "service_account"`, `project_id`: **`bojairu`**) | Relay sends wake messages; Entitlement sends free-license grant/revoke messages | Same VPS host file, mounted read-only into both containers |
+| Google Play service-account JSON | Entitlement validates Play purchases | Separate VPS host file, mounted read-only into Entitlement only |
 | `google-services.json` (Android client flavors) | Mobile app Firebase SDK | App repo / build only — **never** mount on the relay |
 
 `FCM_SERVICE_ACCOUNT_JSON_PATH` in `env/.env` is the path **inside the container**
@@ -227,15 +309,24 @@ file sits on the host. The host file lives under
 
 | Role | Path |
 |------|------|
-| Source file on the VPS host | `/srv/compartarenta-relay/secrets/<adminsdk-filename>.json` |
+| Source file on the VPS host | The real `.Source` printed by `docker inspect` |
 | Path inside Docker (`.env`) | `/run/secrets/fcm-service-account.json` |
 
 See the current bind without guessing:
 
 ```bash
-docker inspect compartarenta-relay \
-  --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+FCM_HOST_JSON=$(docker inspect compartarenta-relay \
+  --format '{{range .Mounts}}{{if eq .Destination "/run/secrets/fcm-service-account.json"}}{{.Source}}{{end}}{{end}}')
+test -n "$FCM_HOST_JSON"
+printf 'Firebase host file: %s\n' "$FCM_HOST_JSON"
+printf 'Entitlement overlay line:      - %s:/run/secrets/fcm-service-account.json:ro\n' \
+  "$FCM_HOST_JSON"
 ```
+
+The printed overlay line must exist under `services.entitlement.volumes` in
+`docker-compose.secrets.yml`. The same source file remains mounted under
+`services.relay.volumes`. Do not remove or replace Entitlement's separate
+`/run/secrets/play-android-developer.json` mount.
 
 ### Obtain the JSON
 
@@ -264,8 +355,10 @@ cd /srv/compartarenta-relay
 
 NEW_FCM_HOST_JSON=/srv/compartarenta-relay/secrets/bojairu-firebase-adminsdk-YOUR_NEW_SUFFIX.json
 
-# Edit docker-compose.secrets.yml — change ONLY the host (left) side:
+# Edit docker-compose.secrets.yml — change the host (left) side for BOTH
+# services.relay and services.entitlement:
 #   - /srv/compartarenta-relay/secrets/<new-filename>.json:/run/secrets/fcm-service-account.json:ro
+# Leave Entitlement's play-android-developer.json line unchanged.
 nano docker-compose.secrets.yml
 ```
 
@@ -282,17 +375,65 @@ In the deploy shell:
 FCM_HOST_JSON=$NEW_FCM_HOST_JSON
 ```
 
-Return to §1.4 (confirm mount), then §1.6 Build so the new bind takes
-effect. Archive the previous host JSON after §1.8 smoke shows
-`project_id` = `bojairu`.
+Return to §1.4 (confirm planned mounts), then continue in order with §1.5 and
+§1.6 so the new bind takes effect. Archive the previous host JSON after §1.8
+smoke shows `project_id` = `bojairu`.
+
+---
+
+## Procedure B — Verify and use free-license operator commands
+
+Run this only after §1.8 passes. These commands run on the VPS as
+`compartarenta-relay`; they call Entitlement over loopback and never expose
+the operator token publicly.
+
+Load the token and list current active grants without changing anything:
+
+```bash
+cd /srv/compartarenta-relay
+set -a
+. env/.env
+set +a
+source/deploy/free-licence/free-license-get.sh
+```
+
+Expected first CSV line:
+
+```text
+Nom,InstallationId
+```
+
+To grant a licence, first obtain the complete installation ID from the user.
+The installation must already have registered with Entitlement and have a
+current Firebase token. The script intentionally fails if a free grant already
+exists, a qualifying paid subscription blocks it, or the silent Firebase
+message cannot be sent.
+
+```bash
+read -r -p "Free-license user name: " FREE_LICENSE_NAME
+read -r -p "Installation ID: " INSTALLATION_ID
+source/deploy/free-licence/free-license-set.sh \
+  "$FREE_LICENSE_NAME" "$INSTALLATION_ID"
+```
+
+To revoke one existing grant:
+
+```bash
+read -r -p "Installation ID to revoke: " INSTALLATION_ID
+source/deploy/free-licence/free-license-delete.sh "$INSTALLATION_ID"
+```
+
+Do not use SET or DELETE as a generic deployment smoke: both change a real
+licence. The authenticated GET in §1.8 and audit §2.5 is the non-mutating
+deployment check.
 
 ---
 
 ## 2. Audit
 
-Run **after** §1. Keep your laptop notepad open (the four-line block from
-§1.6). Map: `Version` → tag `v`+version; `Build datetime` → deploy time;
-`Docker SHA` → relay digest; plus `ENTITLEMENT_DIGEST` from the same note.
+Run **after** §1. Keep your laptop notepad open with both exact blocks printed
+in §1.6. The export block restores the image ids after an SSH reconnect; the
+five-line audit block is copied into the public audit record.
 
 Open findings go into [`docs/relay-audit-log.md`](../docs/relay-audit-log.md)
 (Findings section). Passing checks are summarized in the Self-audit entry
@@ -303,18 +444,27 @@ Open findings go into [`docs/relay-audit-log.md`](../docs/relay-audit-log.md)
 ```bash
 DEPLOY_ROOT=/srv/compartarenta-relay
 PUBLIC_HOST=sync.incoherences.org
+LICENSE_HOST=license.incoherences.org
 STACK_COMPOSE=source/deploy/compose.production-stack.yml
 SECRETS_COMPOSE=docker-compose.secrets.yml
-RELEASE_TAG=v0.4.0
-# Image Ids from §1.6 laptop notepad (required by audit-2.2):
-RELAY_DIGEST=sha256:3f70e5d2c55babdd56f57771d6403f4add9e19f3ff6a477540ebb7e497adeabc
-ENTITLEMENT_DIGEST=sha256:4c30c73512ec9603b7b9b8f10757225a17a52a4ffc4c82667aa310fcff5e2c42
-FCM_HOST_JSON=/srv/compartarenta-relay/secrets/bojairu-firebase-adminsdk-fbsvc-3f8e9288d7.json
+RELEASE_TAG=v0.5.1
+RELAY_SCHEMA_VERSION=4
+ENTITLEMENT_SCHEMA_VERSION=3
 VHOST_FILE=/etc/apache2/sites-available/sync.incoherences.org.conf
-export RELAY_DIGEST ENTITLEMENT_DIGEST RELEASE_TAG DEPLOY_ROOT PUBLIC_HOST \
-  STACK_COMPOSE SECRETS_COMPOSE FCM_HOST_JSON VHOST_FILE
 
 cd "$DEPLOY_ROOT"
+# Paste the three exact `export` lines printed and saved in §1.6 here.
+: "${RELAY_DIGEST:?paste the relay image id saved in section 1.6}"
+: "${ENTITLEMENT_DIGEST:?paste the Entitlement image id saved in section 1.6}"
+GIT_COMMIT=$(git -C source rev-parse HEAD)
+FCM_HOST_JSON=$(docker inspect compartarenta-relay \
+  --format '{{range .Mounts}}{{if eq .Destination "/run/secrets/fcm-service-account.json"}}{{.Source}}{{end}}{{end}}')
+PLAY_HOST_JSON=$(docker inspect compartarenta-entitlement \
+  --format '{{range .Mounts}}{{if eq .Destination "/run/secrets/play-android-developer.json"}}{{.Source}}{{end}}{{end}}')
+export RELAY_DIGEST ENTITLEMENT_DIGEST RELEASE_TAG DEPLOY_ROOT PUBLIC_HOST \
+  LICENSE_HOST STACK_COMPOSE SECRETS_COMPOSE FCM_HOST_JSON PLAY_HOST_JSON \
+  RELAY_SCHEMA_VERSION ENTITLEMENT_SCHEMA_VERSION VHOST_FILE GIT_COMMIT
+
 set -a
 . env/.env
 set +a
@@ -376,7 +526,8 @@ Defaults inside the script match §2.0 (`PUBLIC_HOST`, `DEPLOY_ROOT`,
 and run each command one by one.
 
 Requires `RELAY_DIGEST` and `ENTITLEMENT_DIGEST` from §2.0 (laptop notepad
-image Ids). Override any §2.0 default by exporting vars before running.
+image Ids). `RELEASE_TAG` has no script fallback: the audit stops rather than
+silently inspecting an older release.
 
 ---
 
@@ -414,8 +565,10 @@ and run each command one by one.
 [Appendix A — IF FAILED](#appendix-a--if-failed--check-those-one-by-one) §2.5
 and run each command one by one.
 
-Out of scope for this audit (do not fail the run on these): Play/App Store
-license verifiers, signed assertions Phase B+.
+This check now requires Entitlement schema 3, the public
+`license.incoherences.org` route, both Entitlement secret mounts, the Play and
+Firebase paths, and authenticated read-only access to the free-license CSV.
+Apple validation and signed assertions remain out of scope.
 
 ---
 
@@ -443,17 +596,9 @@ and run each command one by one.
 
 ### 2.7 Record the deployment and self-audit
 
-**Paste your laptop notepad block** (same four lines as §1.6), for example:
-
-```text
-Git commit: 5a434ecad615f76c1feaba41d033450dc2ad8578
-Version: 0.4.0
-Build datetime: 2026-07-24T17:49Z		(13:49 EST)
-Docker SHA: sha256:3f70e5d2c55babdd56f57771d6403f4add9e19f3ff6a477540ebb7e497adeabc
-```
-
-If you also saved entitlement’s image id, paste that too. Otherwise the
-writer uses the `ENTITLEMENT_DIGEST` from §1.6 / §2.2 for this release.
+**Paste the exact five-line audit-log block printed and saved in §1.6.**
+It already contains the commit, version, deployment time, relay image id, and
+Entitlement image id for this run. Do not reuse values from an older release.
 
 Then:
 
@@ -484,7 +629,9 @@ one. A missed deadline is itself a finding.
 | [`audit-2.4-logs-metrics.sh`](./audit-2.4-logs-metrics.sh) | §2.4 PASSED/FAILED script |
 | [`audit-2.5-entitlement.sh`](./audit-2.5-entitlement.sh) | §2.5 PASSED/FAILED script |
 | [`audit-2.6-push-stats.sh`](./audit-2.6-push-stats.sh) | §2.6 PASSED/FAILED script |
-| `/srv/compartarenta-relay/docker-compose.secrets.yml` | Host-only FCM bind mount |
+| [`free-licence/`](./free-licence/) | Authenticated VPS-only free-license GET/SET/DELETE scripts |
+| [`../entitlement/deploy/apache2/license-vhost.conf.template`](../entitlement/deploy/apache2/license-vhost.conf.template) | Public client API vhost; internal introspection denied |
+| `/srv/compartarenta-relay/docker-compose.secrets.yml` | Host-only relay FCM plus Entitlement FCM and Play bind mounts |
 | [`docs/relay-audit-log.md`](../docs/relay-audit-log.md) | Public deploy + audit record |
 
 ---
@@ -497,9 +644,10 @@ known-good production run). Do not invent new expected values — if an
 Expected cell says *(paste from this audit)*, fill it from your live
 output once that step passes, then keep it here for next time.
 
-Assumes §2.0 vars are already set (`PUBLIC_HOST`, `DEPLOY_ROOT`,
-`VHOST_FILE`, `RELEASE_TAG`, `STACK_COMPOSE`, `SECRETS_COMPOSE`,
-`FCM_HOST_JSON`, `psql_relay`).
+Assumes §2.0 vars are already set (`PUBLIC_HOST`, `LICENSE_HOST`,
+`DEPLOY_ROOT`, `VHOST_FILE`, `RELEASE_TAG`, `STACK_COMPOSE`,
+`SECRETS_COMPOSE`, `FCM_HOST_JSON`, `PLAY_HOST_JSON`, schema versions,
+image ids, and `psql_relay`).
 
 ---
 
@@ -719,9 +867,9 @@ docker compose --env-file env/.env -f "$STACK_COMPOSE" -f "$SECRETS_COMPOSE" ps
 
 ```
 NAME                           IMAGE                              COMMAND                  SERVICE                CREATED       STATUS                PORTS
-compartarenta-entitlement      compartarenta-entitlement:v0.4.0   "/entitlement"           entitlement            5 hours ago   Up 5 hours            127.0.0.1:8081->8080/tcp
+compartarenta-entitlement      compartarenta-entitlement:v0.5.1   "/entitlement"           entitlement            5 hours ago   Up 5 hours            127.0.0.1:8081->8080/tcp
 compartarenta-entitlement-db   postgres:17-alpine                 "docker-entrypoint.s…"   entitlement-postgres   5 weeks ago   Up 7 days (healthy)   5432/tcp
-compartarenta-relay            compartarenta-relay:v0.4.0         "/relay"                 relay                  5 hours ago   Up 5 hours            127.0.0.1:8080->8080/tcp, 127.0.0.1:9090->9090/tcp
+compartarenta-relay            compartarenta-relay:v0.5.1         "/relay"                 relay                  5 hours ago   Up 5 hours            127.0.0.1:8080->8080/tcp, 127.0.0.1:9090->9090/tcp
 compartarenta-relay-db         postgres:17-alpine                 "docker-entrypoint.s…"   postgres               5 weeks ago   Up 7 days (healthy)   5432/tcp
 ```
 
@@ -735,12 +883,9 @@ docker inspect --format '{{.Id}}' "compartarenta-relay:${RELEASE_TAG}"
 docker inspect --format '{{.Id}}' "compartarenta-entitlement:${RELEASE_TAG}"
 ```
 
-**Expected:** (must equal `RELAY_DIGEST` / `ENTITLEMENT_DIGEST` from §1.6)
-
-```
-sha256:3f70e5d2c55babdd56f57771d6403f4add9e19f3ff6a477540ebb7e497adeabc
-sha256:4c30c73512ec9603b7b9b8f10757225a17a52a4ffc4c82667aa310fcff5e2c42
-```
+**Expected:** the first line equals the exact `RELAY_DIGEST` saved in §1.6;
+the second equals the exact `ENTITLEMENT_DIGEST`. Never compare with a digest
+copied from an older release.
 
 #### A.2.2.3 No secrets in git
 
@@ -1079,17 +1224,40 @@ curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8081/readyz
 
 ```
 {
-  "build": "5a434ecad615f76c1feaba41d033450dc2ad8578",
-  "schema_version": "1",
+  "build": "62926400f29428e7951326fe554e5da375e6e4f2",
+  "schema_version": "3",
   "status": "ok"
 }
 200
 ```
 
-(`build` SHA changes per release; `status` must be `ok`, readyz must be `200`.)
+For `v0.5.1`, `build` must equal the full `GIT_COMMIT` above, schema must be
+`3`, status must be `ok`, and readyz must be `200`.
+
+#### A.2.5.2 Public client route and protected server routes
 
 ```bash
-grep -E '^ENTITLEMENT_' "$DEPLOY_ROOT/env/.env" | sed 's/=.*/=***redacted***/'
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  "http://${LICENSE_HOST}/healthz"
+curl -sS "https://${LICENSE_HOST}/healthz" | jq .
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  "https://${LICENSE_HOST}/readyz"
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  "https://${LICENSE_HOST}/v1/introspect/envelope"
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  "https://${LICENSE_HOST}/v1/free-licenses"
+```
+
+**Expected:** `301`; the same build/schema/status JSON as loopback; `200`;
+`403`; `401`. The first two responses prove that mobile clients can traverse
+DNS, TLS, Apache, and the Entitlement reverse proxy. The last two prove that
+relay introspection and unauthenticated operator access remain blocked.
+
+#### A.2.5.3 Entitlement configuration and secret mounts
+
+```bash
+grep -E '^(ENTITLEMENT_|PLAY_SERVICE_ACCOUNT_JSON_PATH|FCM_SERVICE_ACCOUNT_JSON_PATH)' \
+  "$DEPLOY_ROOT/env/.env" | sed 's/=.*/=***redacted***/'
 ```
 
 **Expected:** at least these keys (values redacted in the log):
@@ -1102,9 +1270,36 @@ ENTITLEMENT_TAG=***redacted***
 ENTITLEMENT_ENABLED=***redacted***
 ENTITLEMENT_INTROSPECT_URL=***redacted***
 ENTITLEMENT_INTERNAL_TOKEN=***redacted***
+PLAY_SERVICE_ACCOUNT_JSON_PATH=***redacted***
+FCM_SERVICE_ACCOUNT_JSON_PATH=***redacted***
 ```
 
-Unredacted: `ENTITLEMENT_INTROSPECT_URL` must be `http://entitlement:8080`.
+Unredacted values must be:
+
+```text
+ENTITLEMENT_INTROSPECT_URL=http://entitlement:8080
+PLAY_SERVICE_ACCOUNT_JSON_PATH=/run/secrets/play-android-developer.json
+FCM_SERVICE_ACCOUNT_JSON_PATH=/run/secrets/fcm-service-account.json
+```
+
+```bash
+docker inspect compartarenta-entitlement \
+  --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
+docker run --rm \
+  -v "${PLAY_HOST_JSON}:/sa.json:ro" \
+  python:3.12-alpine \
+  python -c "import json; d=json.load(open('/sa.json')); print(d['type'], d['project_id'])"
+docker run --rm \
+  -v "${FCM_HOST_JSON}:/sa.json:ro" \
+  python:3.12-alpine \
+  python -c "import json; d=json.load(open('/sa.json')); print(d['type'], d['project_id'])"
+```
+
+**Expected:** Entitlement lists both destinations above. Both JSON checks print
+`service_account`; the Firebase check also prints project `bojairu`. The two
+host source paths must be different.
+
+#### A.2.5.4 Internal authorization and free-license read
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8081/v1/introspect/envelope \
@@ -1122,6 +1317,16 @@ curl -sS -X POST http://127.0.0.1:8081/v1/introspect/envelope \
   "code": "entitlement_not_entitled"
 }
 ```
+
+```bash
+"$DEPLOY_ROOT/source/deploy/free-licence/free-license-get.sh"
+```
+
+**Expected:** authenticated CSV whose first line is
+`Nom,InstallationId`. This GET is non-mutating; do not use SET or DELETE as an
+audit smoke.
+
+#### A.2.5.5 Entitlement tables
 
 ```bash
 docker exec compartarenta-entitlement-db \

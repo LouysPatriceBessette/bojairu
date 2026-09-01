@@ -100,6 +100,16 @@ or append at the bottom — pick one convention and keep it. This file uses
 - **Operator:** operator-on-call
 - **Notes:** Envelope expiry (`expires_at`, relay schema 4) and vehicle-sharing deadline domain; Play purchase verifier on entitlement (schema 2, host JSON bind); `operator-notice` in the relay image.
 
+### v0.5.1
+
+- **Tag:** v0.5.1
+- **Relay image digest:** sha256:da70b189b3a4edb25828a90f9c65df2f36a37d9c2ce0853b51e875c183db6dab
+- **Entitlement image digest:** sha256:b2e2d6320a40adb6acd2fb480ce79cd5ad0e7562df965a8b0599cf5c499ced05
+- **Deployed at:** 2026-09-01T16:45Z
+- **Git commit:** 62926400f29428e7951326fe554e5da375e6e4f2
+- **Operator:** operator-on-call
+- **Notes:** Free-licence manual management added
+
 ---
 
 ## Self-audits
@@ -192,6 +202,17 @@ Cadence: at least once every **90 days**. Missed deadline → open a Finding.
 - **Procedure:** deploy/2026-07-24-HOW-TO-DEPLOY.md §2
 - **Summary:** §2.1–§2.6 PASS on this host after two audit-script/doc alignments (not production bind changes). Relay `schema_version` 4; entitlement `schema_version` 2, `build` `e6b9f05c2bd2cb8be98e8fae629edb9cbabd09dd`. Public HTML is `/contact/invite/` only (`/` → 403). Play service-account JSON is mounted (smoke §11; §2.5 does not verify Play). FCM `project_id=bojairu` via §2.6.
 - **Findings:** Finding 2026-08-16 — public-root-no-index (accepted). Finding 2026-08-16 — audit-2.5-public-8081-000000 (resolved same day).
+
+### Self-audit — v0.5.1
+
+- **Date:** 2026-09-01T16:45Z
+- **Tag:** v0.5.1
+- **Relay image digest:** sha256:da70b189b3a4edb25828a90f9c65df2f36a37d9c2ce0853b51e875c183db6dab
+- **Entitlement image digest:** sha256:b2e2d6320a40adb6acd2fb480ce79cd5ad0e7562df965a8b0599cf5c499ced05
+- **Operator:** operator-on-call
+- **Procedure:** deploy/2026-07-24-HOW-TO-DEPLOY.md §2
+- **Summary:** §2.1–§2.6 PASS. Relay `schema_version` 4; entitlement `schema_version` 3, `build` `62926400f29428e7951326fe554e5da375e6e4f2`. Public relay and licence surfaces, image digests, databases, metrics, Entitlement Play and FCM mounts, authenticated free-licence listing, wake delivery configuration, and daily statistics passed. Auditor posture confirmed: 14-day routing push-token TTL, country suppression threshold 10, loopback-only statistics endpoint, append-only daily statistics file, and no routine human database queries.
+- **Findings:** None.
 
 ---
 
