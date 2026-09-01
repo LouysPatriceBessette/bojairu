@@ -574,6 +574,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get licensesResubscribe => 'Resubscribe';
 
   @override
+  String get licensesLaunchPromotion => 'Launch promotion';
+
+  @override
+  String get licensesPromotionDetails => 'Promotion details';
+
+  @override
   String licensesStatusAutoRenewOn(String when) {
     return 'Renews on\n$when';
   }

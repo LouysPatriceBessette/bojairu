@@ -1114,6 +1114,18 @@ abstract class AppLocalizations {
   /// **'Resubscribe'**
   String get licensesResubscribe;
 
+  /// No description provided for @licensesLaunchPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch promotion'**
+  String get licensesLaunchPromotion;
+
+  /// No description provided for @licensesPromotionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotion details'**
+  String get licensesPromotionDetails;
+
   /// No description provided for @licensesStatusAutoRenewOn.
   ///
   /// In en, this message translates to:

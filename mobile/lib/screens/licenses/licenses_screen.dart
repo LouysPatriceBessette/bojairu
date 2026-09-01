@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../entitlement/app_module_id.dart';
 import '../../entitlement/entitlement_coordinator.dart';
 import '../../entitlement/module_entitlement_controller.dart';
 import '../../entitlement/store_billing_service.dart';
+import '../../entitlement/store_launch_promotion.dart';
 import '../../entitlement/store_product_catalog.dart';
 import '../../entitlement/store_product_display_names.dart';
 import '../../entitlement/store_receipt_record.dart';
@@ -163,6 +166,26 @@ class _LicensesScreenState extends State<LicensesScreen>
     }
   }
 
+  Future<void> _openLaunchPromotion() async {
+    final billing = _billing;
+    if (billing == null) return;
+    final product = _productDetailsFor(kStoreLaunchPromotionProductId);
+    setState(() => _busy = true);
+    try {
+      await billing.openLaunchPromotion(product);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openPromotionDetails() async {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    await launchUrl(
+      storeLaunchPromotionDetailsUri(languageCode),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
   Future<void> _openPlaySubscriptionManagement(
     String productId, {
     required bool trackCancelTransition,
@@ -281,11 +304,7 @@ class _LicensesScreenState extends State<LicensesScreen>
   ) {
     return <AppModuleId>{
       for (final m in _moduleOrder)
-        if (moduleCoveredByPlayReceipt(
-          module: m,
-          receipts: receipts,
-          now: now,
-        ))
+        if (moduleCoveredByPlayReceipt(module: m, receipts: receipts, now: now))
           m,
     };
   }
@@ -374,6 +393,15 @@ class _LicensesScreenState extends State<LicensesScreen>
     final offers = promptSelect
         ? const <StoreCatalogEntry>[]
         : filterSubscriptionOffers(cart: _cart, paidProductIds: paidIds);
+    final launchPromotionProduct = _productDetailsFor(
+      kStoreLaunchPromotionProductId,
+    );
+    final canOpenLaunchPromotion =
+        !_busy &&
+        billing != null &&
+        billing.isAvailable &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            launchPromotionProduct != null);
 
     return Scaffold(
       appBar: AppBar(
@@ -400,11 +428,7 @@ class _LicensesScreenState extends State<LicensesScreen>
                 if (entitlement == null)
                   Text(l10n.licensesEntitlementUnavailable)
                 else ...[
-                  _moduleGrid(
-                    context: context,
-                    l10n: l10n,
-                    covered: covered,
-                  ),
+                  _moduleGrid(context: context, l10n: l10n, covered: covered),
                   const SizedBox(height: 24),
                   Text(
                     l10n.licensesActiveHeading,
@@ -473,11 +497,10 @@ class _LicensesScreenState extends State<LicensesScreen>
                       ),
                       const SizedBox(height: 8),
                       FilledButton(
-                        onPressed: _busy ||
+                        onPressed:
+                            _busy ||
                                 _selectedOfferProductId == null ||
-                                _productDetailsFor(
-                                      _selectedOfferProductId!,
-                                    ) ==
+                                _productDetailsFor(_selectedOfferProductId!) ==
                                     null
                             ? null
                             : () {
@@ -492,6 +515,17 @@ class _LicensesScreenState extends State<LicensesScreen>
                       ),
                     ],
                   ],
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: canOpenLaunchPromotion
+                        ? () => unawaited(_openLaunchPromotion())
+                        : null,
+                    child: Text(l10n.licensesLaunchPromotion),
+                  ),
+                  TextButton(
+                    onPressed: _openPromotionDetails,
+                    child: Text(l10n.licensesPromotionDetails),
+                  ),
                 ],
                 if (billing != null && !billing.isAvailable) ...[
                   const SizedBox(height: 12),
@@ -571,8 +605,7 @@ class _LicensesScreenState extends State<LicensesScreen>
                 Expanded(
                   child: TextButton(
                     style: selectStyle,
-                    onPressed:
-                        _busy ? null : () => _toggleCartModule(module),
+                    onPressed: _busy ? null : () => _toggleCartModule(module),
                     child: Text(
                       _cart.contains(module)
                           ? l10n.licensesDeselectModule
@@ -621,22 +654,22 @@ class _LicensesScreenState extends State<LicensesScreen>
             onPressed: _busy
                 ? null
                 : () => _openPlaySubscriptionManagement(
-                      productId,
-                      trackCancelTransition: true,
-                    ),
+                    productId,
+                    trackCancelTransition: true,
+                  ),
             child: Text(l10n.licensesCancelThisSubscription),
           )
         : kind == SubscriptionProductLineKind.canceledStillValid
-            ? FilledButton(
-                onPressed: _busy
-                    ? null
-                    : () => _openPlaySubscriptionManagement(
-                          productId,
-                          trackCancelTransition: false,
-                        ),
-                child: Text(l10n.licensesResubscribe),
-              )
-            : null;
+        ? FilledButton(
+            onPressed: _busy
+                ? null
+                : () => _openPlaySubscriptionManagement(
+                    productId,
+                    trackCancelTransition: false,
+                  ),
+            child: Text(l10n.licensesResubscribe),
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -686,10 +719,7 @@ class _LicensesScreenState extends State<LicensesScreen>
                 ),
                 if (actionButton != null) ...[
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: actionButton,
-                  ),
+                  Align(alignment: Alignment.centerRight, child: actionButton),
                 ],
               ],
             ),
@@ -704,10 +734,7 @@ class _LicensesScreenState extends State<LicensesScreen>
 /// (same colors as « Ajout d'abonnement »), with optional green coverage dot
 /// at [_ModuleLicenseIcon._dotAngleDegrees] (12h = 0° clockwise).
 class _ModuleLicenseIcon extends StatelessWidget {
-  const _ModuleLicenseIcon({
-    required this.icon,
-    required this.covered,
-  });
+  const _ModuleLicenseIcon({required this.icon, required this.covered});
 
   final IconData icon;
   final bool covered;
@@ -715,6 +742,7 @@ class _ModuleLicenseIcon extends StatelessWidget {
   static const double _circleSize = 56;
   static const double _iconSize = 28;
   static const double _dotSize = 14;
+
   /// Clockwise from 12 o'clock (0°) on the icon circle perimeter.
   static const double _dotAngleDegrees = 310;
 
@@ -736,18 +764,16 @@ class _ModuleLicenseIcon extends StatelessWidget {
               color: scheme.primary,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: _iconSize,
-              color: scheme.onPrimary,
-            ),
+            child: Icon(icon, size: _iconSize, color: scheme.onPrimary),
           ),
           if (covered)
             Positioned(
-              left: (_circleSize + _dotSize) / 2 +
+              left:
+                  (_circleSize + _dotSize) / 2 +
                   (_circleSize / 2) * math.sin(angleRad) -
                   _dotSize / 2,
-              top: (_circleSize + _dotSize) / 2 -
+              top:
+                  (_circleSize + _dotSize) / 2 -
                   (_circleSize / 2) * math.cos(angleRad) -
                   _dotSize / 2,
               child: Container(

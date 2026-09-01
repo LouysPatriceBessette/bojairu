@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,8 +25,8 @@ class StoreBillingService extends ChangeNotifier {
   StoreBillingService({
     required ModuleEntitlementController entitlement,
     InAppPurchase? iap,
-  })  : _entitlement = entitlement,
-        _iap = iap ?? InAppPurchase.instance;
+  }) : _entitlement = entitlement,
+       _iap = iap ?? InAppPurchase.instance;
 
   static StoreBillingService? _instance;
 
@@ -185,6 +186,40 @@ class StoreBillingService extends ChangeNotifier {
     return _iap.buyNonConsumable(purchaseParam: param);
   }
 
+  /// Opens the store-owned launch-promotion redemption flow.
+  ///
+  /// Android requires a concrete subscription before Play can show its
+  /// purchase sheet. The user selects "Redeem code" inside that sheet.
+  /// StoreKit owns the complete offer-code sheet on iOS.
+  Future<bool> openLaunchPromotion(ProductDetails? androidProduct) async {
+    _lastError = null;
+    notifyListeners();
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final addition = _iap
+            .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+        await addition.presentCodeRedemptionSheet();
+        return true;
+      } catch (e, st) {
+        _releaseLog('openLaunchPromotion iOS: $e\n$st');
+        _lastError = e.toString();
+        notifyListeners();
+        return false;
+      }
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      if (androidProduct == null) {
+        _lastError = 'launch_promotion_product_unavailable';
+        notifyListeners();
+        return false;
+      }
+      return buy(androidProduct);
+    }
+    _lastError = 'launch_promotion_unsupported';
+    notifyListeners();
+    return false;
+  }
+
   Future<void> restore() async {
     await refreshFromPlayStore();
   }
@@ -212,13 +247,11 @@ class StoreBillingService extends ChangeNotifier {
       return true;
     }
     try {
-      final addition =
-          _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+      final addition = _iap
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
       final response = await addition.queryPastPurchases();
       if (response.error != null) {
-        _releaseLog(
-          'queryPastPurchases error: ${response.error!.message}',
-        );
+        _releaseLog('queryPastPurchases error: ${response.error!.message}');
         _lastError = response.error!.message;
         notifyListeners();
         return false;
@@ -330,9 +363,7 @@ class StoreBillingService extends ChangeNotifier {
         try {
           await _acknowledgeIfNeeded(purchase);
         } catch (ackError, ackSt) {
-          _releaseLog(
-            'acknowledge after error failed: $ackError\n$ackSt',
-          );
+          _releaseLog('acknowledge after error failed: $ackError\n$ackSt');
         }
       }
     }
@@ -347,7 +378,8 @@ class StoreBillingService extends ChangeNotifier {
   /// Google Play cancels (and refunds) purchases that are never acknowledged.
   /// Test / license-tester purchases are revoked within minutes.
   Future<void> _acknowledgeIfNeeded(PurchaseDetails purchase) async {
-    final needsAck = purchase.pendingCompletePurchase ||
+    final needsAck =
+        purchase.pendingCompletePurchase ||
         (purchase is GooglePlayPurchaseDetails &&
             !purchase.billingClientPurchase.isAcknowledged);
     if (!needsAck) return;
@@ -404,7 +436,8 @@ class StoreBillingService extends ChangeNotifier {
       orderId: orderId,
       expiresAt: expiresAt,
       autoRenewing: autoRenewing,
-      acknowledged: purchase.status == PurchaseStatus.purchased ||
+      acknowledged:
+          purchase.status == PurchaseStatus.purchased ||
           purchase.status == PurchaseStatus.restored,
       rawJson: raw,
     );

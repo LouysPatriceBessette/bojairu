@@ -196,6 +196,8 @@
   "licensesSubscribe": "S’abonner",
   "licensesUnsubscribe": "Se désabonner",
   "licensesResubscribe": "Se ré-abonner",
+  "licensesLaunchPromotion": "Promotion de lancement",
+  "licensesPromotionDetails": "Détail de la promotion",
   "licensesStatusAutoRenewOn": "Se renouvellera le\n{when}",
   "@licensesStatusAutoRenewOn": {
     "placeholders": {

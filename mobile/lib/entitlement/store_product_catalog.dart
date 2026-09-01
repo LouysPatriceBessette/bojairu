@@ -5,9 +5,9 @@ class StoreCatalogEntry {
   const StoreCatalogEntry.module({
     required this.productId,
     required AppModuleId module,
-  })  : bundleId = null,
-        includedModules = null,
-        _module = module;
+  }) : bundleId = null,
+       includedModules = null,
+       _module = module;
 
   const StoreCatalogEntry.bundle({
     required this.productId,
@@ -34,6 +34,7 @@ class StoreCatalogEntry {
 /// Canonical catalog aligned with [docs/store-mapping.md] (Play product ids).
 abstract final class StoreProductCatalog {
   static const String basePlanMonthly = 'monthly';
+  static const String allModulesProductId = 'bojairu.bundle.all_modules';
 
   static const List<StoreCatalogEntry> entries = <StoreCatalogEntry>[
     StoreCatalogEntry.module(
@@ -67,13 +68,10 @@ abstract final class StoreProductCatalog {
     StoreCatalogEntry.bundle(
       productId: 'bojairu.bundle.housing_vehicle',
       bundleId: AppBundleId.housingVehicle,
-      includedModules: <AppModuleId>[
-        AppModuleId.housing,
-        AppModuleId.vehicle,
-      ],
+      includedModules: <AppModuleId>[AppModuleId.housing, AppModuleId.vehicle],
     ),
     StoreCatalogEntry.bundle(
-      productId: 'bojairu.bundle.all_modules',
+      productId: allModulesProductId,
       bundleId: AppBundleId.allModules,
       includedModules: <AppModuleId>[
         AppModuleId.housing,
@@ -83,9 +81,8 @@ abstract final class StoreProductCatalog {
     ),
   ];
 
-  static final Map<String, StoreCatalogEntry> byProductId = <String, StoreCatalogEntry>{
-    for (final e in entries) e.productId: e,
-  };
+  static final Map<String, StoreCatalogEntry> byProductId =
+      <String, StoreCatalogEntry>{for (final e in entries) e.productId: e};
 
   static Set<String> get allProductIds => byProductId.keys.toSet();
 
